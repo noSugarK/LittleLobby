@@ -1,0 +1,97 @@
+export const Phase = { Lobby: 0, Ready: 1, Playing: 2, Goal: 3, Ended: 4 } as const;
+export type Phase = (typeof Phase)[keyof typeof Phase];
+
+// 手柄按键位：A 传球 / B 射门（长按蓄力）/ X 冲刺 / Y 铲球
+export const BTN_A = 1;
+export const BTN_B = 2;
+export const BTN_X = 4;
+export const BTN_Y = 8;
+
+export const FLAG_SPRINT = 1;
+export const FLAG_TACKLE = 2;
+export const FLAG_STUN = 4;
+export const FLAG_CHARGE = 8;
+
+export type Team = 0 | 1; // 0 红队（左侧，向右进攻） 1 蓝队（右侧）
+
+export interface Input {
+  jx: number; // -1..1
+  jy: number;
+  btn: number;
+}
+
+export interface PlayerInfo {
+  id: number;
+  name: string;
+  team: Team;
+  num: number;
+  bot: boolean;
+  online: boolean;
+  link: 'p2p' | 'relay' | 'bot' | 'local';
+}
+
+export interface SnapPlayer {
+  id: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  angle: number;
+  flags: number;
+  stamina: number; // 0..1
+  charge: number; // 0..1
+}
+
+export interface Snapshot {
+  tick: number;
+  phase: Phase;
+  score: [number, number];
+  timeLeft: number; // 秒
+  phaseTime: number; // 当前阶段已持续秒数
+  ball: { x: number; y: number; vx: number; vy: number };
+  players: SnapPlayer[];
+}
+
+export interface Settings {
+  duration: number; // 秒
+  bots: boolean;
+}
+
+export interface EndInfo {
+  score: [number, number];
+  winner: Team | -1;
+  reason: string;
+}
+
+export interface RosterMsg {
+  t: 'roster';
+  players: PlayerInfo[];
+  settings: Settings;
+  /** 各队已同意投降的球员 id */
+  votes: [number[], number[]];
+  /** 各队投降所需票数 */
+  need: [number, number];
+  end: EndInfo | null;
+  /** 手机主机模式下房主的球员 id，大屏模式为 -1 */
+  hostPid: number;
+}
+
+/** 可靠通道 JSON 消息（主机 -> 客户端） */
+export type HostMsg =
+  | { t: 'welcome'; pid: number }
+  | { t: 'reject'; reason: string }
+  | RosterMsg
+  | { t: 'ev'; k: 'goal'; team: Team; scorer: string; own: boolean }
+  | { t: 'ev'; k: 'kick' }
+  | { t: 'ev'; k: 'tackled' }
+  | ({ t: 'ev'; k: 'end' } & EndInfo)
+  | { t: 'ev'; k: 'vote'; team: Team; name: string; n: number; need: number; cancel: boolean }
+  | { t: 'pong'; ts: number };
+
+/** 可靠通道 JSON 消息（客户端 -> 主机） */
+export type ClientMsg =
+  | { t: 'team'; team: Team }
+  | { t: 'name'; name: string }
+  | { t: 'start' }
+  | { t: 'surrender' }
+  | { t: 'ping'; ts: number };

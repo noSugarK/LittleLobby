@@ -1,0 +1,99 @@
+const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+export function randomCode(n = 5) {
+  let s = '';
+  const r = crypto.getRandomValues(new Uint8Array(n));
+  for (const v of r) s += ALPHABET[v % ALPHABET.length];
+  return s;
+}
+
+export function normalizeCode(s: string) {
+  return s.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+}
+
+export const store = {
+  get(k: string, local = true): string | null {
+    try {
+      return (local ? localStorage : sessionStorage).getItem(k);
+    } catch {
+      return null;
+    }
+  },
+  set(k: string, v: string, local = true) {
+    try {
+      (local ? localStorage : sessionStorage).setItem(k, v);
+    } catch {
+      /* 隐私模式等情况下忽略 */
+    }
+  },
+};
+
+let wakeLock: { release(): Promise<void> } | null = null;
+export async function keepAwake() {
+  const nav = navigator as any;
+  if (!nav.wakeLock) return;
+  try {
+    wakeLock = await nav.wakeLock.request('screen');
+  } catch {
+    /* 不支持或被拒绝 */
+  }
+  if (!(keepAwake as any).bound) {
+    (keepAwake as any).bound = true;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && wakeLock) keepAwake();
+    });
+  }
+}
+
+export function canFullscreen() {
+  const el = document.documentElement as any;
+  return !!(el.requestFullscreen || el.webkitRequestFullscreen);
+}
+
+export function isFullscreen() {
+  const d = document as any;
+  // 从主屏幕图标启动（standalone）也视为全屏
+  return !!(d.fullscreenElement || d.webkitFullscreenElement) || matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+}
+
+/** 必须在 click/touchend/keydown 等用户手势内调用（触屏的 pointerdown 不算手势） */
+export async function enterFullscreen(landscape = false): Promise<boolean> {
+  if (isFullscreen()) return true;
+  const el = document.documentElement as any;
+  try {
+    if (el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else return false;
+  } catch {
+    return false;
+  }
+  if (landscape) {
+    try {
+      await (screen.orientation as any)?.lock?.('landscape');
+    } catch {
+      /* 部分浏览器不支持锁定方向 */
+    }
+  }
+  return true;
+}
+
+export function vibrate(p: number | number[]) {
+  try {
+    navigator.vibrate?.(p);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** 二维码使用的页面地址：开发时用 localhost 打开会替换为局域网 IP */
+export function publicBase() {
+  const { protocol, hostname, port, pathname } = location;
+  if ((hostname === 'localhost' || hostname === '127.0.0.1') && __DEV_LAN_IP__) {
+    return `${protocol}//${__DEV_LAN_IP__}${port ? ':' + port : ''}${pathname}`;
+  }
+  return `${location.origin}${pathname}`;
+}
+
+export function esc(s: string) {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+}
