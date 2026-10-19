@@ -54,7 +54,12 @@ export interface Snapshot {
 
 export interface Settings {
   duration: number; // 秒
-  bots: boolean;
+  /** 自动补位：AI 把人少的一队补到与人多的一队相同 */
+  autoFill: boolean;
+  /** 手动模式下每队的 AI 数量 */
+  bots: [number, number];
+  /** AI 难度：0 简单 1 普通 2 困难 */
+  level: 0 | 1 | 2;
 }
 
 export interface EndInfo {
@@ -94,4 +99,6 @@ export type ClientMsg =
   | { t: 'name'; name: string }
   | { t: 'start' }
   | { t: 'surrender' }
+  | { t: 'settings'; patch: Partial<Settings> }
+  | { t: 'bot'; team: Team; delta: 1 | -1 }
   | { t: 'ping'; ts: number };

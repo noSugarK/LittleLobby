@@ -25,7 +25,7 @@ const BOT_NAMES = ['小罗', '小贝', '大卫', '阿内', '托蒂', '皮尔洛'
 export class HostGame {
   readonly sim = new Sim();
   readonly net: HostNet;
-  readonly settings: Settings = { duration: 180, bots: true };
+  readonly settings: Settings = { duration: 180, autoFill: true, bots: [0, 0], level: 1 };
   goalText = '';
   endInfo: EndInfo | null = null;
   /** 本机球员（无大屏模式），-1 表示没有 */
@@ -79,6 +79,7 @@ export class HostGame {
         s.info.online = false;
         s.offlineAt = performance.now();
         this.sim.setInput(s.info.id, { jx: 0, jy: 0, btn: 0 });
+        this.sim.inactive.add(s.info.id);
         this.rosterChanged();
       },
     });
@@ -152,6 +153,7 @@ export class HostGame {
       }
       existing.cid = cid;
       existing.info.online = true;
+      this.sim.inactive.delete(existing.info.id);
       existing.info.name = name;
       this.byCid.set(cid, existing.info.id);
       return null;
@@ -178,14 +180,24 @@ export class HostGame {
     if (this.localPid >= 0) this.sim.setInput(this.localPid, inp);
   }
 
+  private botCount(team: Team) {
+    return [...this.slots.values()].filter((s) => s.info.bot && s.info.team === team).length;
+  }
+
+  /** 每队应有的 AI 数：自动补位按人数差计算，手动模式按设置值；人+AI 不超过每队上限 */
+  private wantBots(team: Team) {
+    const room = Math.max(0, CONFIG.maxPerTeam - this.humans(team).length);
+    if (this.settings.autoFill) {
+      const target = Math.min(CONFIG.maxPerTeam, Math.max(1, this.humans(0).length, this.humans(1).length));
+      return Math.min(room, Math.max(0, target - this.humans(team).length));
+    }
+    return Math.min(room, this.settings.bots[team]);
+  }
+
   private rebalanceBots() {
     for (const team of [0, 1] as Team[]) {
       const bots = [...this.slots.values()].filter((s) => s.info.bot && s.info.team === team);
-      let want = 0;
-      if (this.settings.bots) {
-        const target = Math.min(CONFIG.maxPerTeam, Math.max(1, this.humans(0).length, this.humans(1).length));
-        want = Math.max(0, target - this.humans(team).length);
-      }
+      const want = this.wantBots(team);
       while (bots.length > want) this.removeSlot(bots.pop()!.info.id);
       for (let i = bots.length; i < want; i++) {
         const used = new Set([...this.slots.values()].map((s) => s.info.name));
@@ -193,6 +205,18 @@ export class HostGame {
         this.addSlot({ name: name + '(AI)', team, bot: true, online: true, link: 'bot' }, null);
       }
     }
+  }
+
+  /** 手动增减某队 AI；在自动补位模式下点击会切换为手动，并以当前数量为起点 */
+  changeBots(team: Team, delta: 1 | -1) {
+    if (this.inMatch()) return;
+    if (this.settings.autoFill) {
+      this.settings.autoFill = false;
+      this.settings.bots = [this.botCount(0), this.botCount(1)];
+    }
+    const room = Math.max(0, CONFIG.maxPerTeam - this.humans(team).length);
+    this.settings.bots[team] = Math.max(0, Math.min(room, this.botCount(team) + delta));
+    this.rosterChanged();
   }
 
   private need(team: Team) {
@@ -210,7 +234,7 @@ export class HostGame {
     return {
       t: 'roster',
       players: [...this.slots.values()].map((s) => s.info),
-      settings: { ...this.settings },
+      settings: { ...this.settings, bots: [...this.settings.bots] as [number, number] },
       votes: [[...this.votes[0]], [...this.votes[1]]],
       need: [this.need(0), this.need(1)],
       end: this.endInfo,
@@ -264,6 +288,12 @@ export class HostGame {
       case 'surrender':
         this.vote(s);
         break;
+      case 'settings':
+        if (msg.patch && typeof msg.patch === 'object') this.setSettings(msg.patch);
+        break;
+      case 'bot':
+        this.changeBots(msg.team === 1 ? 1 : 0, msg.delta === 1 ? 1 : -1);
+        break;
     }
   }
 
@@ -289,8 +319,17 @@ export class HostGame {
     this.rosterChanged();
   }
 
+  /** 比赛进行中不允许改设置；来自手机的值会被校验 */
   setSettings(p: Partial<Settings>) {
-    Object.assign(this.settings, p);
+    if (this.inMatch()) return;
+    const st = this.settings;
+    if (p.duration !== undefined && [60, 120, 180, 300].includes(Number(p.duration))) st.duration = Number(p.duration);
+    if (p.level !== undefined && [0, 1, 2].includes(Number(p.level))) st.level = Number(p.level) as 0 | 1 | 2;
+    if (p.autoFill !== undefined) {
+      st.autoFill = !!p.autoFill;
+      // 关掉自动补位时保留当前的 AI 数量
+      if (!st.autoFill) st.bots = [this.botCount(0), this.botCount(1)];
+    }
     this.rosterChanged();
   }
 
@@ -338,7 +377,7 @@ export class HostGame {
           for (const s of this.slots.values()) {
             if (!s.info.bot) continue;
             const p = sim.players.get(s.info.id);
-            if (p) sim.setInput(p.id, botInput(sim, p, DT));
+            if (p) sim.setInput(p.id, botInput(sim, p, DT, this.settings.level));
           }
           sim.step(DT);
           acc -= DT;

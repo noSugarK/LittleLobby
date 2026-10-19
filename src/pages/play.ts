@@ -18,6 +18,7 @@ import { ClientNet, type ClientState } from '../net/client';
 import { SnapBuffer } from '../net/interp';
 import { decodeSnapshot, encodeInput } from '../net/protocol';
 import { Gamepad } from '../ui/gamepad';
+import { bindSettings, settingsHtml } from '../ui/settings-ui';
 import { unlockAudio } from '../ui/sound';
 import { canFullscreen, enterFullscreen, esc, isFullscreen, keepAwake, publicBase, randomCode, store, vibrate } from '../ui/util';
 
@@ -245,12 +246,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
         <button data-team="0" style="--c:${TEAM_COLOR[0]}" class="${me?.team === 0 ? 'on' : ''}">红队 ${count(0)}</button>
         <button data-team="1" style="--c:${TEAM_COLOR[1]}" class="${me?.team === 1 ? 'on' : ''}">蓝队 ${count(1)}</button>
       </div>`;
-    if (isHost && !inMatch) {
-      const d = roster.settings.duration;
-      html += `<div class="settings">
-        <select class="dur">${[60, 120, 180, 300].map((v) => `<option value="${v}" ${v === d ? 'selected' : ''}>${v / 60} 分钟</option>`).join('')}</select>
-        <label class="check"><input type="checkbox" class="bots" ${roster.settings.bots ? 'checked' : ''}> AI 补位</label></div>`;
-    }
+    if (!inMatch) html += settingsHtml(roster.settings, players);
     if (!inMatch) {
       html += `<button class="primary start">${ended ? '再来一局' : '开始比赛'} · ${roster.settings.duration / 60} 分钟</button>`;
       if (isHost && ended) html += `<button class="back">返回大厅</button>`;
@@ -279,10 +275,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       panelOpen = false;
       renderPanel();
     });
-    const dur = panel.querySelector<HTMLSelectElement>('.dur');
-    if (dur) dur.onchange = () => game?.setSettings({ duration: Number(dur.value) });
-    const bots = panel.querySelector<HTMLInputElement>('.bots');
-    if (bots) bots.onchange = () => game?.setSettings({ bots: bots.checked });
+    bindSettings(panel, { settings: (patch) => send({ t: 'settings', patch }), bot: (team, delta) => send({ t: 'bot', team, delta }) });
   }
 
   $('.menu').onclick = () => {

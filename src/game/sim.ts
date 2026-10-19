@@ -97,6 +97,8 @@ export class Sim {
   kickoffTeam: Team = 0;
   kickoffPending = false;
   events: SimEvent[] = [];
+  /** 掉线等不会操作的球员，AI 安排抢球时会跳过他们 */
+  inactive = new Set<number>();
 
   addPlayer(id: number, team: Team) {
     const p: SimPlayer = {
@@ -133,6 +135,7 @@ export class Sim {
 
   removePlayer(id: number) {
     this.players.delete(id);
+    this.inactive.delete(id);
     this.reslot();
   }
 
@@ -553,6 +556,8 @@ export class Sim {
         }
         break;
       case Phase.Playing:
+        // 开球方 5 秒内没人触球（掉线或挂机），解除开球站位限制，避免卡死
+        if (this.kickoffPending && this.phaseTime > 5) this.kickoffPending = false;
         this.timeLeft = Math.max(0, this.timeLeft - dt);
         if (crossed) {
           const team: Team = b.x > 0 ? 0 : 1;

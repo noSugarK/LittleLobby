@@ -2,6 +2,7 @@ import QRCode from 'qrcode';
 import { HostGame, resultTitle } from '../game/host-game';
 import { Renderer, TEAM_COLOR, TEAM_NAME } from '../game/render';
 import { Phase, type RosterMsg, type Team } from '../game/types';
+import { bindSettings, settingsHtml } from '../ui/settings-ui';
 import { audioReady, unlockAudio } from '../ui/sound';
 import { enterFullscreen, esc, keepAwake, publicBase, randomCode, store } from '../ui/util';
 
@@ -33,20 +34,12 @@ export function mountScreen(app: HTMLElement) {
           <div class="team t0"><h3>${TEAM_NAME[0]}</h3><ul></ul></div>
           <div class="team t1"><h3>${TEAM_NAME[1]}</h3><ul></ul></div>
         </div>
-        <div class="settings">
-          <label>比赛时长
-            <select class="dur">
-              <option value="60">1 分钟</option><option value="120">2 分钟</option>
-              <option value="180" selected>3 分钟</option><option value="300">5 分钟</option>
-            </select>
-          </label>
-          <label class="check"><input type="checkbox" class="bots" checked> AI 补位</label>
-        </div>
+        <div class="cfg-wrap"></div>
         <div class="row">
           <button class="primary start">开始比赛</button>
           <button class="fs">全屏</button>
         </div>
-        <p class="muted small">热身中可以先在场上试操作；手机上也能点「开始比赛」。</p>
+        <p class="muted small">热身中可以先在场上试操作；手机上也能加 AI、点「开始比赛」。</p>
       </div>
     </div>
     <div class="result card" hidden></div>
@@ -59,8 +52,8 @@ export function mountScreen(app: HTMLElement) {
   const cornerEl = $('.corner-qr');
   const endBtn = $('.end-btn');
   const badge = $('.net-badge');
-  const durEl = $<HTMLSelectElement>('.dur');
-  const botsEl = $<HTMLInputElement>('.bots');
+  const cfgEl = $('.cfg-wrap');
+  let cfgHtml = '';
 
   QRCode.toCanvas($('.qr'), joinUrl, { width: 260, margin: 1 });
   QRCode.toCanvas($('.corner-qr canvas'), joinUrl, { width: 110, margin: 1 });
@@ -89,6 +82,13 @@ export function mountScreen(app: HTMLElement) {
           )
           .join('') || '<li class="empty">等待加入…</li>';
     }
+    // 只在内容变化时重绘，避免下拉框展开时被刷新收起
+    const html = settingsHtml(r.settings, r.players);
+    if (html !== cfgHtml) {
+      cfgHtml = html;
+      cfgEl.innerHTML = html;
+      bindSettings(cfgEl, { settings: (p) => game.setSettings(p), bot: (t, d) => game.changeBots(t, d) });
+    }
     const phase = game.sim.phase;
     lobbyEl.hidden = phase !== Phase.Lobby;
     cornerEl.hidden = phase === Phase.Lobby;
@@ -111,8 +111,6 @@ export function mountScreen(app: HTMLElement) {
   endBtn.onclick = () => {
     if (confirm('确定结束本场比赛吗？将按当前比分判定胜负。')) game.endMatch();
   };
-  durEl.onchange = () => game.setSettings({ duration: Number(durEl.value) });
-  botsEl.onchange = () => game.setSettings({ bots: botsEl.checked });
   cornerEl.onclick = () => cornerEl.classList.toggle('mini');
   window.addEventListener('keydown', (e) => {
     const phase = game.sim.phase;
