@@ -52,14 +52,20 @@ export interface Snapshot {
   players: SnapPlayer[];
 }
 
+/** 比赛时长可选值（秒）：设置界面与主机校验共用 */
+export const DURATIONS = [60, 120, 180, 300];
+
+/** AI 难度：0 简单 1 普通 2 困难 */
+export const BOT_LEVELS = [0, 1, 2] as const;
+export type BotLevel = (typeof BOT_LEVELS)[number];
+
 export interface Settings {
   duration: number; // 秒
   /** 自动补位：AI 把人少的一队补到与人多的一队相同 */
   autoFill: boolean;
   /** 手动模式下每队的 AI 数量 */
   bots: [number, number];
-  /** AI 难度：0 简单 1 普通 2 困难 */
-  level: 0 | 1 | 2;
+  level: BotLevel;
 }
 
 export interface EndInfo {

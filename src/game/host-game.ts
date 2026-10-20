@@ -8,7 +8,10 @@ import { botInput, forgetBot } from './ai';
 import { TEAM_NAME, type ViewState } from './render';
 import { Sim } from './sim';
 import {
+  BOT_LEVELS,
+  DURATIONS,
   Phase,
+  type BotLevel,
   type EndInfo,
   type EndReason,
   type HostMsg,
@@ -389,8 +392,9 @@ export class HostGame {
   setSettings(p: Partial<Settings>) {
     if (this.inMatch()) return;
     const st = this.settings;
-    if (p.duration !== undefined && [60, 120, 180, 300].includes(Number(p.duration))) st.duration = Number(p.duration);
-    if (p.level !== undefined && [0, 1, 2].includes(Number(p.level))) st.level = Number(p.level) as 0 | 1 | 2;
+    if (p.duration !== undefined && DURATIONS.includes(Number(p.duration))) st.duration = Number(p.duration);
+    const level = Number(p.level) as BotLevel;
+    if (p.level !== undefined && BOT_LEVELS.includes(level)) st.level = level;
     if (p.autoFill !== undefined) {
       st.autoFill = !!p.autoFill;
       // 关掉自动补位时保留当前的 AI 数量

@@ -22,7 +22,7 @@ import { CONFIG } from '../config';
 import { t, type Key } from '../i18n';
 import { Gamepad } from '../ui/gamepad';
 import { saveQrCard } from '../ui/qrcard';
-import { bindSettings, settingsHtml } from '../ui/settings-ui';
+import { bindSettings, pinLineHtml, playerTag, settingsHtml } from '../ui/settings-ui';
 import { icon } from '../ui/site';
 import { unlockAudio } from '../ui/sound';
 import { brand, canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, store, vibrate } from '../ui/util';
@@ -250,10 +250,9 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       .filter((p) => p.team === team)
       .sort((a, b) => a.num - b.num)
       .map((p) => {
-        const tag = p.bot ? 'AI' : !p.online ? t('status.offline') : p.link === 'local' ? '' : t(p.link === 'p2p' ? 'status.p2p' : 'status.relay');
         const you = p.id === meId ? ` <small>(${t('play.you')})</small>` : '';
         const owner = p.id === roster?.hostPid ? `<i class="owner">${t('role.owner')}</i>` : '';
-        return `<li class="${p.online ? '' : 'off'}"><span class="nm">${esc(p.name)}${you}</span>${owner}<em>${tag}</em></li>`;
+        return `<li class="${p.online ? '' : 'off'}"><span class="nm">${esc(p.name)}${you}</span>${owner}<em>${playerTag(p)}</em></li>`;
       })
       .join('');
   }
@@ -272,7 +271,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     const isOwner = meId >= 0 && meId === roster.hostPid;
     if (isHost && !inMatch) {
       html += `<div class="host-qr">${qrUrl ? `<img src="${qrUrl}" alt="">` : ''}<div>
-        <div class="room-code sm">${esc(room)}</div>${opts?.pin ? `<div class="pin-line">${t('play.pinLine')} <b>${opts.pin}</b></div>` : ''}
+        <div class="room-code sm">${esc(room)}</div>${pinLineHtml(opts?.pin ?? '')}
         <div class="muted small">${t('play.scanToJoin')}${opts?.listed ? t('play.listed') : ''}</div>
         <button class="ghost save-qr">${icon.download}${t('qr.save')}</button></div></div>`;
     }

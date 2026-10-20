@@ -2,14 +2,25 @@ import { CONFIG } from '../config';
 import { LEVEL_NAME } from '../game/ai';
 import { TEAM_NAME } from '../game/render';
 import { t } from '../i18n';
-import type { PlayerInfo, Settings, Team } from '../game/types';
+import { DURATIONS, type PlayerInfo, type Settings, type Team } from '../game/types';
 
 export interface SettingsActions {
   settings(patch: Partial<Settings>): void;
   bot(team: Team, delta: 1 | -1): void;
 }
 
-const DURATIONS = [60, 120, 180, 300];
+/** 球员状态标签：AI / 掉线 / 直连 / 中继（本机球员不显示） */
+export function playerTag(p: PlayerInfo): string {
+  if (p.bot) return 'AI';
+  if (!p.online) return t('status.offline');
+  if (p.link === 'local') return '';
+  return t(p.link === 'p2p' ? 'status.p2p' : 'status.relay');
+}
+
+/** 房间密码一行；没有密码时为空 */
+export function pinLineHtml(pin: string): string {
+  return pin ? `<div class="pin-line">${t('play.pinLine')} <b>${pin}</b></div>` : '';
+}
 
 /** 比赛设置 + 每队 AI 增减（大屏大厅和手机面板共用） */
 export function settingsHtml(st: Settings, players: PlayerInfo[]): string {

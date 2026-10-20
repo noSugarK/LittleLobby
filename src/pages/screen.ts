@@ -4,7 +4,7 @@ import { Renderer, TEAM_COLOR, TEAM_NAME } from '../game/render';
 import { Phase, type RosterMsg, type Team } from '../game/types';
 import { t } from '../i18n';
 import { saveQrCard } from '../ui/qrcard';
-import { bindSettings, settingsHtml } from '../ui/settings-ui';
+import { bindSettings, pinLineHtml, playerTag, settingsHtml } from '../ui/settings-ui';
 import { icon } from '../ui/site';
 import { audioReady, unlockAudio } from '../ui/sound';
 import { brand, enterFullscreen, esc, joinUrl, keepAwake, randomCode, roomOpts, store } from '../ui/util';
@@ -17,7 +17,6 @@ export function mountScreen(app: HTMLElement) {
   }
   const opts = roomOpts();
   const qrUrl = joinUrl(room, opts.pin);
-  const pinLine = opts.pin ? `<div class="pin-line">${t('play.pinLine')} <b>${opts.pin}</b></div>` : '';
 
   app.innerHTML = `
   <div class="screen">
@@ -32,7 +31,7 @@ export function mountScreen(app: HTMLElement) {
       <div class="lobby-join">
         <canvas class="qr"></canvas>
         <div class="room-code">${room}</div>
-        ${pinLine}
+        ${pinLineHtml(opts.pin)}
         <div class="muted">${t('screen.orOpen')}<br><span class="url">${esc(joinUrl(room))}</span></div>
         <button class="ghost save-qr">${icon.download}${t('qr.save')}</button>
       </div>
@@ -84,9 +83,7 @@ export function mountScreen(app: HTMLElement) {
         list
           .map(
             (p) =>
-              `<li class="${p.online ? '' : 'off'}"><b>${p.num}</b>${esc(p.name)}${p.id === r.hostPid ? `<i class="owner">${t('role.owner')}</i>` : ''}<em>${
-                p.bot ? 'AI' : !p.online ? t('status.offline') : t(p.link === 'p2p' ? 'status.p2p' : 'status.relay')
-              }</em></li>`,
+              `<li class="${p.online ? '' : 'off'}"><b>${p.num}</b>${esc(p.name)}${p.id === r.hostPid ? `<i class="owner">${t('role.owner')}</i>` : ''}<em>${playerTag(p)}</em></li>`,
           )
           .join('') || `<li class="empty">${t('screen.waiting')}</li>`;
     }
