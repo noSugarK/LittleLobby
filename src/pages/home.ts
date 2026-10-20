@@ -1,44 +1,92 @@
 import type { LobbyInfo } from '../game/types';
+import { t } from '../i18n';
 import { Signal, parseJson } from '../net/signal';
+import { openScanner } from '../ui/scan';
+import { bindSiteTools, icon, siteFooter, siteTools } from '../ui/site';
 import { esc, isPin, normalizeCode, store } from '../ui/util';
 
 // 主机每 30 秒刷新一次；超过该时长没刷新的视为已失效
 const STALE_MS = 90_000;
+const CODE_LEN = 5;
+type Tab = 'host' | 'join' | 'lobby';
 
 export function mountHome(app: HTMLElement) {
+  const saved = store.get('sfb.tab', false) as Tab | null;
+  let tab: Tab = saved === 'join' || saved === 'lobby' ? saved : 'host';
+
   app.innerHTML = `
-  <div class="home">
-    <div class="card hero">
-      <div class="ball-icon">⚽</div>
-      <h1>扫码足球</h1>
-      <p class="muted">大屏开房间，手机扫码当手柄，最多 4v4 实时对战</p>
-      <div class="room-opts">
-        <label class="check"><input type="checkbox" class="opt-listed"> 展示在公开大厅</label>
-        <input class="opt-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="房间密码（可选，4–6 位数字）">
+  <div class="site home">
+    <header class="site-hero">
+      <div class="site-bar"><span class="brand">ScanKick</span>${siteTools()}</div>
+      <h1>${t('app.name')}</h1>
+      <p>${t('app.tagline')}</p>
+    </header>
+    <main class="site-main">
+      <div class="home-card">
+        <div class="tabs" role="tablist">
+          ${(['host', 'join', 'lobby'] as Tab[])
+            .map((k) => `<button role="tab" data-tab="${k}">${t(`tab.${k}`)}${k === 'lobby' ? ' <span class="count"></span>' : ''}</button>`)
+            .join('')}
+        </div>
+
+        <section data-pane="host">
+          <label class="opt-row"><span>${icon.globe}${t('host.listed')}</span>
+            <input type="checkbox" class="switch opt-listed"></label>
+          <label class="pin-field">${icon.lock}<input class="opt-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="${t('host.pin')}"></label>
+          <p class="field-err" hidden>${t('host.pinBad')}</p>
+          <button class="choice create">${icon.tv}<span><b>${t('host.screen')}</b><small>${t('host.screenDesc')}</small></span>${icon.right}</button>
+          <button class="choice host">${icon.phone}<span><b>${t('host.phone')}</b><small>${t('host.phoneDesc')}</small></span>${icon.right}</button>
+        </section>
+
+        <section data-pane="join">
+          <button class="scan-btn">${icon.scan}<b>${t('join.scan')}</b><small>${t('join.scanDesc')}</small></button>
+          <div class="divider"><span>${t('join.or')}</span></div>
+          <form class="code-form">
+            <label class="code-boxes">
+              ${'<span></span>'.repeat(CODE_LEN)}
+              <input class="code" maxlength="${CODE_LEN}" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="${t('join.codeLabel')}">
+            </label>
+            <button type="submit" class="join-btn">${t('join.go')}</button>
+          </form>
+        </section>
+
+        <section data-pane="lobby">
+          <div class="lobby-table" role="table">
+            <div class="lrow lhead" role="row"><span>${t('lobby.room')}</span><span>${t('lobby.host')}</span><span>${t('lobby.players')}</span><span>${t('lobby.state')}</span></div>
+            <div class="lbody"></div>
+          </div>
+          <p class="hint">${t('lobby.hint')}</p>
+        </section>
       </div>
-      <button class="primary create">在这台设备上创建房间（大屏）</button>
-      <button class="host">无大屏模式：用这台手机开房并参赛</button>
-      <div class="or">或输入房间码加入</div>
-      <form class="join-form">
-        <input class="code" placeholder="房间码" maxlength="8" autocapitalize="characters" autocomplete="off">
-        <button type="submit">加入</button>
-      </form>
-      <div class="or">公开大厅</div>
-      <ul class="room-list"><li class="empty">正在加载…</li></ul>
-    </div>
+      <a class="guide-link" href="#/guide">${icon.book}<span>${t('guide.cta')}</span>${icon.right}</a>
+    </main>
+    ${siteFooter()}
   </div>`;
 
   const $ = <T extends HTMLElement>(s: string) => app.querySelector(s) as T;
+  bindSiteTools(app);
+
+  // ---------- 分页 ----------
+  const showTab = (k: Tab) => {
+    tab = k;
+    store.set('sfb.tab', k, false);
+    app.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === k)));
+    app.querySelectorAll<HTMLElement>('[data-pane]').forEach((p) => (p.hidden = p.dataset.pane !== k));
+  };
+  app.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => (b.onclick = () => showTab(b.dataset.tab as Tab)));
+  showTab(tab);
+
+  // ---------- 开房 ----------
   const pinEl = $<HTMLInputElement>('.opt-pin');
+  const pinErr = $('.field-err');
   pinEl.oninput = () => {
     pinEl.value = pinEl.value.replace(/\D/g, '');
-    pinEl.classList.remove('bad');
+    pinErr.hidden = true;
   };
-
   const create = (hash: string) => {
     const pin = pinEl.value;
     if (pin && !isPin(pin)) {
-      pinEl.classList.add('bad');
+      pinErr.hidden = false;
       pinEl.focus();
       return;
     }
@@ -50,35 +98,67 @@ export function mountHome(app: HTMLElement) {
   };
   $('.create').onclick = () => create('#/screen');
   $('.host').onclick = () => create('#/host');
-  $<HTMLFormElement>('.join-form').onsubmit = (e) => {
-    e.preventDefault();
-    const code = normalizeCode($<HTMLInputElement>('.code').value);
-    if (code) location.hash = `#/join/${code}`;
+
+  // ---------- 加入：房间码格子 ----------
+  const codeEl = $<HTMLInputElement>('.code');
+  const boxes = [...app.querySelectorAll<HTMLElement>('.code-boxes span')];
+  const paint = () => {
+    const v = codeEl.value;
+    const focused = document.activeElement === codeEl;
+    boxes.forEach((b, i) => {
+      b.textContent = v[i] ?? '';
+      b.classList.toggle('filled', i < v.length);
+      b.classList.toggle('cur', focused && i === Math.min(v.length, CODE_LEN - 1));
+    });
   };
+  const go = () => {
+    const code = normalizeCode(codeEl.value);
+    if (code.length === CODE_LEN) location.hash = `#/join/${code}`;
+    else codeEl.focus();
+  };
+  codeEl.oninput = () => {
+    codeEl.value = normalizeCode(codeEl.value).slice(0, CODE_LEN);
+    paint();
+    if (codeEl.value.length === CODE_LEN) go();
+  };
+  codeEl.onfocus = codeEl.onblur = paint;
+  $<HTMLFormElement>('.code-form').onsubmit = (e) => {
+    e.preventDefault();
+    go();
+  };
+  paint();
+  $('.scan-btn').onclick = () => openScanner(app);
 
   // ---------- 公开大厅：订阅所有房间的保留消息 ----------
   const rooms = new Map<string, LobbyInfo>();
-  const listEl = $('.room-list');
-  let loaded = false;
+  const body = $('.lbody');
+  const countEl = $('.count');
+  let state: 'loading' | 'ready' | 'failed' = 'loading';
 
   function render() {
     const now = Date.now();
-    const list = [...rooms.entries()].filter(([, r]) => now - r.ts < STALE_MS).sort((a, b) => b[1].ts - a[1].ts);
+    const list = [...rooms.entries()].filter(([, r]) => now - r.ts < STALE_MS);
+    // 可加入的在前，其次按人数
+    list.sort(([, a], [, b]) => Number(a.n >= a.max) - Number(b.n >= b.max) || Number(a.playing) - Number(b.playing) || b.n - a.n);
+    countEl.textContent = list.length ? String(list.length) : '';
     if (!list.length) {
-      listEl.innerHTML = `<li class="empty">${loaded ? '暂无公开房间' : '正在加载…'}</li>`;
+      const key = state === 'failed' ? 'lobby.failed' : state === 'loading' ? 'lobby.loading' : 'lobby.empty';
+      body.innerHTML = `<div class="lempty">${t(key)}</div>`;
       return;
     }
-    listEl.innerHTML = list
-      .map(
-        ([code, r]) => `<li>
-          <b class="code">${code}</b>
-          <span class="meta">${r.host ? `${esc(r.host)} 的房间` : '大屏房间'} · ${r.n}/${r.max} 人 · ${r.playing ? '比赛中' : '大厅中'}</span>
-          ${r.lock ? '<span class="lock" title="需要密码">🔒</span>' : ''}
-          <button data-code="${code}" data-lock="${r.lock ? 1 : ''}" ${r.n >= r.max ? 'disabled' : ''}>加入</button>
-        </li>`,
-      )
+    body.innerHTML = list
+      .map(([code, r]) => {
+        const full = r.n >= r.max;
+        const st = full ? ['full', t('lobby.full')] : r.playing ? ['live', t('lobby.live')] : ['open', t('lobby.open')];
+        return `<button class="lrow ${full ? 'is-full' : ''}" role="row" data-code="${code}" data-lock="${r.lock ? 1 : ''}" ${full ? 'disabled' : ''}>
+          <span class="mono code">${code}</span>
+          <span class="who">${r.host ? esc(r.host) : t('lobby.screen')}${r.lock ? `<i title="${t('lobby.locked')}">${icon.lock}</i>` : ''}</span>
+          <span class="mono">${r.n}/${r.max}</span>
+          <span class="st ${st[0]}">${st[1]}</span>
+        </button>`;
+      })
       .join('');
-    listEl.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
+    body.querySelectorAll<HTMLButtonElement>('.lrow').forEach((b) => {
       b.onclick = () => (location.hash = `#/join/${b.dataset.code}${b.dataset.lock ? '?lock' : ''}`);
     });
   }
@@ -102,16 +182,20 @@ export function mountHome(app: HTMLElement) {
     } else rooms.delete(code); // 空消息 = 房间关闭
     render();
   });
+  render();
   sig
     .connect()
     .then(() => {
       sig.sub('info');
       // 保留消息在订阅后立即到达，稍等一下再显示「暂无」
       setTimeout(() => {
-        loaded = true;
+        state = 'ready';
         render();
       }, 1500);
     })
-    .catch(() => (listEl.innerHTML = '<li class="empty">大厅连接失败</li>'));
+    .catch(() => {
+      state = 'failed';
+      render();
+    });
   setInterval(render, 10_000);
 }

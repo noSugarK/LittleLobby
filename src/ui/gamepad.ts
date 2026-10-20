@@ -1,10 +1,11 @@
 import { BTN_A, BTN_B, BTN_X, BTN_Y, type Input } from '../game/types';
+import { t } from '../i18n';
 
 const BUTTONS = [
-  { bit: BTN_Y, key: 'Y', label: '铲球', cls: 'y' },
-  { bit: BTN_X, key: 'X', label: '冲刺', cls: 'x' },
-  { bit: BTN_B, key: 'B', label: '射门', cls: 'b' },
-  { bit: BTN_A, key: 'A', label: '传球', cls: 'a' },
+  { bit: BTN_Y, key: 'Y', label: t('pad.y'), cls: 'y' },
+  { bit: BTN_X, key: 'X', label: t('pad.x'), cls: 'x' },
+  { bit: BTN_B, key: 'B', label: t('pad.b'), cls: 'b' },
+  { bit: BTN_A, key: 'A', label: t('pad.a'), cls: 'a' },
 ];
 
 // 桌面调试：WASD/方向键移动，J 传球 K 射门 L/Shift 冲刺 I 铲球

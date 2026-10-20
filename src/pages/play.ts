@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import { HostGame, resultTitle } from '../game/host-game';
+import { HostGame, endReasonText, resultTitle } from '../game/host-game';
 import { Renderer, TEAM_COLOR, TEAM_NAME, type ViewState } from '../game/render';
 import { predictMove } from '../game/sim';
 import {
@@ -17,19 +17,21 @@ import {
 import { ClientNet, type ClientState } from '../net/client';
 import { SnapBuffer } from '../net/interp';
 import { decodeSnapshot, encodeInput } from '../net/protocol';
+import { CONFIG } from '../config';
+import { t, type Key } from '../i18n';
 import { Gamepad } from '../ui/gamepad';
 import { bindSettings, settingsHtml } from '../ui/settings-ui';
 import { unlockAudio } from '../ui/sound';
 import { canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, store, vibrate } from '../ui/util';
 
-const STATE_TEXT: Record<ClientState, string> = {
-  signal: '连接信令…',
-  waiting: '寻找大屏…',
-  connecting: '建立直连…',
-  p2p: '直连',
-  relay: '中继',
-  lost: '重连中…',
-  rejected: '无法加入',
+const STATE_TEXT: Record<ClientState, Key> = {
+  signal: 'status.signal',
+  waiting: 'status.waiting',
+  connecting: 'status.connecting',
+  p2p: 'status.p2p',
+  relay: 'status.relay',
+  lost: 'status.lost',
+  rejected: 'status.rejected',
 };
 
 /** client：扫码加入的手机；host：无大屏模式，本机既是主机又是球员 */
@@ -45,7 +47,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     store.set('sfb.hostroom', room, false);
   }
   const joinedKey = isHost ? 'sfb.hosting' : `sfb.joined.${room}`;
-  const savedName = store.get('sfb.name') || `球员${Math.floor(Math.random() * 90 + 10)}`;
+  const savedName = store.get('sfb.name') || `${t('player.default')}${Math.floor(Math.random() * 90 + 10)}`;
   const autoJoin = store.get(joinedKey, false) === '1';
   const opts = isHost ? roomOpts() : null;
   // 客户端密码：二维码自带 > 本标签页上次输入的
@@ -64,29 +66,29 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     <div class="topbar">
       <div class="status"><i></i><span></span></div>
       <div class="top-actions">
-        <button class="ghost fs-btn" hidden>全屏</button>
-        <button class="ghost cam">跟随视角</button>
-        <button class="ghost menu">菜单</button>
+        <button class="ghost fs-btn" hidden>${t('play.fullscreen')}</button>
+        <button class="ghost cam">${t('play.follow')}</button>
+        <button class="ghost menu">${t('play.menu')}</button>
       </div>
     </div>
     <div class="pad"></div>
     <div class="panel card" hidden></div>
     <div class="join card">
-      <h1>${isHost ? '无大屏模式' : '扫码足球'}</h1>
-      <p class="muted">${isHost ? '这台手机作为主机，其他人扫你屏幕上的二维码加入' : `房间 <b>${esc(room)}</b>`}</p>
-      <input class="name" maxlength="12" value="${esc(savedName)}" placeholder="你的昵称">
-      <input class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="房间密码"
+      <h1>${isHost ? t('play.noScreen') : t('app.name')}</h1>
+      <p class="muted">${isHost ? t('play.noScreenDesc') : t('play.room', { room: `<b>${esc(room)}</b>` })}</p>
+      <input class="name" maxlength="12" value="${esc(savedName)}" placeholder="${t('play.name')}">
+      <input class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="${t('play.pin')}"
         value="${esc(store.get(pinKey, false) ?? '')}" ${askPin ? '' : 'hidden'}>
       <div class="seg">
-        <button data-team="0" style="--c:${TEAM_COLOR[0]}">红队</button>
-        <button data-team="2" class="on">自动</button>
-        <button data-team="1" style="--c:${TEAM_COLOR[1]}">蓝队</button>
+        <button data-team="0" style="--c:${TEAM_COLOR[0]}">${TEAM_NAME[0]}</button>
+        <button data-team="2" class="on">${t('team.auto')}</button>
+        <button data-team="1" style="--c:${TEAM_COLOR[1]}">${TEAM_NAME[1]}</button>
       </div>
-      <button class="primary go">${isHost ? '创建房间' : '进入球场'}</button>
-      <p class="muted small">建议横屏，并关闭系统的「自动锁屏」</p>
+      <button class="primary go">${t(isHost ? 'play.create' : 'play.enter')}</button>
+      <p class="muted small">${t('play.tip')}</p>
     </div>
     <div class="toast" hidden></div>
-    <div class="rotate">请把手机横过来 ↻</div>
+    <div class="rotate">${t('play.rotate')}</div>
   </div>`;
 
   const $ = <T extends HTMLElement>(s: string) => app.querySelector(s) as T;
@@ -127,7 +129,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   function setStatus(s: ClientState) {
     statusEl.className = `status ${s}`;
     const ping = (s === 'p2p' || s === 'relay') && rtt ? ` ${Math.round(rtt)}ms` : '';
-    statusEl.querySelector('span')!.textContent = STATE_TEXT[s] + ping;
+    statusEl.querySelector('span')!.textContent = t(STATE_TEXT[s]) + ping;
   }
 
   const send = (msg: ClientMsg) => {
@@ -165,10 +167,10 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       if (s === 'lost') buf.reset();
     };
     net.onReject = (r) => {
-      toast(r, 5000);
+      toast(t(`reject.${r}`, { n: CONFIG.maxPerTeam * 2 }), 5000);
       joinEl.hidden = false;
       store.set(joinedKey, '', false);
-      if (r.includes('密码')) {
+      if (r.startsWith('pin')) {
         pinEl.hidden = false;
         pinEl.value = '';
         pinEl.focus();
@@ -184,7 +186,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       await net.start();
     } catch {
       setStatus('lost');
-      toast('信令服务器连接失败，请检查网络后刷新', 6000);
+      toast(t('play.signalFail'), 6000);
     }
   }
 
@@ -197,7 +199,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     game.onLocal = onMsg;
     game.onStatus = (ok, text) => {
       statusEl.className = `status ${ok ? 'p2p' : 'lost'}`;
-      statusEl.querySelector('span')!.textContent = ok ? `主机 · 房间 ${room}` : text;
+      statusEl.querySelector('span')!.textContent = ok ? t('status.host', { room }) : text;
     };
     meId = game.addLocal(name, team);
     await game.start();
@@ -221,17 +223,17 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
         if (m.k === 'kick') vibrate(25);
         else if (m.k === 'tackled') {
           vibrate([60, 40, 60]);
-          toast('被铲倒了！', 1000);
+          toast(t('play.tackled'), 1000);
         } else if (m.k === 'goal') {
-          goalText = m.own ? `乌龙球 · ${m.scorer}` : `${TEAM_NAME[m.team]} · ${m.scorer}`;
+          goalText = m.own ? t('play.ownGoal', { name: m.scorer }) : `${TEAM_NAME[m.team]} · ${m.scorer}`;
           const me = players.find((p) => p.id === meId);
           vibrate(me && me.team === m.team ? [120, 60, 120, 60, 200] : 200);
         } else if (m.k === 'end') {
           vibrate([300, 100, 300]);
         } else if (m.k === 'vote') {
           const me = players.find((p) => p.id === meId);
-          if (me?.team === m.team) toast(`${m.name}${m.cancel ? '撤回了投降' : '同意投降'}（${m.n}/${m.need}）`, 2500);
-          else if (!m.cancel) toast('对方有人提议投降', 2000);
+          if (me?.team === m.team) toast(t(m.cancel ? 'play.unvote' : 'play.vote', { name: m.name, n: m.n, need: m.need }), 2500);
+          else if (!m.cancel) toast(t('play.enemyVote'), 2000);
         }
         break;
     }
@@ -248,34 +250,36 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     if (panel.hidden || !roster) return;
     const me = players.find((p) => p.id === meId);
     const count = (t: number) => players.filter((p) => p.team === t && !p.bot).length;
-    let html = `<div class="panel-head">房间 <b>${esc(room)}</b> · ${players.filter((p) => !p.bot).length} 人在线`;
+    let html = `<div class="panel-head">${t('play.room', { room: `<b>${esc(room)}</b>` })} · ${t('play.online', { n: players.filter((p) => !p.bot).length })}`;
     html += panelOpen ? `<button class="ghost close">×</button></div>` : `</div>`;
     if (isHost && !inMatch) {
       html += `<div class="host-qr">${qrUrl ? `<img src="${qrUrl}" alt="">` : ''}<div>
-        <div class="room-code sm">${esc(room)}</div>${opts?.pin ? `<div class="pin-line">密码 <b>${opts.pin}</b></div>` : ''}
-        <div class="muted small">让其他人扫码加入${opts?.listed ? '，已展示在公开大厅' : ''}</div></div></div>`;
+        <div class="room-code sm">${esc(room)}</div>${opts?.pin ? `<div class="pin-line">${t('play.pinLine')} <b>${opts.pin}</b></div>` : ''}
+        <div class="muted small">${t('play.scanToJoin')}${opts?.listed ? t('play.listed') : ''}</div></div></div>`;
     }
     if (ended && roster.end) {
       const [a, b] = roster.end.score;
       html += `<div class="final"><span style="color:${TEAM_COLOR[0]}">${a}</span> : <span style="color:${TEAM_COLOR[1]}">${b}</span></div>
-        <p><b>${resultTitle(roster.end)}</b> <span class="muted small">${esc(roster.end.reason)}</span></p>`;
+        <p><b>${resultTitle(roster.end)}</b> <span class="muted small">${esc(endReasonText(roster.end))}</span></p>`;
     }
     html += `<div class="seg team-switch">
-        <button data-team="0" style="--c:${TEAM_COLOR[0]}" class="${me?.team === 0 ? 'on' : ''}">红队 ${count(0)}</button>
-        <button data-team="1" style="--c:${TEAM_COLOR[1]}" class="${me?.team === 1 ? 'on' : ''}">蓝队 ${count(1)}</button>
+        <button data-team="0" style="--c:${TEAM_COLOR[0]}" class="${me?.team === 0 ? 'on' : ''}">${TEAM_NAME[0]} ${count(0)}</button>
+        <button data-team="1" style="--c:${TEAM_COLOR[1]}" class="${me?.team === 1 ? 'on' : ''}">${TEAM_NAME[1]} ${count(1)}</button>
       </div>`;
     if (!inMatch) html += settingsHtml(roster.settings, players);
     if (!inMatch) {
-      html += `<button class="primary start">${ended ? '再来一局' : '开始比赛'} · ${roster.settings.duration / 60} 分钟</button>`;
-      if (isHost && ended) html += `<button class="back">返回大厅</button>`;
+      html += `<button class="primary start">${t(ended ? 'play.again' : 'play.start')} · ${t('play.minutes', { n: roster.settings.duration / 60 })}</button>`;
+      if (isHost && ended) html += `<button class="back">${t('play.toLobby')}</button>`;
     }
     if (inMatch && me) {
       const votes = roster.votes[me.team];
       const voted = votes.includes(meId);
-      html += `<button class="surrender ${voted ? '' : 'danger'}">${voted ? '撤回投降' : '投降'}（${votes.length}/${roster.need[me.team]}）</button>`;
-      if (isHost) html += `<button class="end">结束比赛（按比分判定）</button>`;
+      html += `<button class="surrender ${voted ? '' : 'danger'}">${t(voted ? 'play.unsurrender' : 'play.surrender')} (${votes.length}/${roster.need[me.team]})</button>`;
+      if (isHost) html += `<button class="end">${t('play.end')}</button>`;
     }
-    if (lobby) html += `<p class="muted small">${isHost ? '本机是主机：请保持本页在前台，不要锁屏' : '热身中，先试试操作吧'}</p>`;
+    if (lobby) html += `<p class="muted small">${t(isHost ? 'play.hostTip' : 'play.warmup')}</p>`;
+    // 新标签页打开，不打断当前连接
+    html += `<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a>`;
     panel.innerHTML = html;
 
     const on = (sel: string, fn: () => void) => {
@@ -287,7 +291,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     });
     on('.start', () => send({ t: 'start' }));
     on('.surrender', () => send({ t: 'surrender' }));
-    on('.end', () => confirm('确定结束本场比赛吗？') && game?.endMatch());
+    on('.end', () => confirm(t('play.confirmEnd')) && game?.endMatch());
     on('.back', () => game?.toLobby());
     on('.close', () => {
       panelOpen = false;
@@ -303,7 +307,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   const camBtn = $('.cam');
   camBtn.onclick = () => {
     renderer.follow = !renderer.follow;
-    camBtn.textContent = renderer.follow ? '全场视角' : '跟随视角';
+    camBtn.textContent = t(renderer.follow ? 'play.overview' : 'play.follow');
   };
   // ---------- 全屏 ----------
   const fsBtn = $('.fs-btn');
@@ -327,7 +331,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     join();
     if (iosTip && !store.get('sfb.iosTip')) {
       store.set('sfb.iosTip', '1');
-      toast('iPhone 不支持网页全屏：Safari 点「分享 → 添加到主屏幕」，从桌面图标打开即可全屏', 7000);
+      toast(t('play.iosTip'), 7000);
     }
   };
 

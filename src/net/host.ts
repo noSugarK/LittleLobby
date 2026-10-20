@@ -1,4 +1,5 @@
 import { CONFIG } from '../config';
+import type { RejectReason } from '../game/types';
 import { Signal, isJson, parseJson } from './signal';
 
 export type LinkMode = 'connecting' | 'p2p' | 'relay';
@@ -14,7 +15,7 @@ export interface Hello {
 
 export interface HostCallbacks {
   /** 新客户端请求加入，返回 null 允许，或返回拒绝原因 */
-  onHello(cid: string, hello: Hello): string | null;
+  onHello(cid: string, hello: Hello): RejectReason | null;
   /** 对端已创建（此时可以 sendJson，消息会先走 MQTT） */
   onPeer(cid: string): void;
   onJson(cid: string, msg: any): void;

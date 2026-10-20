@@ -1,4 +1,5 @@
 import { F, homeSpot, type Sim, type SimPlayer } from './sim';
+import { t } from '../i18n';
 import { BTN_A, BTN_B, BTN_X, BTN_Y, type Input } from './types';
 
 interface BotMem {
@@ -11,7 +12,7 @@ interface BotMem {
 
 /** AI 难度：0 简单 1 普通 2 困难 */
 export type BotLevel = 0 | 1 | 2;
-export const LEVEL_NAME = ['简单', '普通', '困难'];
+export const LEVEL_NAME = [t('level.0'), t('level.1'), t('level.2')];
 
 const LEVELS = [
   { speed: 0.72, sprint: false, tackle: 0.012, shootRange: 300, aimNoise: 0.35, pass: 0.03, think: 0.5 },

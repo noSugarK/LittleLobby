@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { LEVEL_NAME } from '../game/ai';
 import { TEAM_NAME } from '../game/render';
+import { t } from '../i18n';
 import type { PlayerInfo, Settings, Team } from '../game/types';
 
 export interface SettingsActions {
@@ -17,14 +18,14 @@ export function settingsHtml(st: Settings, players: PlayerInfo[]): string {
     const bots = players.filter((p) => p.team === team && p.bot).length;
     const humans = players.filter((p) => p.team === team && !p.bot).length;
     const full = bots + humans >= CONFIG.maxPerTeam;
-    return `<div class="ai-step t${team}"><span>${TEAM_NAME[team]} AI</span>
+    return `<div class="ai-step t${team}"><span>${t('cfg.ai', { team: TEAM_NAME[team] })}</span>
       <button data-team="${team}" data-d="-1" ${bots <= 0 ? 'disabled' : ''}>−</button><b>${bots}</b>
       <button data-team="${team}" data-d="1" ${full ? 'disabled' : ''}>＋</button></div>`;
   };
   return `<div class="cfg">
-      <select data-k="duration">${DURATIONS.map((v) => opt(v, `${v / 60} 分钟`, st.duration)).join('')}</select>
+      <select data-k="duration">${DURATIONS.map((v) => opt(v, t('play.minutes', { n: v / 60 }), st.duration)).join('')}</select>
       <select data-k="level">${LEVEL_NAME.map((n, i) => opt(i, `AI ${n}`, st.level)).join('')}</select>
-      <label class="check"><input type="checkbox" data-k="autoFill" ${st.autoFill ? 'checked' : ''}> 自动补位</label>
+      <label class="check"><input type="checkbox" data-k="autoFill" ${st.autoFill ? 'checked' : ''}> ${t('cfg.autoFill')}</label>
     </div>
     <div class="ai-row">${step(0)}${step(1)}</div>`;
 }

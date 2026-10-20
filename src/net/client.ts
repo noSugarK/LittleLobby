@@ -1,4 +1,5 @@
 import { CONFIG } from '../config';
+import type { RejectReason } from '../game/types';
 import { Signal, isJson, parseJson } from './signal';
 
 export type ClientState = 'signal' | 'waiting' | 'connecting' | 'p2p' | 'relay' | 'lost' | 'rejected';
@@ -32,7 +33,7 @@ export class ClientNet {
   onState: (s: ClientState) => void = () => {};
   onJson: (msg: any) => void = () => {};
   onBinary: (data: Uint8Array) => void = () => {};
-  onReject: (reason: string) => void = () => {};
+  onReject: (reason: RejectReason) => void = () => {};
 
   constructor(
     readonly room: string,

@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { HostNet, type Hello } from '../net/host';
 import { decodeInput, encodeSnapshot } from '../net/protocol';
+import { t } from '../i18n';
 import { sfxGoal, sfxKick, sfxWhistle } from '../ui/sound';
 import type { RoomOpts } from '../ui/util';
 import { botInput, forgetBot } from './ai';
@@ -9,10 +10,12 @@ import { Sim } from './sim';
 import {
   Phase,
   type EndInfo,
+  type EndReason,
   type HostMsg,
   type Input,
   type LobbyInfo,
   type PlayerInfo,
+  type RejectReason,
   type RosterMsg,
   type Settings,
   type Team,
@@ -27,7 +30,7 @@ interface Slot {
 
 const DT = 1 / 60;
 const MAX_HUMANS = CONFIG.maxPerTeam * 2;
-const BOT_NAMES = ['小罗', '小贝', '大卫', '阿内', '托蒂', '皮尔洛', '卡卡', '欧文'];
+const BOT_NAMES = t('bot.names').split(',');
 
 /**
  * 主机：运行比赛、管理玩家、收发网络消息。
@@ -104,7 +107,7 @@ export class HostGame {
 
   async start() {
     this.net.signal.onStatus = (ok) => {
-      this.onStatus(ok, ok ? '房间已就绪' : '信令断开，重连中…');
+      this.onStatus(ok, t(ok ? 'status.ready' : 'status.reconnecting'));
       if (ok) this.publishInfo(true);
     };
     window.addEventListener('pagehide', () => this.clearInfo());
@@ -112,12 +115,12 @@ export class HostGame {
     this.rosterChanged();
     try {
       await this.net.start();
-      this.onStatus(true, '房间已就绪');
+      this.onStatus(true, t('status.ready'));
       // 不公开时也清一次：同一房间码之前可能公开过
       if (this.opts.listed) this.publishInfo(true);
       else this.clearInfo();
     } catch {
-      this.onStatus(false, '信令服务器连接失败，请刷新重试');
+      this.onStatus(false, t('status.failed'));
     }
   }
 
@@ -167,17 +170,17 @@ export class HostGame {
     return c0 <= c1 ? 0 : 1;
   }
 
-  private onHello(cid: string, h: Hello): string | null {
+  private onHello(cid: string, h: Hello): RejectReason | null {
     const pin = this.opts.pin;
     if (pin && h.pin !== pin) {
       // 全局限速：10 秒内最多 5 次错误，4 位密码穷举需要数小时
       const now = performance.now();
       this.pinFails = this.pinFails.filter((t) => now - t < 10000);
-      if (this.pinFails.length >= 5) return '尝试次数过多，请稍后再试';
+      if (this.pinFails.length >= 5) return 'pinThrottle';
       this.pinFails.push(now);
-      return h.pin ? '密码错误' : '该房间需要密码';
+      return h.pin ? 'pinWrong' : 'pinNeed';
     }
-    const name = String(h.name || '球员').slice(0, 12);
+    const name = String(h.name || t('player.default')).slice(0, 12);
     const existing = [...this.slots.values()].find((s) => s.token && s.token === h.token);
     if (existing) {
       if (existing.cid && existing.cid !== cid) {
@@ -191,9 +194,9 @@ export class HostGame {
       this.byCid.set(cid, existing.info.id);
       return null;
     }
-    if (this.humans().length >= MAX_HUMANS) return `房间已满（最多 ${MAX_HUMANS} 人）`;
+    if (this.humans().length >= MAX_HUMANS) return 'full';
     const team = this.pickTeam(h.team);
-    if (team === null) return '房间已满';
+    if (team === null) return 'full';
     const s = this.addSlot({ name, team, bot: false, online: true, link: 'relay' }, h.token);
     s.cid = cid;
     this.byCid.set(cid, s.info.id);
@@ -335,7 +338,7 @@ export class HostGame {
         break;
       }
       case 'name':
-        s.info.name = String(msg.name || '球员').slice(0, 12);
+        s.info.name = String(msg.name || t('player.default')).slice(0, 12);
         this.rosterChanged();
         break;
       case 'start':
@@ -368,7 +371,7 @@ export class HostGame {
     else set.add(s.info.id);
     const need = this.need(team);
     if (set.size >= need) {
-      this.endMatch(`${TEAM_NAME[team]}投降`, team === 0 ? 1 : 0);
+      this.endMatch('surrender', team === 0 ? 1 : 0);
       return;
     }
     this.broadcast({ t: 'ev', k: 'vote', team, name: s.info.name, n: set.size, need, cancel });
@@ -400,7 +403,7 @@ export class HostGame {
   }
 
   /** 主动结束比赛；winner 不传则按比分判定 */
-  endMatch(reason = '房主结束了比赛', winner?: Team) {
+  endMatch(reason: EndReason = 'host', winner?: Team) {
     if (!this.inMatch()) return;
     this.pendingEnd = { reason, winner: winner ?? this.scoreWinner() };
     this.sim.forceEnd();
@@ -483,13 +486,13 @@ export class HostGame {
         case 'goal': {
           sfxGoal();
           const scorer = this.slots.get(ev.scorer)?.info.name ?? '';
-          this.goalText = ev.own ? `乌龙球 · ${scorer}` : `${TEAM_NAME[ev.team]} · ${scorer}`;
+          this.goalText = ev.own ? t('play.ownGoal', { name: scorer }) : `${TEAM_NAME[ev.team]} · ${scorer}`;
           this.broadcast({ t: 'ev', k: 'goal', team: ev.team, scorer, own: ev.own });
           break;
         }
         case 'end': {
           sfxWhistle(true);
-          const p = this.pendingEnd ?? { reason: '时间到', winner: this.scoreWinner() };
+          const p = this.pendingEnd ?? { reason: 'time' as const, winner: this.scoreWinner() };
           this.pendingEnd = null;
           this.endInfo = { score: [sim.score[0], sim.score[1]], ...p };
           this.broadcast({ t: 'ev', k: 'end', ...this.endInfo });
@@ -514,5 +517,10 @@ export class HostGame {
 }
 
 export function resultTitle(e: EndInfo) {
-  return e.winner === -1 ? '平局' : `${TEAM_NAME[e.winner]}获胜！`;
+  return e.winner === -1 ? t('end.draw') : t('end.win', { team: TEAM_NAME[e.winner] });
+}
+
+export function endReasonText(e: EndInfo) {
+  // 投降方是输的一方
+  return e.reason === 'surrender' ? t('end.surrender', { team: TEAM_NAME[e.winner === 0 ? 1 : 0] }) : t(`end.${e.reason}`);
 }

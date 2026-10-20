@@ -65,8 +65,12 @@ export interface Settings {
 export interface EndInfo {
   score: [number, number];
   winner: Team | -1;
-  reason: string;
+  reason: EndReason;
 }
+
+/** 结束原因与拒绝原因只传代码，由各端按自己的语言显示 */
+export type EndReason = 'time' | 'host' | 'surrender';
+export type RejectReason = 'pinWrong' | 'pinNeed' | 'pinThrottle' | 'full';
 
 export interface RosterMsg {
   t: 'roster';
@@ -94,7 +98,7 @@ export interface LobbyInfo {
 /** 可靠通道 JSON 消息（主机 -> 客户端） */
 export type HostMsg =
   | { t: 'welcome'; pid: number }
-  | { t: 'reject'; reason: string }
+  | { t: 'reject'; reason: RejectReason }
   | RosterMsg
   | { t: 'ev'; k: 'goal'; team: Team; scorer: string; own: boolean }
   | { t: 'ev'; k: 'kick' }

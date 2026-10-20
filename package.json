@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "jsqr": "^1.4.0",
     "mqtt": "^5.16.1",
     "qrcode": "^1.5.4"
   },

@@ -1,9 +1,10 @@
+import { t } from '../i18n';
 import { F } from './sim';
 import { FLAG_CHARGE, FLAG_STUN, FLAG_TACKLE, Phase, type PlayerInfo, type SnapPlayer, type Snapshot } from './types';
 
 export const TEAM_COLOR = ['#e5484d', '#3e7bfa'];
 export const TEAM_DARK = ['#8c1d22', '#173f99'];
-export const TEAM_NAME = ['红队', '蓝队'];
+export const TEAM_NAME = [t('team.red'), t('team.blue')];
 const ME = '#ffd60a';
 
 export interface ViewState extends Snapshot {
@@ -264,7 +265,7 @@ export class Renderer {
     ctx.fillText(stun ? '✶' : String(info?.num ?? ''), p.x, p.y + 1);
 
     if (info) {
-      const label = info.online ? info.name : `${info.name}(掉线)`;
+      const label = info.online ? info.name : `${info.name}(${t('status.offline')})`;
       ctx.font = '600 12px system-ui, sans-serif';
       const tw = ctx.measureText(label).width + 10;
       const ly = p.y - r - 14;
@@ -319,10 +320,10 @@ export class Renderer {
     ctx.fillText(String(s.score[0]), -W / 2 + 42, H / 2 + 1);
     ctx.fillText(String(s.score[1]), W / 2 - 42, H / 2 + 1);
     ctx.font = 'bold 22px ui-monospace, Menlo, monospace';
-    const t = s.phase === Phase.Lobby ? '热身' : fmtTime(s.timeLeft);
+    const clock = s.phase === Phase.Lobby ? t('hud.warmup') : fmtTime(s.timeLeft);
     ctx.fillStyle = s.phase === Phase.Playing && s.timeLeft < 10 ? '#ff453a' : '#fff';
     ctx.font = s.phase === Phase.Lobby ? 'bold 20px system-ui, sans-serif' : 'bold 22px ui-monospace, Menlo, monospace';
-    ctx.fillText(t, 0, H / 2 + 1);
+    ctx.fillText(clock, 0, H / 2 + 1);
     ctx.restore();
   }
 
@@ -332,7 +333,7 @@ export class Renderer {
     let sub = '';
     let color = '#fff';
     if (s.phase === Phase.Ready) {
-      text = s.phaseTime < 1 ? '准备' : '开球!';
+      text = s.phaseTime < 1 ? t('hud.ready') : t('hud.kickoff');
     } else if (s.phase === Phase.Goal && s.goalText) {
       text = 'GOAL!';
       sub = s.goalText;
@@ -340,10 +341,10 @@ export class Renderer {
     }
     if (!text) return;
     const size = Math.min(this.w / 6, 120);
-    const t = s.phase === Phase.Goal ? Math.min(1, s.phaseTime * 3) : 1;
+    const k = s.phase === Phase.Goal ? Math.min(1, s.phaseTime * 3) : 1;
     ctx.save();
     ctx.translate(this.w / 2, this.h / 2 - size * 0.2);
-    ctx.scale(0.6 + 0.4 * easeOutBack(t), 0.6 + 0.4 * easeOutBack(t));
+    ctx.scale(0.6 + 0.4 * easeOutBack(k), 0.6 + 0.4 * easeOutBack(k));
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `900 ${size}px system-ui, sans-serif`;

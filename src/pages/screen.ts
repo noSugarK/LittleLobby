@@ -1,7 +1,8 @@
 import QRCode from 'qrcode';
-import { HostGame, resultTitle } from '../game/host-game';
+import { HostGame, endReasonText, resultTitle } from '../game/host-game';
 import { Renderer, TEAM_COLOR, TEAM_NAME } from '../game/render';
 import { Phase, type RosterMsg, type Team } from '../game/types';
+import { t } from '../i18n';
 import { bindSettings, settingsHtml } from '../ui/settings-ui';
 import { audioReady, unlockAudio } from '../ui/sound';
 import { enterFullscreen, esc, joinUrl, keepAwake, randomCode, roomOpts, store } from '../ui/util';
@@ -14,39 +15,39 @@ export function mountScreen(app: HTMLElement) {
   }
   const opts = roomOpts();
   const qrUrl = joinUrl(room, opts.pin);
-  const pinLine = opts.pin ? `<div class="pin-line">密码 <b>${opts.pin}</b></div>` : '';
+  const pinLine = opts.pin ? `<div class="pin-line">${t('play.pinLine')} <b>${opts.pin}</b></div>` : '';
 
   app.innerHTML = `
   <div class="screen">
     <canvas class="stage"></canvas>
     <div class="corner-qr" hidden>
-      <canvas></canvas><div>扫码加入 · <b>${room}</b>${opts.pin ? ` · 密码 ${opts.pin}` : ''}</div>
+      <canvas></canvas><div>${t('screen.scanJoin')} · <b>${room}</b>${opts.pin ? ` · ${t('play.pinLine')} ${opts.pin}` : ''}</div>
     </div>
-    <div class="net-badge"><i></i><span>连接信令服务器…</span></div>
-    <button class="ghost end-btn" hidden>结束比赛</button>
+    <div class="net-badge"><i></i><span>${t('status.connectingSignal')}</span></div>
+    <button class="ghost end-btn" hidden>${t('screen.end')}</button>
     <div class="lobby card">
       <div class="lobby-join">
         <canvas class="qr"></canvas>
         <div class="room-code">${room}</div>
         ${pinLine}
-        <div class="muted">手机扫码加入，或打开<br><span class="url">${esc(joinUrl(room))}</span></div>
+        <div class="muted">${t('screen.orOpen')}<br><span class="url">${esc(joinUrl(room))}</span></div>
       </div>
       <div class="lobby-side">
-        <h1>扫码足球</h1>
+        <h1>${t('app.name')}</h1>
         <div class="teams">
           <div class="team t0"><h3>${TEAM_NAME[0]}</h3><ul></ul></div>
           <div class="team t1"><h3>${TEAM_NAME[1]}</h3><ul></ul></div>
         </div>
         <div class="cfg-wrap"></div>
         <div class="row">
-          <button class="primary start">开始比赛</button>
-          <button class="fs">全屏</button>
+          <button class="primary start">${t('play.start')}</button>
+          <button class="fs">${t('play.fullscreen')}</button>
         </div>
-        <p class="muted small">热身中可以先在场上试操作；手机上也能加 AI、点「开始比赛」。</p>
+        <p class="muted small">${t('screen.lobbyTip')}</p>
       </div>
     </div>
     <div class="result card" hidden></div>
-    <div class="audio-tip" hidden>点击任意位置开启声音</div>
+    <div class="audio-tip" hidden>${t('screen.audio')}</div>
   </div>`;
 
   const $ = <T extends HTMLElement>(s: string) => app.querySelector(s) as T;
@@ -80,10 +81,10 @@ export function mountScreen(app: HTMLElement) {
           .map(
             (p) =>
               `<li class="${p.online ? '' : 'off'}"><b>${p.num}</b>${esc(p.name)}<em>${
-                p.bot ? 'AI' : !p.online ? '掉线' : p.link === 'p2p' ? '直连' : '中继'
+                p.bot ? 'AI' : !p.online ? t('status.offline') : t(p.link === 'p2p' ? 'status.p2p' : 'status.relay')
               }</em></li>`,
           )
-          .join('') || '<li class="empty">等待加入…</li>';
+          .join('') || `<li class="empty">${t('screen.waiting')}</li>`;
     }
     // 只在内容变化时重绘，避免下拉框展开时被刷新收起
     const html = settingsHtml(r.settings, r.players);
@@ -100,9 +101,9 @@ export function mountScreen(app: HTMLElement) {
       const [a, b] = r.end.score;
       resultEl.innerHTML = `
         <h2>${resultTitle(r.end)}</h2>
-        <p class="muted">${esc(r.end.reason)}</p>
+        <p class="muted">${esc(endReasonText(r.end))}</p>
         <div class="final"><span style="color:${TEAM_COLOR[0]}">${a}</span> : <span style="color:${TEAM_COLOR[1]}">${b}</span></div>
-        <div class="row"><button class="primary again">再来一局</button><button class="back">返回大厅</button></div>`;
+        <div class="row"><button class="primary again">${t('play.again')}</button><button class="back">${t('play.toLobby')}</button></div>`;
       resultEl.querySelector<HTMLElement>('.again')!.onclick = () => game.startMatch();
       resultEl.querySelector<HTMLElement>('.back')!.onclick = () => game.toLobby();
       resultEl.hidden = false;
@@ -112,7 +113,7 @@ export function mountScreen(app: HTMLElement) {
   $('.start').onclick = () => game.startMatch();
   $('.fs').onclick = () => enterFullscreen();
   endBtn.onclick = () => {
-    if (confirm('确定结束本场比赛吗？将按当前比分判定胜负。')) game.endMatch();
+    if (confirm(t('screen.confirmEnd'))) game.endMatch();
   };
   cornerEl.onclick = () => cornerEl.classList.toggle('mini');
   window.addEventListener('keydown', (e) => {
@@ -121,7 +122,7 @@ export function mountScreen(app: HTMLElement) {
     if (e.code === 'KeyF') enterFullscreen();
     if (e.code === 'Escape') {
       if (phase === Phase.Ended) game.toLobby();
-      else if (phase !== Phase.Lobby && confirm('确定结束本场比赛吗？')) game.endMatch();
+      else if (phase !== Phase.Lobby && confirm(t('play.confirmEnd'))) game.endMatch();
     }
   });
 

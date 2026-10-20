@@ -1,16 +1,23 @@
 import './style.css';
+import { lang, t } from './i18n';
+import { mountGuide } from './pages/guide';
 import { mountHome } from './pages/home';
 import { mountPlay } from './pages/play';
 import { mountScreen } from './pages/screen';
+import { applyTheme } from './ui/site';
 import { normalizeCode } from './ui/util';
 
 const app = document.getElementById('app')!;
+document.documentElement.lang = lang;
+document.title = lang === 'en' ? 'ScanKick' : `${t('app.name')} · ScanKick`;
+applyTheme();
 
 function route() {
   const [path, query = ''] = location.hash.replace(/^#\/?/, '').split('?');
   const [page, arg] = path.split('/');
   if (page === 'screen') mountScreen(app);
   else if (page === 'host') mountPlay(app, { kind: 'host' });
+  else if (page === 'guide') mountGuide(app);
   else if (page === 'join' && arg) {
     const q = new URLSearchParams(query);
     mountPlay(app, { kind: 'client', room: normalizeCode(arg), forceRelay: q.has('relay'), pin: q.get('pin') ?? '', lock: q.has('lock') });
