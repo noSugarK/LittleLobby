@@ -1,6 +1,21 @@
-# 扫码足球 ScanKick
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/brand/logo-dark.png">
+    <img src="public/brand/logo.png" alt="ScanKick" width="420">
+  </picture>
+</p>
 
-在线体验：https://nosugark.cc.cd/scankick/
+<p align="center">
+  <a href="https://github.com/noSugarK/scankick/stargazers"><img src="https://img.shields.io/github/stars/noSugarK/scankick?style=flat&logo=github&color=2fa866" alt="GitHub stars"></a>
+  <a href="https://github.com/noSugarK/scankick/actions/workflows/deploy.yml"><img src="https://img.shields.io/github/actions/workflow/status/noSugarK/scankick/deploy.yml?branch=main&label=deploy" alt="Deploy"></a>
+  <a href="https://github.com/noSugarK/scankick/commits/main"><img src="https://img.shields.io/github/last-commit/noSugarK/scankick" alt="Last commit"></a>
+  <a href="https://nosugark.github.io/scankick/"><img src="https://img.shields.io/badge/demo-%E5%9C%A8%E7%BA%BF%E4%BD%93%E9%AA%8C-2fa866" alt="Demo"></a>
+</p>
+
+<p align="center">
+  <b>扫码足球</b> · 手机扫码当手柄的多人足球<br>
+  <a href="https://nosugark.github.io/scankick/">在线体验</a> · 简体中文 · <a href="README.en.md">English</a>
+</p>
 
 大屏创建房间，手机扫码加入，用虚拟手柄（左摇杆 + ABXY）实时 4v4 对战。手机与大屏同时显示比赛画面。纯静态站点，可直接部署到 GitHub Pages。界面支持简体中文、繁體中文、English，首页可切换浅色 / 深色主题，首页另有玩法教程（`#/guide`）。
 
@@ -59,6 +74,8 @@ npm run dev        # HTTPS，局域网内手机可扫码访问（首次需信任
 1. 推送到 GitHub 仓库的 `main` 分支。
 2. 仓库 Settings → Pages → Source 选择 **GitHub Actions**。
 3. 之后每次推送会自动构建发布，访问 `https://<用户名>.github.io/<仓库名>/`。
+
+扫码加入需要 HTTPS，建议同时在 Pages 设置里勾选「Enforce HTTPS」。
 
 ## 网络配置（`src/config.ts`）
 
