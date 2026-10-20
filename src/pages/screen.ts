@@ -5,7 +5,7 @@ import { Phase, type RosterMsg, type Team } from '../game/types';
 import { t } from '../i18n';
 import { bindSettings, settingsHtml } from '../ui/settings-ui';
 import { audioReady, unlockAudio } from '../ui/sound';
-import { enterFullscreen, esc, joinUrl, keepAwake, randomCode, roomOpts, store } from '../ui/util';
+import { brand, enterFullscreen, esc, joinUrl, keepAwake, randomCode, roomOpts, store } from '../ui/util';
 
 export function mountScreen(app: HTMLElement) {
   let room = store.get('sfb.room', false);
@@ -23,6 +23,7 @@ export function mountScreen(app: HTMLElement) {
     <div class="corner-qr" hidden>
       <canvas></canvas><div>${t('screen.scanJoin')} · <b>${room}</b>${opts.pin ? ` · ${t('play.pinLine')} ${opts.pin}` : ''}</div>
     </div>
+    <img class="game-logo screen-logo" src="${brand('logo-dark-sm.png')}" alt="">
     <div class="net-badge"><i></i><span>${t('status.connectingSignal')}</span></div>
     <button class="ghost end-btn" hidden>${t('screen.end')}</button>
     <div class="lobby card">
@@ -33,7 +34,7 @@ export function mountScreen(app: HTMLElement) {
         <div class="muted">${t('screen.orOpen')}<br><span class="url">${esc(joinUrl(room))}</span></div>
       </div>
       <div class="lobby-side">
-        <h1>${t('app.name')}</h1>
+        <img class="lobby-logo" src="${brand('logo-dark.png')}" alt="${t('app.name')}">
         <div class="teams">
           <div class="team t0"><h3>${TEAM_NAME[0]}</h3><ul></ul></div>
           <div class="team t1"><h3>${TEAM_NAME[1]}</h3><ul></ul></div>

@@ -22,7 +22,7 @@ import { t, type Key } from '../i18n';
 import { Gamepad } from '../ui/gamepad';
 import { bindSettings, settingsHtml } from '../ui/settings-ui';
 import { unlockAudio } from '../ui/sound';
-import { canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, store, vibrate } from '../ui/util';
+import { brand, canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, store, vibrate } from '../ui/util';
 
 const STATE_TEXT: Record<ClientState, Key> = {
   signal: 'status.signal',
@@ -64,7 +64,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   <div class="play">
     <canvas class="stage"></canvas>
     <div class="topbar">
-      <div class="status"><i></i><span></span></div>
+      <div class="topbar-left"><img class="game-logo" src="${brand('logo-dark-sm.png')}" alt=""><div class="status"><i></i><span></span></div></div>
       <div class="top-actions">
         <button class="ghost fs-btn" hidden>${t('play.fullscreen')}</button>
         <button class="ghost cam">${t('play.follow')}</button>
@@ -74,7 +74,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     <div class="pad"></div>
     <div class="panel card" hidden></div>
     <div class="join card">
-      <h1>${isHost ? t('play.noScreen') : t('app.name')}</h1>
+      <img class="join-logo" src="${brand('logo-dark.png')}" alt="${t('app.name')}">
+      ${isHost ? `<h1>${t('play.noScreen')}</h1>` : ''}
       <p class="muted">${isHost ? t('play.noScreenDesc') : t('play.room', { room: `<b>${esc(room)}</b>` })}</p>
       <input class="name" maxlength="12" value="${esc(savedName)}" placeholder="${t('play.name')}">
       <input class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="${t('play.pin')}"

@@ -3,7 +3,7 @@ import { t } from '../i18n';
 import { Signal, parseJson } from '../net/signal';
 import { openScanner } from '../ui/scan';
 import { bindSiteTools, icon, siteFooter, siteTools } from '../ui/site';
-import { esc, isPin, normalizeCode, store } from '../ui/util';
+import { brand, esc, isPin, normalizeCode, store } from '../ui/util';
 
 // 主机每 30 秒刷新一次；超过该时长没刷新的视为已失效
 const STALE_MS = 90_000;
@@ -17,7 +17,7 @@ export function mountHome(app: HTMLElement) {
   app.innerHTML = `
   <div class="site home">
     <header class="site-hero">
-      <div class="site-bar"><span class="brand">ScanKick</span>${siteTools()}</div>
+      <div class="site-bar"><span class="brand"><img class="logo-light" src="${brand('logo-white-sm.png')}" alt="ScanKick"><img class="logo-dark" src="${brand('logo-dark-sm.png')}" alt="ScanKick"></span>${siteTools()}</div>
       <h1>${t('app.name')}</h1>
       <p>${t('app.tagline')}</p>
     </header>

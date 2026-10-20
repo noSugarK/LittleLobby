@@ -116,6 +116,9 @@ export function joinUrl(room: string, pin = '') {
   return `${publicBase()}#/join/${room}${pin ? `?pin=${pin}` : ''}`;
 }
 
+/** public/brand 下的品牌素材地址（兼容 GitHub Pages 子路径） */
+export const brand = (file: string) => `${import.meta.env.BASE_URL}brand/${file}`;
+
 export function esc(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }

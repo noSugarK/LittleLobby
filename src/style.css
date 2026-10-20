@@ -1369,3 +1369,48 @@ h1 {
   font-size: 13px;
   margin-top: 4px;
 }
+
+/* 品牌 logo */
+.brand img {
+  display: block;
+  height: 30px;
+  width: auto;
+}
+.brand .logo-dark,
+[data-theme='dark'] .brand .logo-light {
+  display: none;
+}
+[data-theme='dark'] .brand .logo-dark {
+  display: block;
+}
+.join-logo {
+  height: 44px;
+  width: auto;
+  align-self: center;
+}
+.lobby-logo {
+  display: block;
+  height: 48px;
+  width: auto;
+  margin-bottom: 8px;
+}
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* 比赛中的水印：小、半透明、不接收点击 */
+.game-logo {
+  height: 18px;
+  width: auto;
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+}
+.screen-logo {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  height: 26px;
+  z-index: 1;
+}
