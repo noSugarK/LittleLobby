@@ -70,7 +70,7 @@ export interface EndInfo {
 
 /** 结束原因与拒绝原因只传代码，由各端按自己的语言显示 */
 export type EndReason = 'time' | 'host' | 'surrender';
-export type RejectReason = 'pinWrong' | 'pinNeed' | 'pinThrottle' | 'full';
+export type RejectReason = 'pinWrong' | 'pinNeed' | 'pinThrottle' | 'full' | 'notFound'; // notFound 由客户端超时判定
 
 export interface RosterMsg {
   t: 'roster';
@@ -81,7 +81,7 @@ export interface RosterMsg {
   /** 各队投降所需票数 */
   need: [number, number];
   end: EndInfo | null;
-  /** 手机主机模式下房主的球员 id，大屏模式为 -1 */
+  /** 房主的球员 id（只有房主能开始比赛、改设置、增减 AI），没有则为 -1 */
   hostPid: number;
 }
 

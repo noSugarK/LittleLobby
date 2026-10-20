@@ -33,6 +33,7 @@ Host a room on a big screen, scan the QR code with phones, and play real-time 4v
 
 - **Big screen**: open the home page on a computer or TV → Host → Host on big screen. The screen only shows the match; everyone plays on their phone.
 - **No big screen**: home page → Host → Host on phone. That phone is both host and player, and its menu shows a QR code for others. Keep the host page in front and the screen unlocked.
+- **Room host**: only the host can start the match, change settings, and add or remove AI. In no-screen mode that's the hosting phone; in a big-screen room it's the first player to join (passed on if they drop), and the big screen itself can always start.
 
 ### Public lobby and room passwords
 

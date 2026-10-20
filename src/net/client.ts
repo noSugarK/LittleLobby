@@ -22,6 +22,8 @@ export class ClientNet {
   private fast: RTCDataChannel | null = null;
   private helloTimer = 0;
   private watchTimer = 0;
+  /** 主机是否回应过；首次加入一直没回应说明房间不存在或主机已离线 */
+  private answered = false;
   private lastRecv = 0;
   private relay = false;
   private lastOffer = '';
@@ -88,6 +90,10 @@ export class ClientNet {
     if ((this.state === 'p2p' || this.state === 'relay') && idle > 5000) {
       this.setState('lost');
       this.restart();
+    } else if (this.state === 'waiting' && !this.answered && idle > 10000) {
+      clearInterval(this.helloTimer);
+      this.setState('rejected');
+      this.onReject('notFound');
     } else if (this.state === 'lost' || (this.state === 'connecting' && idle > CONFIG.p2pTimeoutMs + 6000)) {
       this.restart();
     }
@@ -105,6 +111,7 @@ export class ClientNet {
     const msg = parseJson(payload);
     if (!msg) return;
     this.lastRecv = performance.now();
+    this.answered = true;
     switch (msg.t) {
       case 'offer':
         clearInterval(this.helloTimer);

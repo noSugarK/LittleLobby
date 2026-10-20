@@ -260,6 +260,13 @@ export class HostGame {
     return Math.floor(this.humans(team).filter((s) => s.info.online).length / 2) + 1;
   }
 
+  /** 房主：手机开房时是本机；大屏模式下是最早加入且在线的真人，掉线后顺延给下一位 */
+  ownerPid(): number {
+    if (this.localPid >= 0) return this.localPid;
+    for (const s of this.slots.values()) if (!s.info.bot && s.info.online) return s.info.id;
+    return -1;
+  }
+
   rosterMsg(): RosterMsg {
     for (const team of [0, 1] as Team[]) {
       this.sim.teamPlayers(team).forEach((p, i) => {
@@ -274,7 +281,7 @@ export class HostGame {
       votes: [[...this.votes[0]], [...this.votes[1]]],
       need: [this.need(0), this.need(1)],
       end: this.endInfo,
-      hostPid: this.localPid,
+      hostPid: this.ownerPid(),
     };
   }
 
@@ -342,16 +349,16 @@ export class HostGame {
         this.rosterChanged();
         break;
       case 'start':
-        this.startMatch();
+        if (pid === this.ownerPid()) this.startMatch();
         break;
       case 'surrender':
         this.vote(s);
         break;
       case 'settings':
-        if (msg.patch && typeof msg.patch === 'object') this.setSettings(msg.patch);
+        if (pid === this.ownerPid() && msg.patch && typeof msg.patch === 'object') this.setSettings(msg.patch);
         break;
       case 'bot':
-        this.changeBots(msg.team === 1 ? 1 : 0, msg.delta === 1 ? 1 : -1);
+        if (pid === this.ownerPid()) this.changeBots(msg.team === 1 ? 1 : 0, msg.delta === 1 ? 1 : -1);
         break;
     }
   }

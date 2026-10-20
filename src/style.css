@@ -644,7 +644,7 @@ h1 {
 }
 .ai-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 8px;
 }
@@ -657,6 +657,7 @@ h1 {
   background: rgba(255, 255, 255, 0.05);
   border-left: 3px solid var(--c);
   font-size: 13px;
+  min-width: 0;
 }
 .ai-step.t0 {
   --c: var(--red);
@@ -666,8 +667,11 @@ h1 {
 }
 .ai-step span {
   flex: 1;
+  min-width: 0;
   text-align: left;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .ai-step b {
   min-width: 14px;
@@ -1539,4 +1543,72 @@ h1 {
   width: 20px;
   height: 20px;
   flex: none;
+}
+
+/* 手机面板：成员名单与房主标记 */
+.roster-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.roster-cols ul {
+  list-style: none;
+  margin: 0;
+  padding: 2px 0 2px 8px;
+  border-left: 3px solid var(--c);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 22px;
+  font-size: 13px;
+}
+.roster-cols .t0 {
+  --c: #e5484d;
+}
+.roster-cols .t1 {
+  --c: #3e7bfa;
+}
+.roster-cols li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.roster-cols li.off {
+  opacity: 0.5;
+}
+.roster-cols .nm {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.roster-cols em {
+  margin-left: auto;
+  flex: none;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+}
+.owner {
+  flex: none;
+  font-style: normal;
+  font-size: 10px;
+  line-height: 1.5;
+  padding: 0 5px;
+  margin-left: 4px;
+  border-radius: 6px;
+  background: #ffd60a;
+  color: #3a2a00;
+}
+.wait-owner {
+  margin: 2px 0;
+  padding: 10px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+}
+.cfg-summary {
+  text-align: center;
 }

@@ -84,7 +84,7 @@ export function mountScreen(app: HTMLElement) {
         list
           .map(
             (p) =>
-              `<li class="${p.online ? '' : 'off'}"><b>${p.num}</b>${esc(p.name)}<em>${
+              `<li class="${p.online ? '' : 'off'}"><b>${p.num}</b>${esc(p.name)}${p.id === r.hostPid ? `<i class="owner">${t('role.owner')}</i>` : ''}<em>${
                 p.bot ? 'AI' : !p.online ? t('status.offline') : t(p.link === 'p2p' ? 'status.p2p' : 'status.relay')
               }</em></li>`,
           )

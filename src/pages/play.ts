@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { LEVEL_NAME } from '../game/ai';
 import { HostGame, endReasonText, resultTitle } from '../game/host-game';
 import { Renderer, TEAM_COLOR, TEAM_NAME, type ViewState } from '../game/render';
 import { predictMove } from '../game/sim';
@@ -243,18 +244,32 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   }
 
   // ---------- 面板（大厅/结算/菜单） ----------
+  /** 某队成员：标出房主、自己、AI、掉线与连接方式 */
+  function memberList(team: number) {
+    return players
+      .filter((p) => p.team === team)
+      .sort((a, b) => a.num - b.num)
+      .map((p) => {
+        const tag = p.bot ? 'AI' : !p.online ? t('status.offline') : p.link === 'local' ? '' : t(p.link === 'p2p' ? 'status.p2p' : 'status.relay');
+        const you = p.id === meId ? ` <small>(${t('play.you')})</small>` : '';
+        const owner = p.id === roster?.hostPid ? `<i class="owner">${t('role.owner')}</i>` : '';
+        return `<li class="${p.online ? '' : 'off'}"><span class="nm">${esc(p.name)}${you}</span>${owner}<em>${tag}</em></li>`;
+      })
+      .join('');
+  }
+
   function renderPanel() {
     const { phase } = current();
     const lobby = phase === Phase.Lobby;
     const ended = phase === Phase.Ended;
     const inMatch = !lobby && !ended;
-    const show = panelOpen || lobby || ended;
-    panel.hidden = !show || !joinEl.hidden;
+    panel.hidden = !panelOpen || !joinEl.hidden;
     if (panel.hidden || !roster) return;
     const me = players.find((p) => p.id === meId);
     const count = (t: number) => players.filter((p) => p.team === t && !p.bot).length;
     let html = `<div class="panel-head">${t('play.room', { room: `<b>${esc(room)}</b>` })} · ${t('play.online', { n: players.filter((p) => !p.bot).length })}`;
-    html += panelOpen ? `<button class="ghost close">×</button></div>` : `</div>`;
+    html += `<button class="ghost close" aria-label="close">×</button></div>`;
+    const isOwner = meId >= 0 && meId === roster.hostPid;
     if (isHost && !inMatch) {
       html += `<div class="host-qr">${qrUrl ? `<img src="${qrUrl}" alt="">` : ''}<div>
         <div class="room-code sm">${esc(room)}</div>${opts?.pin ? `<div class="pin-line">${t('play.pinLine')} <b>${opts.pin}</b></div>` : ''}
@@ -270,8 +285,11 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
         <button data-team="0" style="--c:${TEAM_COLOR[0]}" class="${me?.team === 0 ? 'on' : ''}">${TEAM_NAME[0]} ${count(0)}</button>
         <button data-team="1" style="--c:${TEAM_COLOR[1]}" class="${me?.team === 1 ? 'on' : ''}">${TEAM_NAME[1]} ${count(1)}</button>
       </div>`;
-    if (!inMatch) html += settingsHtml(roster.settings, players);
-    if (!inMatch) {
+    html += `<div class="roster-cols"><ul class="t0">${memberList(0)}</ul><ul class="t1">${memberList(1)}</ul></div>`;
+    if (!inMatch && isOwner) html += settingsHtml(roster.settings, players);
+    else if (!inMatch) html += `<p class="muted small cfg-summary">${t('play.minutes', { n: roster.settings.duration / 60 })} · AI ${LEVEL_NAME[roster.settings.level]}</p>`;
+    if (!inMatch && !isOwner) html += `<p class="wait-owner">${t('play.waitOwner')}</p>`;
+    if (!inMatch && isOwner) {
       html += `<button class="primary start">${t(ended ? 'play.again' : 'play.start')} · ${t('play.minutes', { n: roster.settings.duration / 60 })}</button>`;
       if (isHost && ended) html += `<button class="back">${t('play.toLobby')}</button>`;
     }
@@ -379,7 +397,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       renderer.draw(view, dt);
       if (snap.phase !== lastPhase) {
         lastPhase = snap.phase;
-        if (snap.phase === Phase.Playing || snap.phase === Phase.Ready) panelOpen = false;
+        // 进入大厅/结算时自动弹出菜单，开赛时自动收起；玩家随时可以手动关闭或打开
+        panelOpen = snap.phase === Phase.Lobby || snap.phase === Phase.Ended;
         renderPanel();
       }
     }
