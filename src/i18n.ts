@@ -35,6 +35,10 @@ const zhCN = {
   'scan.unsupported': '当前浏览器无法使用摄像头（需要 HTTPS）',
   'scan.notOurs': '这不是扫码足球的二维码',
   'scan.loading': '正在打开摄像头…',
+  'scan.upload': '从相册选择图片',
+  'scan.noCode': '图片里没有找到二维码',
+  'qr.save': '保存二维码',
+  'qr.caption': '扫码加入，手机当手柄踢球',
 
   'lobby.title': '公开房间 · {n}',
   'lobby.room': '房间',
@@ -199,6 +203,10 @@ const zhTW: Dict = {
   'scan.unsupported': '目前瀏覽器無法使用相機（需要 HTTPS）',
   'scan.notOurs': '這不是掃碼足球的 QR 碼',
   'scan.loading': '正在開啟相機…',
+  'scan.upload': '從相簿選擇圖片',
+  'scan.noCode': '圖片裡沒有找到 QR 碼',
+  'qr.save': '儲存 QR 碼',
+  'qr.caption': '掃碼加入，手機當手把踢球',
 
   'lobby.title': '公開房間 · {n}',
   'lobby.room': '房間',
@@ -361,6 +369,10 @@ const en: Dict = {
   'scan.unsupported': "This browser can't use the camera (HTTPS required).",
   'scan.notOurs': "That's not a ScanKick QR code.",
   'scan.loading': 'Opening camera…',
+  'scan.upload': 'Choose a photo',
+  'scan.noCode': 'No QR code found in that image.',
+  'qr.save': 'Save QR code',
+  'qr.caption': 'Scan to join, your phone is the gamepad',
 
   'lobby.title': 'Live rooms · {n}',
   'lobby.room': 'Room',

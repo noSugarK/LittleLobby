@@ -1494,3 +1494,49 @@ h1 {
     width: min(560px, 100%);
   }
 }
+
+/* 保存二维码按钮（比赛页，不在 .site 内） */
+.save-qr {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+.save-qr .ico {
+  width: 16px;
+  height: 16px;
+}
+.host-qr .save-qr {
+  margin-top: 6px;
+}
+/* 扫码页底部：提示 + 相册按钮 */
+.scan-bottom {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: max(32px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.scan-bottom .scan-msg {
+  position: static;
+}
+.scan-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 15px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.scan-upload .ico {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}

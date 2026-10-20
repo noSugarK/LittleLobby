@@ -3,7 +3,9 @@ import { HostGame, endReasonText, resultTitle } from '../game/host-game';
 import { Renderer, TEAM_COLOR, TEAM_NAME } from '../game/render';
 import { Phase, type RosterMsg, type Team } from '../game/types';
 import { t } from '../i18n';
+import { saveQrCard } from '../ui/qrcard';
 import { bindSettings, settingsHtml } from '../ui/settings-ui';
+import { icon } from '../ui/site';
 import { audioReady, unlockAudio } from '../ui/sound';
 import { brand, enterFullscreen, esc, joinUrl, keepAwake, randomCode, roomOpts, store } from '../ui/util';
 
@@ -32,6 +34,7 @@ export function mountScreen(app: HTMLElement) {
         <div class="room-code">${room}</div>
         ${pinLine}
         <div class="muted">${t('screen.orOpen')}<br><span class="url">${esc(joinUrl(room))}</span></div>
+        <button class="ghost save-qr">${icon.download}${t('qr.save')}</button>
       </div>
       <div class="lobby-side">
         <img class="lobby-logo" src="${brand('logo-dark.png')}" alt="${t('app.name')}">
@@ -112,6 +115,7 @@ export function mountScreen(app: HTMLElement) {
   }
 
   $('.start').onclick = () => game.startMatch();
+  $('.save-qr').onclick = () => saveQrCard(room, opts.pin);
   $('.fs').onclick = () => enterFullscreen();
   endBtn.onclick = () => {
     if (confirm(t('screen.confirmEnd'))) game.endMatch();

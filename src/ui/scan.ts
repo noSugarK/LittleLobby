@@ -1,4 +1,4 @@
-// 扫码加入：摄像头 + jsQR（按需加载，iOS Safari 没有 BarcodeDetector，统一用 jsQR）
+// 扫码加入：摄像头或相册图片 + jsQR（按需加载，iOS Safari 没有 BarcodeDetector，统一用 jsQR）
 import { t } from '../i18n';
 import { icon } from './site';
 import { isPin, normalizeCode } from './util';
@@ -20,13 +20,21 @@ export async function openScanner(root: HTMLElement): Promise<void> {
   el.innerHTML = `
     <video playsinline muted></video>
     <div class="scan-frame"></div>
-    <p class="scan-msg">${t('scan.loading')}</p>
+    <div class="scan-bottom">
+      <p class="scan-msg">${t('scan.loading')}</p>
+      <label class="scan-upload">${icon.image}<span>${t('scan.upload')}</span><input type="file" accept="image/*" hidden></label>
+    </div>
     <button class="icon-btn scan-close" aria-label="${t('scan.close')}">${icon.x}</button>`;
   root.appendChild(el);
   const video = el.querySelector('video')!;
   const msg = el.querySelector<HTMLElement>('.scan-msg')!;
+  const jsqr = import('jsqr').then((m) => m.default);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
   let stream: MediaStream | null = null;
   let raf = 0;
+  let lastBad = '';
+
   const close = () => {
     cancelAnimationFrame(raf);
     stream?.getTracks().forEach((tr) => tr.stop());
@@ -34,47 +42,59 @@ export async function openScanner(root: HTMLElement): Promise<void> {
   };
   el.querySelector<HTMLElement>('.scan-close')!.onclick = close;
 
+  /** 识别一帧；是本游戏的码就跳转并返回 true */
+  const decode = async (src: CanvasImageSource, w: number, h: number, both = false) => {
+    // 缩到最长边 maxSide 再识别：摄像头 640 足够快，照片给 1200 保留细节
+    const k = Math.min(1, (both ? 1200 : 640) / Math.max(w, h));
+    canvas.width = Math.round(w * k);
+    canvas.height = Math.round(h * k);
+    ctx.drawImage(src, 0, 0, canvas.width, canvas.height);
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = (await jsqr)(img.data, img.width, img.height, { inversionAttempts: both ? 'attemptBoth' : 'dontInvert' });
+    if (!code?.data) return false;
+    const hash = joinHashFromQr(code.data);
+    if (hash) {
+      close();
+      location.hash = hash;
+      return true;
+    }
+    if (code.data !== lastBad) {
+      lastBad = code.data;
+      msg.textContent = t('scan.notOurs');
+    }
+    return true;
+  };
+
+  // 相册图片
+  const file = el.querySelector<HTMLInputElement>('input[type=file]')!;
+  file.onchange = async () => {
+    const f = file.files?.[0];
+    file.value = '';
+    if (!f) return;
+    try {
+      const bmp = await createImageBitmap(f);
+      lastBad = '';
+      if (!(await decode(bmp, bmp.width, bmp.height, true))) msg.textContent = t('scan.noCode');
+      bmp.close();
+    } catch {
+      msg.textContent = t('scan.noCode');
+    }
+  };
+
+  // 摄像头
   if (!navigator.mediaDevices?.getUserMedia) {
     msg.textContent = t('scan.unsupported');
     return;
   }
   try {
-    const [s, { default: jsQR }] = await Promise.all([
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }),
-      import('jsqr'),
-    ]);
-    stream = s;
-    if (!el.isConnected) return close(); // 加载期间已关闭
-    video.srcObject = s;
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    if (!el.isConnected) return close(); // 打开期间已关闭
+    video.srcObject = stream;
     await video.play();
     msg.textContent = t('scan.hint');
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
-    let lastBad = '';
-    const tick = () => {
-      if (video.videoWidth) {
-        // 缩到最长边 640 再识别，手机上足够快
-        const k = Math.min(1, 640 / Math.max(video.videoWidth, video.videoHeight));
-        canvas.width = Math.round(video.videoWidth * k);
-        canvas.height = Math.round(video.videoHeight * k);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
-        if (code?.data) {
-          const hash = joinHashFromQr(code.data);
-          if (hash) {
-            close();
-            location.hash = hash;
-            return;
-          }
-          if (code.data !== lastBad) {
-            lastBad = code.data;
-            msg.textContent = t('scan.notOurs');
-          }
-        }
-      }
-      raf = requestAnimationFrame(tick);
+    const tick = async () => {
+      if (video.videoWidth) await decode(video, video.videoWidth, video.videoHeight);
+      if (el.isConnected) raf = requestAnimationFrame(tick);
     };
     tick();
   } catch (e) {

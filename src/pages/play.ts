@@ -20,7 +20,9 @@ import { decodeSnapshot, encodeInput } from '../net/protocol';
 import { CONFIG } from '../config';
 import { t, type Key } from '../i18n';
 import { Gamepad } from '../ui/gamepad';
+import { saveQrCard } from '../ui/qrcard';
 import { bindSettings, settingsHtml } from '../ui/settings-ui';
+import { icon } from '../ui/site';
 import { unlockAudio } from '../ui/sound';
 import { brand, canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, store, vibrate } from '../ui/util';
 
@@ -256,7 +258,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     if (isHost && !inMatch) {
       html += `<div class="host-qr">${qrUrl ? `<img src="${qrUrl}" alt="">` : ''}<div>
         <div class="room-code sm">${esc(room)}</div>${opts?.pin ? `<div class="pin-line">${t('play.pinLine')} <b>${opts.pin}</b></div>` : ''}
-        <div class="muted small">${t('play.scanToJoin')}${opts?.listed ? t('play.listed') : ''}</div></div></div>`;
+        <div class="muted small">${t('play.scanToJoin')}${opts?.listed ? t('play.listed') : ''}</div>
+        <button class="ghost save-qr">${icon.download}${t('qr.save')}</button></div></div>`;
     }
     if (ended && roster.end) {
       const [a, b] = roster.end.score;
@@ -291,6 +294,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       b.onclick = () => send({ t: 'team', team: Number(b.dataset.team) as 0 | 1 });
     });
     on('.start', () => send({ t: 'start' }));
+    on('.save-qr', () => saveQrCard(room, opts?.pin ?? ''));
     on('.surrender', () => send({ t: 'surrender' }));
     on('.end', () => confirm(t('play.confirmEnd')) && game?.endMatch());
     on('.back', () => game?.toLobby());
