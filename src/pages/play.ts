@@ -20,7 +20,7 @@ import { decodeSnapshot, encodeInput } from '../net/protocol';
 import { Gamepad } from '../ui/gamepad';
 import { bindSettings, settingsHtml } from '../ui/settings-ui';
 import { unlockAudio } from '../ui/sound';
-import { canFullscreen, enterFullscreen, esc, isFullscreen, keepAwake, publicBase, randomCode, store, vibrate } from '../ui/util';
+import { canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, store, vibrate } from '../ui/util';
 
 const STATE_TEXT: Record<ClientState, string> = {
   signal: '连接信令…',
@@ -33,7 +33,7 @@ const STATE_TEXT: Record<ClientState, string> = {
 };
 
 /** client：扫码加入的手机；host：无大屏模式，本机既是主机又是球员 */
-export type PlayMode = { kind: 'client'; room: string; forceRelay: boolean } | { kind: 'host' };
+export type PlayMode = { kind: 'client'; room: string; forceRelay: boolean; pin: string; lock: boolean } | { kind: 'host' };
 
 export function mountPlay(app: HTMLElement, mode: PlayMode) {
   const isHost = mode.kind === 'host';
@@ -47,9 +47,13 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   const joinedKey = isHost ? 'sfb.hosting' : `sfb.joined.${room}`;
   const savedName = store.get('sfb.name') || `球员${Math.floor(Math.random() * 90 + 10)}`;
   const autoJoin = store.get(joinedKey, false) === '1';
-  const joinUrl = `${publicBase()}#/join/${room}`;
+  const opts = isHost ? roomOpts() : null;
+  // 客户端密码：二维码自带 > 本标签页上次输入的
+  const urlPin = mode.kind === 'client' ? mode.pin : '';
+  const pinKey = `sfb.pin.${room}`;
+  const askPin = mode.kind === 'client' && !urlPin && (mode.lock || !!store.get(pinKey, false));
   let qrUrl = '';
-  if (isHost) QRCode.toDataURL(joinUrl, { width: 220, margin: 1 }).then((u) => {
+  if (opts) QRCode.toDataURL(joinUrl(room, opts.pin), { width: 220, margin: 1 }).then((u) => {
       qrUrl = u;
       renderPanel();
     });
@@ -71,6 +75,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       <h1>${isHost ? '无大屏模式' : '扫码足球'}</h1>
       <p class="muted">${isHost ? '这台手机作为主机，其他人扫你屏幕上的二维码加入' : `房间 <b>${esc(room)}</b>`}</p>
       <input class="name" maxlength="12" value="${esc(savedName)}" placeholder="你的昵称">
+      <input class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="房间密码"
+        value="${esc(store.get(pinKey, false) ?? '')}" ${askPin ? '' : 'hidden'}>
       <div class="seg">
         <button data-team="0" style="--c:${TEAM_COLOR[0]}">红队</button>
         <button data-team="2" class="on">自动</button>
@@ -145,7 +151,12 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     joinEl.hidden = true;
     $('.play').classList.add('joined');
     keepAwake();
-    net = new ClientNet(room, { token, name, team });
+    const pinEl = $<HTMLInputElement>('.pin');
+    // 输入框显示时以输入为准（例如二维码里的旧密码被拒后重新输入）
+    const pin = pinEl.hidden ? urlPin : pinEl.value.replace(/\D/g, '');
+    if (!pinEl.hidden) store.set(pinKey, pin, false);
+    net?.close();
+    net = new ClientNet(room, { token, name, team, pin });
     net.forceRelay = forceRelay;
     buf.delay = 60;
     net.onState = (s) => {
@@ -156,6 +167,12 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     net.onReject = (r) => {
       toast(r, 5000);
       joinEl.hidden = false;
+      store.set(joinedKey, '', false);
+      if (r.includes('密码')) {
+        pinEl.hidden = false;
+        pinEl.value = '';
+        pinEl.focus();
+      }
     };
     net.onBinary = (d) => {
       const s = decodeSnapshot(d);
@@ -176,7 +193,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     $('.play').classList.add('joined');
     keepAwake();
     unlockAudio();
-    game = new HostGame(room);
+    game = new HostGame(room, opts!);
     game.onLocal = onMsg;
     game.onStatus = (ok, text) => {
       statusEl.className = `status ${ok ? 'p2p' : 'lost'}`;
@@ -235,7 +252,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     html += panelOpen ? `<button class="ghost close">×</button></div>` : `</div>`;
     if (isHost && !inMatch) {
       html += `<div class="host-qr">${qrUrl ? `<img src="${qrUrl}" alt="">` : ''}<div>
-        <div class="room-code sm">${esc(room)}</div><div class="muted small">让其他人扫码加入</div></div></div>`;
+        <div class="room-code sm">${esc(room)}</div>${opts?.pin ? `<div class="pin-line">密码 <b>${opts.pin}</b></div>` : ''}
+        <div class="muted small">让其他人扫码加入${opts?.listed ? '，已展示在公开大厅' : ''}</div></div></div>`;
     }
     if (ended && roster.end) {
       const [a, b] = roster.end.score;

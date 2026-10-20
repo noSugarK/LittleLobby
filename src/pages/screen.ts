@@ -4,7 +4,7 @@ import { Renderer, TEAM_COLOR, TEAM_NAME } from '../game/render';
 import { Phase, type RosterMsg, type Team } from '../game/types';
 import { bindSettings, settingsHtml } from '../ui/settings-ui';
 import { audioReady, unlockAudio } from '../ui/sound';
-import { enterFullscreen, esc, keepAwake, publicBase, randomCode, store } from '../ui/util';
+import { enterFullscreen, esc, joinUrl, keepAwake, randomCode, roomOpts, store } from '../ui/util';
 
 export function mountScreen(app: HTMLElement) {
   let room = store.get('sfb.room', false);
@@ -12,13 +12,15 @@ export function mountScreen(app: HTMLElement) {
     room = randomCode();
     store.set('sfb.room', room, false);
   }
-  const joinUrl = `${publicBase()}#/join/${room}`;
+  const opts = roomOpts();
+  const qrUrl = joinUrl(room, opts.pin);
+  const pinLine = opts.pin ? `<div class="pin-line">密码 <b>${opts.pin}</b></div>` : '';
 
   app.innerHTML = `
   <div class="screen">
     <canvas class="stage"></canvas>
     <div class="corner-qr" hidden>
-      <canvas></canvas><div>扫码加入 · <b>${room}</b></div>
+      <canvas></canvas><div>扫码加入 · <b>${room}</b>${opts.pin ? ` · 密码 ${opts.pin}` : ''}</div>
     </div>
     <div class="net-badge"><i></i><span>连接信令服务器…</span></div>
     <button class="ghost end-btn" hidden>结束比赛</button>
@@ -26,7 +28,8 @@ export function mountScreen(app: HTMLElement) {
       <div class="lobby-join">
         <canvas class="qr"></canvas>
         <div class="room-code">${room}</div>
-        <div class="muted">手机扫码加入，或打开<br><span class="url">${esc(joinUrl)}</span></div>
+        ${pinLine}
+        <div class="muted">手机扫码加入，或打开<br><span class="url">${esc(joinUrl(room))}</span></div>
       </div>
       <div class="lobby-side">
         <h1>扫码足球</h1>
@@ -55,10 +58,10 @@ export function mountScreen(app: HTMLElement) {
   const cfgEl = $('.cfg-wrap');
   let cfgHtml = '';
 
-  QRCode.toCanvas($('.qr'), joinUrl, { width: 260, margin: 1 });
-  QRCode.toCanvas($('.corner-qr canvas'), joinUrl, { width: 110, margin: 1 });
+  QRCode.toCanvas($('.qr'), qrUrl, { width: 260, margin: 1 });
+  QRCode.toCanvas($('.corner-qr canvas'), qrUrl, { width: 110, margin: 1 });
 
-  const game = new HostGame(room);
+  const game = new HostGame(room, opts);
   const renderer = new Renderer($('.stage'));
 
   game.onStatus = (ok, text) => {

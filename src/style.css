@@ -666,13 +666,15 @@ h1 {
   padding: 7px 10px;
   font-size: 14px;
 }
-.cfg .check {
+.cfg .check,
+.room-opts .check {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 14px;
 }
-.cfg .check input {
+.cfg .check input,
+.room-opts .check input {
   width: 18px;
   height: 18px;
 }
@@ -717,4 +719,58 @@ h1 {
 .ai-step button:disabled {
   opacity: 0.3;
   cursor: default;
+}
+
+/* 创建房间选项与公开大厅 */
+.room-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+input.bad {
+  border-color: #ff453a;
+}
+.room-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  text-align: left;
+}
+.room-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.room-list li.empty {
+  justify-content: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.room-list .code {
+  letter-spacing: 2px;
+}
+.room-list .meta {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.room-list button {
+  padding: 6px 12px;
+}
+.pin-line {
+  font-size: 18px;
+  color: var(--muted);
+}
+.pin-line b {
+  color: var(--fg);
+  letter-spacing: 3px;
 }

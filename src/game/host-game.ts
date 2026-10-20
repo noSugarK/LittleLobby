@@ -2,10 +2,21 @@ import { CONFIG } from '../config';
 import { HostNet, type Hello } from '../net/host';
 import { decodeInput, encodeSnapshot } from '../net/protocol';
 import { sfxGoal, sfxKick, sfxWhistle } from '../ui/sound';
+import type { RoomOpts } from '../ui/util';
 import { botInput, forgetBot } from './ai';
 import { TEAM_NAME, type ViewState } from './render';
 import { Sim } from './sim';
-import { Phase, type EndInfo, type HostMsg, type Input, type PlayerInfo, type RosterMsg, type Settings, type Team } from './types';
+import {
+  Phase,
+  type EndInfo,
+  type HostMsg,
+  type Input,
+  type LobbyInfo,
+  type PlayerInfo,
+  type RosterMsg,
+  type Settings,
+  type Team,
+} from './types';
 
 interface Slot {
   info: PlayerInfo;
@@ -42,8 +53,13 @@ export class HostGame {
   private votes: [Set<number>, Set<number>] = [new Set(), new Set()];
   private pendingEnd: Omit<EndInfo, 'score'> | null = null;
   private timers: number[] = [];
+  private pinFails: number[] = [];
+  private lastInfo = '';
 
-  constructor(readonly room: string) {
+  constructor(
+    readonly room: string,
+    readonly opts: RoomOpts = { listed: false, pin: '' },
+  ) {
     this.net = new HostNet(room, {
       onHello: (cid, h) => this.onHello(cid, h),
       onPeer: (cid) => {
@@ -83,15 +99,23 @@ export class HostGame {
         this.rosterChanged();
       },
     });
+    if (opts.listed) this.net.signal.willClear = 'info';
   }
 
   async start() {
-    this.net.signal.onStatus = (ok) => this.onStatus(ok, ok ? '房间已就绪' : '信令断开，重连中…');
+    this.net.signal.onStatus = (ok) => {
+      this.onStatus(ok, ok ? '房间已就绪' : '信令断开，重连中…');
+      if (ok) this.publishInfo(true);
+    };
+    window.addEventListener('pagehide', () => this.clearInfo());
     this.startLoops();
     this.rosterChanged();
     try {
       await this.net.start();
       this.onStatus(true, '房间已就绪');
+      // 不公开时也清一次：同一房间码之前可能公开过
+      if (this.opts.listed) this.publishInfo(true);
+      else this.clearInfo();
     } catch {
       this.onStatus(false, '信令服务器连接失败，请刷新重试');
     }
@@ -144,6 +168,15 @@ export class HostGame {
   }
 
   private onHello(cid: string, h: Hello): string | null {
+    const pin = this.opts.pin;
+    if (pin && h.pin !== pin) {
+      // 全局限速：10 秒内最多 5 次错误，4 位密码穷举需要数小时
+      const now = performance.now();
+      this.pinFails = this.pinFails.filter((t) => now - t < 10000);
+      if (this.pinFails.length >= 5) return '尝试次数过多，请稍后再试';
+      this.pinFails.push(now);
+      return h.pin ? '密码错误' : '该房间需要密码';
+    }
     const name = String(h.name || '球员').slice(0, 12);
     const existing = [...this.slots.values()].find((s) => s.token && s.token === h.token);
     if (existing) {
@@ -242,7 +275,30 @@ export class HostGame {
     };
   }
 
+  // ---------- 公开大厅 ----------
+  /** 内容变化时发布保留消息；force 用于心跳刷新时间戳 */
+  private publishInfo(force = false) {
+    if (!this.opts.listed) return;
+    const local = this.slots.get(this.localPid);
+    const info: Omit<LobbyInfo, 'ts'> = {
+      host: local?.info.name ?? '',
+      n: this.humans().filter((s) => s.info.online).length,
+      max: MAX_HUMANS,
+      playing: this.inMatch(),
+      lock: !!this.opts.pin,
+    };
+    const key = JSON.stringify(info);
+    if (!force && key === this.lastInfo) return;
+    this.lastInfo = key;
+    this.net.signal.pub('info', { ...info, ts: Date.now() }, true);
+  }
+
+  private clearInfo() {
+    this.net.signal.pub('info', new Uint8Array(0), true);
+  }
+
   rosterChanged() {
+    this.publishInfo();
     this.rebalanceBots();
     const msg = this.rosterMsg();
     this.net.broadcastJson(msg);
@@ -386,6 +442,7 @@ export class HostGame {
           if (sim.phase !== lastPhase) {
             lastPhase = sim.phase;
             this.onPhase(sim.phase);
+            this.publishInfo();
           }
         }
       }, 4),
@@ -404,6 +461,7 @@ export class HostGame {
         }
         if (changed) this.rosterChanged();
       }, 1000),
+      window.setInterval(() => this.publishInfo(true), 30000),
     );
   }
 
@@ -449,6 +507,7 @@ export class HostGame {
   }
 
   close() {
+    this.clearInfo();
     this.timers.forEach(clearInterval);
     this.net.close();
   }

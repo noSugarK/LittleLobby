@@ -9,6 +9,7 @@ export interface Hello {
   token: string;
   name: string;
   team: number;
+  pin?: string;
 }
 
 export interface HostCallbacks {

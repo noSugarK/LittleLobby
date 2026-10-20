@@ -94,6 +94,28 @@ export function publicBase() {
   return `${location.origin}${pathname}`;
 }
 
+/** 创建房间时在首页选的选项，存在本标签页里，刷新后仍有效 */
+export interface RoomOpts {
+  listed: boolean;
+  pin: string; // 空串表示无密码
+}
+
+export const isPin = (s: unknown): s is string => typeof s === 'string' && /^\d{4,6}$/.test(s);
+
+export function roomOpts(): RoomOpts {
+  try {
+    const o = JSON.parse(store.get('sfb.roomopts', false) || '{}');
+    return { listed: !!o.listed, pin: isPin(o.pin) ? o.pin : '' };
+  } catch {
+    return { listed: false, pin: '' };
+  }
+}
+
+/** 二维码地址：带上密码，扫码的人无需再输入（hash 部分不会发给任何服务器） */
+export function joinUrl(room: string, pin = '') {
+  return `${publicBase()}#/join/${room}${pin ? `?pin=${pin}` : ''}`;
+}
+
 export function esc(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }

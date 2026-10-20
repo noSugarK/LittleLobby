@@ -81,6 +81,16 @@ export interface RosterMsg {
   hostPid: number;
 }
 
+/** 公开大厅里的房间信息：主机以保留消息发布到 `<topicPrefix>/<房间码>/info` */
+export interface LobbyInfo {
+  host: string; // 无大屏模式下为房主昵称，大屏模式为空
+  n: number; // 在线真人
+  max: number;
+  playing: boolean;
+  lock: boolean;
+  ts: number; // 发布时间，用来过滤失效房间
+}
+
 /** 可靠通道 JSON 消息（主机 -> 客户端） */
 export type HostMsg =
   | { t: 'welcome'; pid: number }

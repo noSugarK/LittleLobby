@@ -7,6 +7,7 @@ export interface JoinInfo {
   token: string;
   name: string;
   team: number; // 0 红 1 蓝 2 自动
+  pin: string;
 }
 
 const rid = () => Math.random().toString(36).slice(2, 10);
@@ -63,6 +64,7 @@ export class ClientNet {
         token: this.info.token,
         name: this.info.name,
         team: this.info.team,
+        pin: this.info.pin,
       });
     hello();
     clearInterval(this.helloTimer);

@@ -23,6 +23,8 @@ export class Signal {
   private handler: SignalHandler = () => {};
   readonly prefix: string;
   onStatus: (connected: boolean) => void = () => {};
+  /** 设置后作为遗嘱：本端异常掉线时 broker 清空该 topic 的保留消息（大厅房间信息） */
+  willClear: string | null = null;
 
   constructor(room: string) {
     this.prefix = `${CONFIG.topicPrefix}/${room}`;
@@ -32,7 +34,7 @@ export class Signal {
     let lastErr: unknown = new Error('无可用信令服务器');
     for (const url of CONFIG.brokers) {
       try {
-        this.client = await connectOne(url);
+        this.client = await connectOne(url, this.willClear && `${this.prefix}/${this.willClear}`);
         break;
       } catch (e) {
         lastErr = e;
@@ -60,10 +62,10 @@ export class Signal {
     return topic.startsWith(this.prefix + '/') ? topic.slice(this.prefix.length + 1) : topic;
   }
 
-  pub(topic: string, data: Uint8Array | object) {
+  pub(topic: string, data: Uint8Array | object, retain = false) {
     if (!this.client?.connected) return;
     const payload = data instanceof Uint8Array ? data : enc.encode(JSON.stringify(data));
-    this.client.publish(`${this.prefix}/${topic}`, payload as any, { qos: 0 });
+    this.client.publish(`${this.prefix}/${topic}`, payload as any, { qos: 0, retain });
   }
 
   close() {
@@ -72,7 +74,7 @@ export class Signal {
   }
 }
 
-function connectOne(url: string): Promise<MqttClient> {
+function connectOne(url: string, willTopic: string | null): Promise<MqttClient> {
   return new Promise((resolve, reject) => {
     const c = mqtt.connect(url, {
       connectTimeout: 5000,
@@ -80,6 +82,7 @@ function connectOne(url: string): Promise<MqttClient> {
       keepalive: 30,
       clean: true,
       clientId: 'sfb_' + Math.random().toString(36).slice(2, 12),
+      will: willTopic ? { topic: willTopic, payload: new Uint8Array(0) as any, qos: 0, retain: true } : undefined,
     });
     const timer = setTimeout(() => {
       c.end(true);
