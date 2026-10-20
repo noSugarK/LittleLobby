@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 import { LEVEL_NAME } from '../game/ai';
 import { HostGame, endReasonText, resultTitle } from '../game/host-game';
-import { Renderer, TEAM_COLOR, TEAM_NAME, type ViewState } from '../game/render';
+import { Renderer, TEAM_COLOR, TEAM_NAME, goalText as goalLabel, type ViewState } from '../game/render';
 import { predictMove } from '../game/sim';
 import {
   BTN_A,
@@ -25,6 +25,7 @@ import { saveQrCard } from '../ui/qrcard';
 import { bindSettings, pinLineHtml, playerTag, settingsHtml } from '../ui/settings-ui';
 import { icon } from '../ui/site';
 import { unlockAudio } from '../ui/sound';
+import type { Team } from '../game/types';
 import { brand, canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, store, vibrate } from '../ui/util';
 
 const STATE_TEXT: Record<ClientState, Key> = {
@@ -58,7 +59,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   const pinKey = `sfb.pin.${room}`;
   const askPin = mode.kind === 'client' && !urlPin && (mode.lock || !!store.get(pinKey, false));
   let qrUrl = '';
-  if (opts) QRCode.toDataURL(joinUrl(room, opts.pin), { width: 220, margin: 1 }).then((u) => {
+  if (opts) QRCode.toDataURL(joinUrl({ room, pin: opts.pin }), { width: 220, margin: 1 }).then((u) => {
       qrUrl = u;
       renderPanel();
     });
@@ -85,7 +86,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
         value="${esc(store.get(pinKey, false) ?? '')}" ${askPin ? '' : 'hidden'}>
       <div class="seg">
         <button data-team="0" style="--c:${TEAM_COLOR[0]}">${TEAM_NAME[0]}</button>
-        <button data-team="2" class="on">${t('team.auto')}</button>
+        <button data-team="auto" class="on">${t('team.auto')}</button>
         <button data-team="1" style="--c:${TEAM_COLOR[1]}">${TEAM_NAME[1]}</button>
       </div>
       <button class="primary go">${t(isHost ? 'play.create' : 'play.enter')}</button>
@@ -105,10 +106,10 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   const pad = new Gamepad($('.pad'));
   const buf = new SnapBuffer();
 
-  let team = 2;
+  let team: Team | 'auto' = 'auto';
   joinEl.querySelectorAll<HTMLButtonElement>('.seg button').forEach((b) => {
     b.onclick = () => {
-      team = Number(b.dataset.team);
+      team = b.dataset.team === 'auto' ? 'auto' : (Number(b.dataset.team) as Team);
       joinEl.querySelectorAll('.seg button').forEach((x) => x.classList.toggle('on', x === b));
     };
   });
@@ -159,8 +160,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     keepAwake();
     const pinEl = $<HTMLInputElement>('.pin');
     // 输入框显示时以输入为准（例如二维码里的旧密码被拒后重新输入）
-    const pin = pinEl.hidden ? urlPin : pinEl.value.replace(/\D/g, '');
-    if (!pinEl.hidden) store.set(pinKey, pin, false);
+    const pin = (pinEl.hidden ? urlPin : pinEl.value.replace(/\D/g, '')) || undefined;
+    if (!pinEl.hidden) store.set(pinKey, pin ?? '', false);
     net?.close();
     net = new ClientNet(room, { token, name, team, pin });
     net.forceRelay = forceRelay;
@@ -229,7 +230,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
           vibrate([60, 40, 60]);
           toast(t('play.tackled'), 1000);
         } else if (m.k === 'goal') {
-          goalText = m.own ? t('play.ownGoal', { name: m.scorer }) : `${TEAM_NAME[m.team]} · ${m.scorer}`;
+          goalText = goalLabel(m.team, m.scorer, m.own);
           const me = players.find((p) => p.id === meId);
           vibrate(me && me.team === m.team ? [120, 60, 120, 60, 200] : 200);
         } else if (m.k === 'end') {
@@ -271,7 +272,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     const isOwner = meId >= 0 && meId === roster.hostPid;
     if (isHost && !inMatch) {
       html += `<div class="host-qr">${qrUrl ? `<img src="${qrUrl}" alt="">` : ''}<div>
-        <div class="room-code sm">${esc(room)}</div>${pinLineHtml(opts?.pin ?? '')}
+        <div class="room-code sm">${esc(room)}</div>${pinLineHtml(opts?.pin)}
         <div class="muted small">${t('play.scanToJoin')}${opts?.listed ? t('play.listed') : ''}</div>
         <button class="ghost save-qr">${icon.download}${t('qr.save')}</button></div></div>`;
     }
@@ -311,7 +312,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       b.onclick = () => send({ t: 'team', team: Number(b.dataset.team) as 0 | 1 });
     });
     on('.start', () => send({ t: 'start' }));
-    on('.save-qr', () => saveQrCard(room, opts?.pin ?? ''));
+    on('.save-qr', () => saveQrCard({ room, pin: opts?.pin }));
     on('.surrender', () => send({ t: 'surrender' }));
     on('.end', () => confirm(t('play.confirmEnd')) && game?.endMatch());
     on('.back', () => game?.toLobby());

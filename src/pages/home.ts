@@ -1,12 +1,9 @@
-import type { LobbyInfo } from '../game/types';
 import { t } from '../i18n';
-import { Signal, parseJson } from '../net/signal';
+import { LOBBY_STALE_MS, watchLobby, type LobbyInfo } from '../net/lobby';
 import { openScanner } from '../ui/scan';
 import { bindSiteTools, icon, siteFooter, siteTools } from '../ui/site';
 import { brand, esc, isPin, normalizeCode, store } from '../ui/util';
 
-// 主机每 30 秒刷新一次；超过该时长没刷新的视为已失效
-const STALE_MS = 90_000;
 const CODE_LEN = 5;
 type Tab = 'host' | 'join' | 'lobby';
 
@@ -100,7 +97,7 @@ export function mountHome(app: HTMLElement) {
       pinEl.focus();
       return;
     }
-    store.set('sfb.roomopts', JSON.stringify({ listed: $<HTMLInputElement>('.opt-listed').checked, pin }), false);
+    store.set('sfb.roomopts', JSON.stringify({ listed: $<HTMLInputElement>('.opt-listed').checked, pin: pin || undefined }), false);
     // 每次从首页创建都换新房间码，避免旧房间的玩家绕过新设置的密码重连
     store.set('sfb.room', '', false);
     store.set('sfb.hostroom', '', false);
@@ -140,14 +137,14 @@ export function mountHome(app: HTMLElement) {
   $('.scan-btn').onclick = () => openScanner(app);
 
   // ---------- 公开大厅：订阅所有房间的保留消息 ----------
-  const rooms = new Map<string, LobbyInfo>();
+  let rooms = new Map<string, LobbyInfo>();
   const body = $('.lbody');
   const countEls = app.querySelectorAll<HTMLElement>('.count');
   let state: 'loading' | 'ready' | 'failed' = 'loading';
 
   function render() {
     const now = Date.now();
-    const list = [...rooms.entries()].filter(([, r]) => now - r.ts < STALE_MS);
+    const list = [...rooms.entries()].filter(([, r]) => now - r.ts < LOBBY_STALE_MS);
     // 可加入的在前，其次按人数
     list.sort(([, a], [, b]) => Number(a.n >= a.max) - Number(b.n >= b.max) || Number(a.playing) - Number(b.playing) || b.n - a.n);
     countEls.forEach((el) => (el.textContent = list.length ? String(list.length) : ''));
@@ -173,30 +170,12 @@ export function mountHome(app: HTMLElement) {
     });
   }
 
-  // 用 '+' 作房间名，订阅 scanfb/v1/+/info
-  const sig = new Signal('+');
-  sig.onMessage((topic, payload) => {
-    const code = normalizeCode(topic.split('/').at(-2) ?? '');
-    if (!code) return;
-    const r = parseJson<LobbyInfo>(payload);
-    // 公共 broker 上谁都能发，字段逐个校验
-    if (r && typeof r.ts === 'number' && typeof r.n === 'number' && typeof r.max === 'number') {
-      rooms.set(code, {
-        host: String(r.host ?? '').slice(0, 12),
-        n: Math.max(0, Math.min(99, r.n | 0)),
-        max: Math.max(1, Math.min(99, r.max | 0)),
-        playing: !!r.playing,
-        lock: !!r.lock,
-        ts: r.ts,
-      });
-    } else rooms.delete(code); // 空消息 = 房间关闭
-    render();
-  });
   render();
-  sig
-    .connect()
+  watchLobby((next) => {
+    rooms = next;
+    render();
+  })
     .then(() => {
-      sig.sub('info');
       // 保留消息在订阅后立即到达，稍等一下再显示「暂无」
       setTimeout(() => {
         state = 'ready';

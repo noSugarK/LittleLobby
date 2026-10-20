@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import type { RejectReason } from '../game/types';
+import type { RejectReason, Team } from '../game/types';
 import { Signal, isJson, parseJson } from './signal';
 
 export type ClientState = 'signal' | 'waiting' | 'connecting' | 'p2p' | 'relay' | 'lost' | 'rejected';
@@ -7,8 +7,8 @@ export type ClientState = 'signal' | 'waiting' | 'connecting' | 'p2p' | 'relay' 
 export interface JoinInfo {
   token: string;
   name: string;
-  team: number; // 0 红 1 蓝 2 自动
-  pin: string;
+  team: Team | 'auto';
+  pin?: string;
 }
 
 const rid = () => Math.random().toString(36).slice(2, 10);

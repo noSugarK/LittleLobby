@@ -7,6 +7,11 @@ export const TEAM_DARK = ['#8c1d22', '#173f99'];
 export const TEAM_NAME = [t('team.red'), t('team.blue')];
 const ME = '#ffd60a';
 
+/** 进球横幅上的文案（主机与客户端共用） */
+export function goalText(team: number, scorer: string, own: boolean) {
+  return own ? t('play.ownGoal', { name: scorer }) : `${TEAM_NAME[team]} · ${scorer}`;
+}
+
 export interface ViewState extends Snapshot {
   info: Map<number, PlayerInfo>;
   meId: number;

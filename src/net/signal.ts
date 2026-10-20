@@ -23,8 +23,8 @@ export class Signal {
   private handler: SignalHandler = () => {};
   readonly prefix: string;
   onStatus: (connected: boolean) => void = () => {};
-  /** 设置后作为遗嘱：本端异常掉线时 broker 清空该 topic 的保留消息（大厅房间信息） */
-  willClear: string | null = null;
+  /** 设置后作为遗嘱：本端异常掉线时 broker 清空该 topic（房间前缀之后的部分）的保留消息 */
+  willClearTopic: string | null = null;
 
   constructor(room: string) {
     this.prefix = `${CONFIG.topicPrefix}/${room}`;
@@ -34,7 +34,7 @@ export class Signal {
     let lastErr: unknown = new Error('无可用信令服务器');
     for (const url of CONFIG.brokers) {
       try {
-        this.client = await connectOne(url, this.willClear && `${this.prefix}/${this.willClear}`);
+        this.client = await connectOne(url, this.willClearTopic && `${this.prefix}/${this.willClearTopic}`);
         break;
       } catch (e) {
         lastErr = e;

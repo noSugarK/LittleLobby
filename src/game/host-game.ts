@@ -1,11 +1,12 @@
 import { CONFIG } from '../config';
 import { HostNet, type Hello } from '../net/host';
+import { LOBBY_HEARTBEAT_MS, LobbyPublisher } from '../net/lobby';
 import { decodeInput, encodeSnapshot } from '../net/protocol';
 import { t } from '../i18n';
 import { sfxGoal, sfxKick, sfxWhistle } from '../ui/sound';
 import type { RoomOpts } from '../ui/util';
 import { botInput, forgetBot } from './ai';
-import { TEAM_NAME, type ViewState } from './render';
+import { TEAM_NAME, goalText, type ViewState } from './render';
 import { Sim } from './sim';
 import {
   BOT_LEVELS,
@@ -16,7 +17,6 @@ import {
   type EndReason,
   type HostMsg,
   type Input,
-  type LobbyInfo,
   type PlayerInfo,
   type RejectReason,
   type RosterMsg,
@@ -60,11 +60,11 @@ export class HostGame {
   private pendingEnd: Omit<EndInfo, 'score'> | null = null;
   private timers: number[] = [];
   private pinFails: number[] = [];
-  private lastInfo = '';
+  private readonly lobby: LobbyPublisher;
 
   constructor(
     readonly room: string,
-    readonly opts: RoomOpts = { listed: false, pin: '' },
+    readonly opts: RoomOpts = { listed: false },
   ) {
     this.net = new HostNet(room, {
       onHello: (cid, h) => this.onHello(cid, h),
@@ -105,7 +105,7 @@ export class HostGame {
         this.rosterChanged();
       },
     });
-    if (opts.listed) this.net.signal.willClear = 'info';
+    this.lobby = new LobbyPublisher(this.net.signal, opts.listed);
   }
 
   async start() {
@@ -113,15 +113,14 @@ export class HostGame {
       this.onStatus(ok, t(ok ? 'status.ready' : 'status.reconnecting'));
       if (ok) this.publishInfo(true);
     };
-    window.addEventListener('pagehide', () => this.clearInfo());
+    window.addEventListener('pagehide', () => this.lobby.clear());
     this.startLoops();
     this.rosterChanged();
     try {
       await this.net.start();
       this.onStatus(true, t('status.ready'));
-      // 不公开时也清一次：同一房间码之前可能公开过
       if (this.opts.listed) this.publishInfo(true);
-      else this.clearInfo();
+      else this.lobby.clear();
     } catch {
       this.onStatus(false, t('status.failed'));
     }
@@ -161,7 +160,8 @@ export class HostGame {
     forgetBot(id);
   }
 
-  private pickTeam(want: number): Team | null {
+  /** 来自网络的 want 不可信：不是 0/1 一律按自动分队处理 */
+  private pickTeam(want: Team | 'auto'): Team | null {
     const max = CONFIG.maxPerTeam;
     const c0 = this.humans(0).length;
     const c1 = this.humans(1).length;
@@ -207,7 +207,7 @@ export class HostGame {
   }
 
   /** 无大屏模式：把本机作为一名球员加入 */
-  addLocal(name: string, team: number) {
+  addLocal(name: string, team: Team | 'auto') {
     const t = this.pickTeam(team) ?? 0;
     const s = this.addSlot({ name: name.slice(0, 12), team: t, bot: false, online: true, link: 'local' }, null);
     this.localPid = s.info.id;
@@ -219,13 +219,18 @@ export class HostGame {
     if (this.localPid >= 0) this.sim.setInput(this.localPid, inp);
   }
 
+  /** 该队还能再放几个人（真人之外的空位） */
+  private roomLeft(team: Team) {
+    return Math.max(0, CONFIG.maxPerTeam - this.humans(team).length);
+  }
+
   private botCount(team: Team) {
     return [...this.slots.values()].filter((s) => s.info.bot && s.info.team === team).length;
   }
 
   /** 每队应有的 AI 数：自动补位按人数差计算，手动模式按设置值；人+AI 不超过每队上限 */
   private wantBots(team: Team) {
-    const room = Math.max(0, CONFIG.maxPerTeam - this.humans(team).length);
+    const room = this.roomLeft(team);
     if (this.settings.autoFill) {
       const target = Math.min(CONFIG.maxPerTeam, Math.max(1, this.humans(0).length, this.humans(1).length));
       return Math.min(room, Math.max(0, target - this.humans(team).length));
@@ -253,7 +258,7 @@ export class HostGame {
       this.settings.autoFill = false;
       this.settings.bots = [this.botCount(0), this.botCount(1)];
     }
-    const room = Math.max(0, CONFIG.maxPerTeam - this.humans(team).length);
+    const room = this.roomLeft(team);
     this.settings.bots[team] = Math.max(0, Math.min(room, this.botCount(team) + delta));
     this.rosterChanged();
   }
@@ -289,25 +294,18 @@ export class HostGame {
   }
 
   // ---------- 公开大厅 ----------
-  /** 内容变化时发布保留消息；force 用于心跳刷新时间戳 */
+  /** 内容变化时发布；force 用于心跳刷新时间戳 */
   private publishInfo(force = false) {
-    if (!this.opts.listed) return;
-    const local = this.slots.get(this.localPid);
-    const info: Omit<LobbyInfo, 'ts'> = {
-      host: local?.info.name ?? '',
-      n: this.humans().filter((s) => s.info.online).length,
-      max: MAX_HUMANS,
-      playing: this.inMatch(),
-      lock: !!this.opts.pin,
-    };
-    const key = JSON.stringify(info);
-    if (!force && key === this.lastInfo) return;
-    this.lastInfo = key;
-    this.net.signal.pub('info', { ...info, ts: Date.now() }, true);
-  }
-
-  private clearInfo() {
-    this.net.signal.pub('info', new Uint8Array(0), true);
+    this.lobby.publish(
+      {
+        host: this.slots.get(this.localPid)?.info.name ?? '',
+        n: this.humans().filter((s) => s.info.online).length,
+        max: MAX_HUMANS,
+        playing: this.inMatch(),
+        lock: !!this.opts.pin,
+      },
+      force,
+    );
   }
 
   rosterChanged() {
@@ -475,7 +473,7 @@ export class HostGame {
         }
         if (changed) this.rosterChanged();
       }, 1000),
-      window.setInterval(() => this.publishInfo(true), 30000),
+      window.setInterval(() => this.publishInfo(true), LOBBY_HEARTBEAT_MS),
     );
   }
 
@@ -497,7 +495,7 @@ export class HostGame {
         case 'goal': {
           sfxGoal();
           const scorer = this.slots.get(ev.scorer)?.info.name ?? '';
-          this.goalText = ev.own ? t('play.ownGoal', { name: scorer }) : `${TEAM_NAME[ev.team]} · ${scorer}`;
+          this.goalText = goalText(ev.team, scorer, ev.own);
           this.broadcast({ t: 'ev', k: 'goal', team: ev.team, scorer, own: ev.own });
           break;
         }
@@ -521,7 +519,7 @@ export class HostGame {
   }
 
   close() {
-    this.clearInfo();
+    this.lobby.clear();
     this.timers.forEach(clearInterval);
     this.net.close();
   }

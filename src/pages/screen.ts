@@ -16,7 +16,7 @@ export function mountScreen(app: HTMLElement) {
     store.set('sfb.room', room, false);
   }
   const opts = roomOpts();
-  const qrUrl = joinUrl(room, opts.pin);
+  const qrUrl = joinUrl({ room, pin: opts.pin });
 
   app.innerHTML = `
   <div class="screen">
@@ -32,7 +32,7 @@ export function mountScreen(app: HTMLElement) {
         <canvas class="qr"></canvas>
         <div class="room-code">${room}</div>
         ${pinLineHtml(opts.pin)}
-        <div class="muted">${t('screen.orOpen')}<br><span class="url">${esc(joinUrl(room))}</span></div>
+        <div class="muted">${t('screen.orOpen')}<br><span class="url">${esc(joinUrl({ room }))}</span></div>
         <button class="ghost save-qr">${icon.download}${t('qr.save')}</button>
       </div>
       <div class="lobby-side">
@@ -112,7 +112,7 @@ export function mountScreen(app: HTMLElement) {
   }
 
   $('.start').onclick = () => game.startMatch();
-  $('.save-qr').onclick = () => saveQrCard(room, opts.pin);
+  $('.save-qr').onclick = () => saveQrCard({ room, pin: opts.pin });
   $('.fs').onclick = () => enterFullscreen();
   endBtn.onclick = () => {
     if (confirm(t('screen.confirmEnd'))) game.endMatch();

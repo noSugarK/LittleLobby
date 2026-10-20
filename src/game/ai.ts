@@ -26,15 +26,15 @@ export function forgetBot(id: number) {
 
 /** AI：离球最近的人去抢球，其余人按阵型跟随；难度影响速度、反应、射门精度和逼抢 */
 export function botInput(sim: Sim, p: SimPlayer, dt: number, level: BotLevel = 1): Input {
-  const L = LEVELS[level];
-  const r = decide(sim, p, dt, L);
-  if (!L.sprint) r.btn &= ~BTN_X;
-  r.jx *= L.speed;
-  r.jy *= L.speed;
+  const tuning = LEVELS[level];
+  const r = decide(sim, p, dt, tuning);
+  if (!tuning.sprint) r.btn &= ~BTN_X;
+  r.jx *= tuning.speed;
+  r.jy *= tuning.speed;
   return r;
 }
 
-function decide(sim: Sim, p: SimPlayer, dt: number, L: (typeof LEVELS)[number]): Input {
+function decide(sim: Sim, p: SimPlayer, dt: number, tuning: (typeof LEVELS)[number]): Input {
   let m = mem.get(p.id);
   if (!m) {
     m = { holdB: 0, releaseB: false, think: 0, noise: [0, 0], aimOff: 0 };
@@ -47,7 +47,7 @@ function decide(sim: Sim, p: SimPlayer, dt: number, L: (typeof LEVELS)[number]):
 
   m.think -= dt;
   if (m.think <= 0) {
-    m.think = L.think + Math.random() * 0.3;
+    m.think = tuning.think + Math.random() * 0.3;
     m.noise = [(Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30];
   }
 
@@ -98,7 +98,7 @@ function decide(sim: Sim, p: SimPlayer, dt: number, L: (typeof LEVELS)[number]):
     if (q.team === p.team) continue;
     const qd = Math.hypot(q.x - b.x, q.y - b.y);
     const pq = Math.hypot(q.x - p.x, q.y - p.y);
-    if (qd < F.PR + F.BR + 6 && pq < 55 && p.tackleCd <= 0 && Math.random() < L.tackle) btn |= BTN_Y;
+    if (qd < F.PR + F.BR + 6 && pq < 55 && p.tackleCd <= 0 && Math.random() < tuning.tackle) btn |= BTN_Y;
   }
 
   if (ahead > -4) {
@@ -121,9 +121,9 @@ function decide(sim: Sim, p: SimPlayer, dt: number, L: (typeof LEVELS)[number]):
   // 在球后方，带球推进
   const goalDist = Math.hypot(attackX - b.x, goalY - b.y);
   const facing = Math.cos(p.angle) * ax + Math.sin(p.angle) * ay;
-  if (goalDist < L.shootRange && facing > 0.85 && p.kickCd <= 0) {
+  if (goalDist < tuning.shootRange && facing > 0.85 && p.kickCd <= 0) {
     m.holdB = Math.min(0.8, 0.15 + goalDist / 700);
-    m.aimOff = (Math.random() - 0.5) * 2 * L.aimNoise;
+    m.aimOff = (Math.random() - 0.5) * 2 * tuning.aimNoise;
     m.releaseB = true;
     return { jx: ax, jy: ay, btn: BTN_B };
   }
@@ -132,7 +132,7 @@ function decide(sim: Sim, p: SimPlayer, dt: number, L: (typeof LEVELS)[number]):
   for (const q of sim.players.values()) {
     if (q.team !== p.team && Math.hypot(q.x - p.x, q.y - p.y) < 60) pressed = true;
   }
-  if (pressed && mates.length > 1 && Math.random() < L.pass) btn |= BTN_A;
+  if (pressed && mates.length > 1 && Math.random() < tuning.pass) btn |= BTN_A;
   return { jx: ax, jy: ay, btn };
 }
 

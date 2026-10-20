@@ -97,7 +97,13 @@ export function publicBase() {
 /** 创建房间时在首页选的选项，存在本标签页里，刷新后仍有效 */
 export interface RoomOpts {
   listed: boolean;
-  pin: string; // 空串表示无密码
+  pin?: string; // 没有则不设密码
+}
+
+/** 加入一个房间所需的信息 */
+export interface RoomRef {
+  room: string;
+  pin?: string;
 }
 
 export const isPin = (s: unknown): s is string => typeof s === 'string' && /^\d{4,6}$/.test(s);
@@ -105,14 +111,14 @@ export const isPin = (s: unknown): s is string => typeof s === 'string' && /^\d{
 export function roomOpts(): RoomOpts {
   try {
     const o = JSON.parse(store.get('sfb.roomopts', false) || '{}');
-    return { listed: !!o.listed, pin: isPin(o.pin) ? o.pin : '' };
+    return { listed: !!o.listed, pin: isPin(o.pin) ? o.pin : undefined };
   } catch {
-    return { listed: false, pin: '' };
+    return { listed: false };
   }
 }
 
 /** 二维码地址：带上密码，扫码的人无需再输入（hash 部分不会发给任何服务器） */
-export function joinUrl(room: string, pin = '') {
+export function joinUrl({ room, pin }: RoomRef) {
   return `${publicBase()}#/join/${room}${pin ? `?pin=${pin}` : ''}`;
 }
 

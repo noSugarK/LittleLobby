@@ -18,7 +18,7 @@ export function playerTag(p: PlayerInfo): string {
 }
 
 /** 房间密码一行；没有密码时为空 */
-export function pinLineHtml(pin: string): string {
+export function pinLineHtml(pin?: string): string {
   return pin ? `<div class="pin-line">${t('play.pinLine')} <b>${pin}</b></div>` : '';
 }
 

@@ -1,7 +1,7 @@
 // 保存房间二维码：生成带 logo 的分享卡片（PNG），手机走系统分享（可存相册），电脑直接下载
 import QRCode from 'qrcode';
 import { t } from '../i18n';
-import { brand, joinUrl } from './util';
+import { brand, joinUrl, type RoomRef } from './util';
 
 const W = 720;
 const PAD = 56;
@@ -18,11 +18,12 @@ function loadImage(src: string) {
   });
 }
 
-export async function renderQrCard(room: string, pin: string): Promise<HTMLCanvasElement> {
+export async function renderQrCard(ref: RoomRef): Promise<HTMLCanvasElement> {
+  const { room, pin } = ref;
   const [logo, mark] = await Promise.all([loadImage(brand('logo.png')), loadImage(brand('icon.png'))]);
   // 中心要盖图标，用最高纠错等级 H（可容忍约 30% 遮挡）
   const qr = document.createElement('canvas');
-  await QRCode.toCanvas(qr, joinUrl(room, pin), { errorCorrectionLevel: 'H', width: QR, margin: 1, color: { dark: FG, light: '#ffffff' } });
+  await QRCode.toCanvas(qr, joinUrl(ref), { errorCorrectionLevel: 'H', width: QR, margin: 1, color: { dark: FG, light: '#ffffff' } });
 
   const logoW = 380;
   const logoH = Math.round((logo.height / logo.width) * logoW);
@@ -70,8 +71,9 @@ export async function renderQrCard(room: string, pin: string): Promise<HTMLCanva
   return c;
 }
 
-export async function saveQrCard(room: string, pin: string) {
-  const canvas = await renderQrCard(room, pin);
+export async function saveQrCard(ref: RoomRef) {
+  const canvas = await renderQrCard(ref);
+  const { room } = ref;
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
   if (!blob) return;
   const file = new File([blob], `scankick-${room}.png`, { type: 'image/png' });

@@ -43,14 +43,14 @@ export async function openScanner(root: HTMLElement): Promise<void> {
   el.querySelector<HTMLElement>('.scan-close')!.onclick = close;
 
   /** 识别一帧；是本游戏的码就跳转并返回 true */
-  const decode = async (src: CanvasImageSource, w: number, h: number, both = false) => {
-    // 缩到最长边 maxSide 再识别：摄像头 640 足够快，照片给 1200 保留细节
-    const k = Math.min(1, (both ? 1200 : 640) / Math.max(w, h));
+  const decode = async (src: CanvasImageSource, w: number, h: number, fromPhoto = false) => {
+    // 缩小后再识别：摄像头最长边 640 足够快，照片给 1200 保留细节
+    const k = Math.min(1, (fromPhoto ? 1200 : 640) / Math.max(w, h));
     canvas.width = Math.round(w * k);
     canvas.height = Math.round(h * k);
     ctx.drawImage(src, 0, 0, canvas.width, canvas.height);
     const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = (await jsqr)(img.data, img.width, img.height, { inversionAttempts: both ? 'attemptBoth' : 'dontInvert' });
+    const code = (await jsqr)(img.data, img.width, img.height, { inversionAttempts: fromPhoto ? 'attemptBoth' : 'dontInvert' });
     if (!code?.data) return false;
     const hash = joinHashFromQr(code.data);
     if (hash) {

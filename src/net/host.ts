@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import type { RejectReason } from '../game/types';
+import type { RejectReason, Team } from '../game/types';
 import { Signal, isJson, parseJson } from './signal';
 
 export type LinkMode = 'connecting' | 'p2p' | 'relay';
@@ -9,7 +9,7 @@ export interface Hello {
   cid: string;
   token: string;
   name: string;
-  team: number;
+  team: Team | 'auto';
   pin?: string;
 }
 
