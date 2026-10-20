@@ -18,8 +18,15 @@ export function mountHome(app: HTMLElement) {
   <div class="site home">
     <header class="site-hero">
       <div class="site-bar"><span class="brand"><img class="logo-light" src="${brand('logo-white-sm.png')}" alt="ScanKick"><img class="logo-dark" src="${brand('logo-dark-sm.png')}" alt="ScanKick"></span>${siteTools()}</div>
-      <h1>${t('app.name')}</h1>
-      <p>${t('app.tagline')}</p>
+      <div class="hero-body">
+        <div class="hero-text">
+          <h1>${t('app.name')}</h1>
+          <p>${t('app.tagline')}</p>
+          <p class="hero-desc">${t('app.desc')}</p>
+        </div>
+        <img class="hero-icon logo-light" src="${brand('icon-white.png')}" alt="">
+        <img class="hero-icon logo-dark" src="${brand('icon-dark.png')}" alt="">
+      </div>
     </header>
     <main class="site-main">
       <div class="home-card">
@@ -30,6 +37,7 @@ export function mountHome(app: HTMLElement) {
         </div>
 
         <section data-pane="host">
+          <h2 class="pane-title">${t('tab.host')}</h2>
           <label class="opt-row"><span>${icon.globe}${t('host.listed')}</span>
             <input type="checkbox" class="switch opt-listed"></label>
           <label class="pin-field">${icon.lock}<input class="opt-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="${t('host.pin')}"></label>
@@ -39,6 +47,7 @@ export function mountHome(app: HTMLElement) {
         </section>
 
         <section data-pane="join">
+          <h2 class="pane-title">${t('tab.join')}</h2>
           <button class="scan-btn">${icon.scan}<b>${t('join.scan')}</b><small>${t('join.scanDesc')}</small></button>
           <div class="divider"><span>${t('join.or')}</span></div>
           <form class="code-form">
@@ -51,6 +60,7 @@ export function mountHome(app: HTMLElement) {
         </section>
 
         <section data-pane="lobby">
+          <h2 class="pane-title">${t('tab.lobby')} <span class="count"></span></h2>
           <div class="lobby-table" role="table">
             <div class="lrow lhead" role="row"><span>${t('lobby.room')}</span><span>${t('lobby.host')}</span><span>${t('lobby.players')}</span><span>${t('lobby.state')}</span></div>
             <div class="lbody"></div>
@@ -132,7 +142,7 @@ export function mountHome(app: HTMLElement) {
   // ---------- 公开大厅：订阅所有房间的保留消息 ----------
   const rooms = new Map<string, LobbyInfo>();
   const body = $('.lbody');
-  const countEl = $('.count');
+  const countEls = app.querySelectorAll<HTMLElement>('.count');
   let state: 'loading' | 'ready' | 'failed' = 'loading';
 
   function render() {
@@ -140,7 +150,7 @@ export function mountHome(app: HTMLElement) {
     const list = [...rooms.entries()].filter(([, r]) => now - r.ts < STALE_MS);
     // 可加入的在前，其次按人数
     list.sort(([, a], [, b]) => Number(a.n >= a.max) - Number(b.n >= b.max) || Number(a.playing) - Number(b.playing) || b.n - a.n);
-    countEl.textContent = list.length ? String(list.length) : '';
+    countEls.forEach((el) => (el.textContent = list.length ? String(list.length) : ''));
     if (!list.length) {
       const key = state === 'failed' ? 'lobby.failed' : state === 'loading' ? 'lobby.loading' : 'lobby.empty';
       body.innerHTML = `<div class="lempty">${t(key)}</div>`;

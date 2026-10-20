@@ -857,7 +857,7 @@ h1 {
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
-.tabs .count:not(:empty) {
+.site .count:not(:empty) {
   display: inline-block;
   min-width: 18px;
   padding: 0 5px;
@@ -1413,4 +1413,84 @@ h1 {
   bottom: 16px;
   height: 26px;
   z-index: 1;
+}
+
+/* 首页宽屏：三栏并排，不用分页 */
+.hero-desc,
+.hero-icon,
+.pane-title {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .site-hero {
+    padding: 16px 32px 104px;
+  }
+  .site-hero > * {
+    max-width: 1120px;
+  }
+  .hero-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    margin-top: 32px;
+  }
+  .site-hero h1 {
+    font-size: 48px;
+    margin: 0 0 8px;
+  }
+  .site-hero p {
+    font-size: 18px;
+  }
+  .site-hero .hero-desc {
+    display: block;
+    margin-top: 10px;
+    font-size: 15px;
+    opacity: 0.75;
+  }
+  .site .hero-icon.logo-light,
+  [data-theme='dark'] .site .hero-icon.logo-dark {
+    display: block;
+    height: 168px;
+    width: auto;
+  }
+  [data-theme='dark'] .site .hero-icon.logo-light {
+    display: none;
+  }
+  .site-main {
+    width: min(1184px, 100%);
+    padding: 0 32px 32px;
+  }
+  .home-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.3fr;
+    margin-top: -64px;
+    padding: 0;
+  }
+  .home-card .tabs {
+    display: none;
+  }
+  .home-card [data-pane],
+  .home-card [data-pane][hidden] {
+    display: flex;
+    padding: 20px;
+  }
+  .home-card [data-pane] + [data-pane] {
+    border-left: 1px solid var(--s-line);
+  }
+  .pane-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 2px;
+    font-size: 16px;
+  }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .site-hero > * {
+    max-width: 560px;
+  }
+  .site-main {
+    width: min(560px, 100%);
+  }
 }
