@@ -1,5 +1,5 @@
 import './adventure.css';
-import { AdventureGame, CHARACTERS, LEVELS, validSkin, type AdventureInput, type AdventureView } from '../game/adventure';
+import { AdventureGame, CHARACTERS, LEVELS, MAP_THEMES, validSkin, type AdventureInput, type AdventureView } from '../game/adventure';
 import { AdventureRenderer, drawAvatar, loadCharacterSprites } from '../game/adventure-render';
 import { AdventureHost } from '../net/adventure-host';
 import { ClientNet } from '../net/client';
@@ -13,7 +13,7 @@ import { sfxAdventure, unlockAudio } from '../ui/sound';
 
 const storedSkin = () => { const value = Number(store.get('adventure.skin')); return validSkin(value) ? value : 0; };
 const logo = `<span class="adv-logo-flower" aria-hidden="true">✿</span><span>软乎乎冒险<small>little picnic club</small></span>`;
-const nav = `<nav class="adv-nav"><a class="adv-brand" href="#/adventure">${logo}</a><div><a href="#/">回到开踢</a><button class="adv-full" aria-label="进入全屏">全屏 ↗</button></div></nav>`;
+const nav = `<nav class="adv-nav"><a class="adv-brand" href="#/adventure">${logo}</a><div><a href="#/">回到小聚场</a><button class="adv-full" aria-label="进入全屏">全屏 ↗</button></div></nav>`;
 const choices = () => CHARACTERS.map((c, i) => `<button class="adv-character" data-skin="${i}" aria-pressed="false" aria-label="选择${c.name}，${c.subtitle}"><canvas aria-hidden="true"></canvas><b>${c.name}</b><small>${c.subtitle.split(' · ')[1]}</small></button>`).join('');
 async function avatars(root: HTMLElement) {
   await loadCharacterSprites();
@@ -25,16 +25,16 @@ function selected(root: HTMLElement, skin: number) {
 }
 
 export async function mountAdventureMenu(app: HTMLElement) {
-  document.title = '软乎乎冒险 · ScanKick';
+  document.title = '软乎乎冒险 · Little Lobby';
   let skin = storedSkin();
-  app.innerHTML = `<main class="adventure adv-menu">${nav}<section class="adv-hero"><div class="adv-welcome"><span class="adv-eyebrow">A TINY ADVENTURE, TOGETHER</span><h1>今天，和谁<br>一起去<span>冒险？</span></h1><p>踩着软软的草地，捡一点小点心。<br>跳过小水洼，和朋友在终点碰头。</p><div class="adv-menu-actions"><a class="adv-primary" href="#/adventure-host?solo=1">一个人先逛逛 <span>→</span></a><a class="adv-secondary" href="${isLanPage() ? `#/join/${window.__SCANKICK_LAN__!.room}?lan=1&game=adventure` : `#/adventure-host${isNativeApp() ? '?lan=1' : ''}`}">${isLanPage() ? '回到朋友的房间' : isNativeApp() ? '和朋友离线出发' : '和朋友一起玩'} <span>↗</span></a></div><small class="adv-network-note">${isNativeApp() || isLanPage() ? '同一个 Wi-Fi / 热点，扫码就能一起玩，无需外网。' : '单人无需联网 · 离线联机请用原生应用开房，朋友手机扫码加入。'}</small></div><div class="adv-preview"><span class="adv-sticker">没有淘汰，只有再试一次 ♡</span><canvas class="adv-preview-canvas" aria-label="可爱角色和平台关卡预览"></canvas><div class="adv-preview-caption"><span>01 / 莓莓散步道</span><span>跳一跳 · 收集 · 一起到终点</span></div></div></section><section class="adv-wardrobe"><div><span class="adv-eyebrow">PICK YOUR LITTLE BUDDY</span><h2>挑一位小伙伴</h2><p>随时换角色，点心和小世界也跟着换装。</p><strong class="adv-theme-label"></strong></div><div class="adv-character-grid">${choices()}</div></section><section class="adv-trip"><span>✦ 三站小旅行</span>${LEVELS.map((l, i) => `<span><b>0${i + 1}</b>${l.name}</span>`).join('')}<span>1–8 人 · 检查点复活</span></section><p class="adv-original">一二与布布 · PNG 角色帧动画 · 每个人都能选择自己的角色和世界配色</p></main>`;
+  app.innerHTML = `<main class="adventure adv-menu">${nav}<section class="adv-hero"><div class="adv-welcome"><span class="adv-eyebrow">A TINY ADVENTURE, TOGETHER</span><h1>今天，和谁<br>一起去<span>冒险？</span></h1><p>踩着软软的草地，捡一点小点心。<br>跳过小水洼，和朋友在终点碰头。</p><div class="adv-menu-actions"><a class="adv-primary" href="#/adventure-host?solo=1">一个人先逛逛 <span>→</span></a><a class="adv-secondary" href="${isLanPage() ? `#/join/${window.__SCANKICK_LAN__!.room}?lan=1&game=adventure` : `#/adventure-host${isNativeApp() ? '?lan=1' : ''}`}">${isLanPage() ? '回到朋友的房间' : isNativeApp() ? '和朋友离线出发' : '和朋友一起玩'} <span>↗</span></a></div><small class="adv-network-note">${isNativeApp() || isLanPage() ? '同一个 Wi-Fi / 热点，扫码就能一起玩，无需外网。' : '单人无需联网 · 离线联机请用原生应用开房，朋友手机扫码加入。'}</small></div><div class="adv-preview"><span class="adv-sticker">没有淘汰，只有再试一次 ♡</span><canvas class="adv-preview-canvas" aria-label="可爱角色和平台关卡预览"></canvas><div class="adv-preview-caption"><span>01 / 莓莓散步道</span><span>跳一跳 · 收集 · 一起到终点</span></div></div></section><section class="adv-wardrobe"><div><span class="adv-eyebrow">PICK YOUR LITTLE BUDDY</span><h2>挑一位小伙伴</h2><p>随时换角色，在同一张地图一起冒险。</p><strong class="adv-theme-label"></strong></div><div class="adv-character-grid">${choices()}</div></section><section class="adv-trip"><span>✦ 三站小旅行</span>${LEVELS.map((l, i) => `<span><b>0${i + 1}</b>${l.name}</span>`).join('')}<span>1–8 人 · 检查点复活</span></section><p class="adv-original">一二与布布 · PNG 角色帧动画 · 每个人都能选择自己喜欢的角色</p></main>`;
   try { await avatars(app); }
   catch (error) { app.querySelector('.adv-preview-caption')!.textContent = String(error); return; }
   const renderer = new AdventureRenderer(app.querySelector('canvas.adv-preview-canvas')!);
   const preview = new AdventureGame(); preview.add(1, CHARACTERS[skin].name, skin);
   const update = () => {
     selected(app.querySelector('.adventure')!, skin);
-    app.querySelector('.adv-theme-label')!.textContent = `${CHARACTERS[skin].subtitle} / 收集${CHARACTERS[skin].item}`;
+    app.querySelector('.adv-theme-label')!.textContent = `${CHARACTERS[skin].name} · 地图由房主选择`;
     preview.skin(1, skin); preview.players.get(1)!.name = CHARACTERS[skin].name;
   };
   update();
@@ -48,7 +48,7 @@ export async function mountAdventureMenu(app: HTMLElement) {
 
 interface AdventureMode { host?: boolean; solo?: boolean; lan?: boolean; room?: string; server?: string; }
 export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
-  document.title = '软乎乎冒险 · ScanKick';
+  document.title = '软乎乎冒险 · Little Lobby';
   let skin = storedSkin(), host: AdventureHost | null = null, client: ClientNet | LanClient | null = null;
   let state: AdventureView | null = null, previous: AdventureView | null = null, received = 0, pid = -1;
   let closed = false, frame = 0, timer = 0, seq = 0, lastEpoch = -1, sound = true;
@@ -76,7 +76,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   const renderer = new AdventureRenderer($<HTMLCanvasElement>('.adv-canvas'));
   const setSkin = () => {
     selected($('.adventure'), skin);
-    $('.adv-current-theme').textContent = `${CHARACTERS[skin].name} · ${CHARACTERS[skin].item}主题`;
+    $('.adv-current-theme').textContent = `${CHARACTERS[skin].name} · 角色装扮`;
     initial.skin(1, skin);
     if (host?.localId !== undefined) { host.game.skin(host.localId, skin); host.publish(); }
     if (client?.linked) client.sendJson({ t: 'adventure-skin', skin });
@@ -150,7 +150,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     if (won && previous?.phase === 'playing' && sound) sfxAdventure('clear');
     $('.adv-level-name').textContent = level.name; $('.adv-level-number').textContent = `0${state.level + 1} / 03`;
     $('.adv-hearts').textContent = me ? '♥ '.repeat(me.hearts) + '♡ '.repeat(3 - me.hearts) : '♡ 一起散步';
-    $('.adv-treat-count').textContent = `${CHARACTERS[skin].item} ${me?.coins.length ?? 0} / ${level.coins.length}`;
+    $('.adv-treat-count').textContent = `${MAP_THEMES[state.level].item} ${me?.coins.length ?? 0} / ${level.coins.length}`;
     $('.adv-star-count').textContent = `✦ ${state.stars.length} / 3`;
     $('.adv-time').textContent = `${String(Math.floor(state.time / 60)).padStart(2, '0')}:${String(Math.floor(state.time) % 60).padStart(2, '0')}`;
     $('.adv-progress').textContent = state.paused ? '主机在后台，旅行暂停中' : me?.reached ? '你已到达，等小伙伴来野餐 ♡' : state.stars.length === 3 ? '小屋开门了！去终点集合 →' : '找齐三颗星星，去小屋集合';

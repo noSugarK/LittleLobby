@@ -1,5 +1,5 @@
 import { drawBuddyImage, type BuddyAction } from './adventure-sprites';
-import { CHARACTERS, LEVELS, enemyX, type AdventureView } from './adventure';
+import { MAP_THEMES, LEVELS, enemyX, type AdventureView } from './adventure';
 
 const INK = '#70594f';
 function round(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number, fill: string, stroke = '') {
@@ -54,8 +54,8 @@ export class AdventureRenderer {
     this.canvas.width = Math.round(this.width * this.dpr); this.canvas.height = Math.round(this.height * this.dpr);
   }
   close() { this.observer.disconnect(); }
-  draw(s: AdventureView, skin: number) {
-    const ctx = this.ctx, theme = CHARACTERS[skin], level = LEVELS[s.level];
+  draw(s: AdventureView, _skin: number) {
+    const ctx = this.ctx, theme = MAP_THEMES[s.level], level = LEVELS[s.level];
     const now = performance.now(), dt = Math.min(.05, (now - this.last) / 1000); this.last = now;
     const scale = this.height / 460, worldWidth = this.width / scale;
     const me = s.players.find((p) => p.id === s.me);
@@ -96,7 +96,7 @@ export class AdventureRenderer {
         oval(ctx, x, r.y - 19, 3, 3, '#eec888');
       }
     }
-    level.coins.forEach((item, i) => { if (!me?.coins.includes(i)) drawTreat(ctx, item.x, item.y + Math.sin(now / 380 + i) * 3, skin, .8); });
+    level.coins.forEach((item, i) => { if (!me?.coins.includes(i)) drawTreat(ctx, item.x, item.y + Math.sin(now / 380 + i) * 3, theme.treat, .8); });
     level.stars.forEach((item, i) => {
       if (s.stars.includes(i)) return;
       oval(ctx, item.x, item.y + 3, 24, 24, '#fff4c480'); star(ctx, item.x, item.y + Math.sin(now / 400) * 4, 17, '#f6d47a');

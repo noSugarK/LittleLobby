@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ScanKick",
+  "productName": "Little Lobby",
   "version": "0.1.0-beta.5",
   "identifier": "io.github.nosugark.scankick",
   "build": {
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "开踢 · ScanKick",
+        "title": "小聚场 · Little Lobby",
         "width": 1280,
         "height": 800,
         "resizable": true,

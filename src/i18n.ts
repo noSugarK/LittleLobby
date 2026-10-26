@@ -2,9 +2,9 @@
 import { store } from './ui/util';
 
 const zhCN = {
-  'app.name': '开踢',
-  'app.tagline': '手机当手柄，随时来一场',
-  'app.desc': '大屏开房间，手机扫码当手柄，最多 4v4 实时对战',
+  'app.name': '小聚场',
+  'app.tagline': '朋友碰头，随时一起开玩',
+  'app.desc': '选个游戏，手机扫码入场；同一 Wi-Fi，就能一起玩',
   'theme.toLight': '切换到浅色',
   'theme.toDark': '切换到深色',
   'lang.label': '语言',
@@ -23,7 +23,7 @@ const zhCN = {
   'lan.address': '入场地址（选择玩家可访问的网卡）',
   'lan.noAddress': '尚未检测到局域网地址，请连接 Wi-Fi 或开启热点后重新开房。',
   'lan.starting': '正在启动局域网房间…',
-  'lan.appRequired': '请使用开踢应用创建局域网房间。',
+  'lan.appRequired': '请使用小聚场应用创建局域网房间。',
   'lan.startFailed': '局域网服务启动失败',
   'lan.disconnected': '局域网连接已断开，请检查主机或重新开房',
   'lan.joinHint': '连接同一 Wi-Fi 或热点，大厅会自动搜索房间。点击房间即可在应用内加入，无需自己开房。也可粘贴主机入场地址并填写房间码，或粘贴完整邀请链接。',
@@ -36,9 +36,9 @@ const zhCN = {
   'tab.lobby': '大厅',
 
   'host.screen': '大屏开房',
-  'host.screenDesc': '电视或电脑显示比赛',
+  'host.screenDesc': '电视或电脑作为聚会大屏',
   'host.phone': '手机开房',
-  'host.phoneDesc': '边当主机边踢',
+  'host.phoneDesc': '创建房间，自己也一起玩',
   'host.listed': '展示在公开大厅',
   'host.pin': '房间密码（可选，4–6 位数字）',
   'host.pinBad': '密码需为 4–6 位数字',
@@ -256,9 +256,9 @@ const zhCN = {
 type Dict = Record<keyof typeof zhCN, string>;
 
 const zhTW: Dict = {
-  'app.name': '開踢',
-  'app.tagline': '手機當手把，隨時來一場',
-  'app.desc': '大螢幕開房間，手機掃碼當手把，最多 4v4 即時對戰',
+  'app.name': '小聚場',
+  'app.tagline': '朋友碰頭，隨時一起開玩',
+  'app.desc': '選個遊戲，手機掃碼入場；同一 Wi-Fi，就能一起玩',
   'theme.toLight': '切換到淺色',
   'theme.toDark': '切換到深色',
   'lang.label': '語言',
@@ -290,9 +290,9 @@ const zhTW: Dict = {
   'tab.lobby': '大廳',
 
   'host.screen': '大螢幕開房',
-  'host.screenDesc': '電視或電腦顯示比賽',
+  'host.screenDesc': '電視或電腦作為聚會大螢幕',
   'host.phone': '手機開房',
-  'host.phoneDesc': '邊當主機邊踢',
+  'host.phoneDesc': '建立房間，自己也一起玩',
   'host.listed': '展示在公開大廳',
   'host.pin': '房間密碼（選填，4–6 位數字）',
   'host.pinBad': '密碼需為 4–6 位數字',
@@ -508,9 +508,9 @@ const zhTW: Dict = {
 };
 
 const en: Dict = {
-  'app.name': 'ScanKick',
-  'app.tagline': 'Scan to play, your phone is the gamepad',
-  'app.desc': 'Host on a big screen, scan with phones, up to 4v4 in real time',
+  'app.name': 'Little Lobby',
+  'app.tagline': 'A little lobby. A lot of fun together.',
+  'app.desc': 'Pick a game, scan to join, and play together on the same Wi-Fi',
   'theme.toLight': 'Switch to light theme',
   'theme.toDark': 'Switch to dark theme',
   'lang.label': 'Language',
@@ -529,7 +529,7 @@ const en: Dict = {
   'lan.address': 'Join address (choose the reachable network interface)',
   'lan.noAddress': 'No LAN address found. Connect to Wi-Fi or enable a hotspot, then create a new room.',
   'lan.starting': 'Starting local room…',
-  'lan.appRequired': 'Use the ScanKick app to host a local room.',
+  'lan.appRequired': 'Use the Little Lobby app to host a local room.',
   'lan.startFailed': 'Could not start the LAN server',
   'lan.disconnected': 'LAN disconnected. Check the host or create a new room.',
   'lan.joinHint': 'Connect to the same Wi-Fi or hotspot. The lobby finds rooms automatically; select one to join in this app without hosting. You can also paste the host address and enter its room code, or paste a full invite link.',
@@ -542,7 +542,7 @@ const en: Dict = {
   'tab.lobby': 'Lobby',
 
   'host.screen': 'Host on big screen',
-  'host.screenDesc': 'TV or computer shows the match',
+  'host.screenDesc': 'Show the room and game on a big screen',
   'host.phone': 'Host on phone',
   'host.phoneDesc': 'Host and play at once',
   'host.listed': 'Show in public lobby',
@@ -560,7 +560,7 @@ const en: Dict = {
   'scan.close': 'Close',
   'scan.denied': 'Camera access is blocked. Allow it in browser settings and try again.',
   'scan.unsupported': "This browser can't use the camera (HTTPS required).",
-  'scan.notOurs': "That's not a ScanKick QR code.",
+  'scan.notOurs': "That's not a Little Lobby QR code.",
   'scan.loading': 'Opening camera…',
   'scan.upload': 'Choose a photo',
   'scan.noCode': 'No QR code found in that image.',

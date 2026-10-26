@@ -27,6 +27,7 @@ export function fmtTime(sec: number) {
 }
 
 export class Renderer {
+  private observer: ResizeObserver;
   private ctx: CanvasRenderingContext2D;
   private dpr = 1;
   private w = 0;
@@ -41,10 +42,12 @@ export class Renderer {
 
   constructor(readonly canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
-    const ro = new ResizeObserver(() => this.resize());
-    ro.observe(canvas);
+    this.observer = new ResizeObserver(() => this.resize());
+    this.observer.observe(canvas);
     this.resize();
   }
+
+  close() { this.observer.disconnect(); }
 
   private resize() {
     this.dpr = Math.min(2, window.devicePixelRatio || 1);

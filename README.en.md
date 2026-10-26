@@ -1,12 +1,16 @@
+# Little Lobby · 小聚场
+
+A local party game collection with football and Cozy Adventure. Host on a big screen or join as a player, scan in with phones, and switch games and maps in the same room. Offline LAN play uses the native app. Internal package and repository names remain ScanKick.
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="public/brand/logo-dark.png">
-    <img src="public/brand/logo.png" alt="ScanKick" width="400">
+    <img src="public/brand/logo.png" alt="Little Lobby" width="400">
   </picture>
 </p>
 
 <p align="center">
-  <b>Multiplayer football for up to 4v4: host on a big screen, scan in, and play with your phone as the gamepad.</b><br>
+  <b>Pick a game, scan in, and play together. Football supports up to 4v4; Cozy Adventure supports up to 8 players.</b><br>
   No backend server: open the page and kick off. Windows, macOS, Linux, and Android apps add offline LAN play.
 </p>
 

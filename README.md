@@ -1,13 +1,17 @@
+# 小聚场 · Little Lobby
+
+朋友线下聚会的多游戏平台。选择开踢或软乎乎冒险，沿用大屏／手机开房、扫码加入；同一房间可切换游戏和地图。内部工程名与仓库地址暂保留 ScanKick。
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="public/brand/logo-dark.png">
-    <img src="public/brand/logo.png" alt="ScanKick" width="400">
+    <img src="public/brand/logo.png" alt="小聚场 Little Lobby" width="400">
   </picture>
 </p>
 
 <p align="center">
-  <b>开踢 · ScanKick</b><br>
-  <b>大屏开房，手机扫码当手柄，最多 4v4 实时对战的多人足球。</b><br>
+  <b>小聚场 · Little Lobby</b><br>
+  <b>大屏开房，手机扫码入场；足球组队对战，或一起冒险闯关。</b><br>
   无需后端服务器，打开网页就能踢；也提供 Windows / macOS / Linux / Android 应用，支持断网局域网对战。
 </p>
 

@@ -27,6 +27,33 @@ const { LanClient } = await import('../src/net/lan-client.ts');
 const { lanJoinHash, lanSocketUrl } = await import('../src/net/lan-session.ts');
 const info = { token: 'player', name: 'P', team: 'auto' };
 
+test('局域网大厅即使没有游戏快照也持续发送心跳', async () => {
+  const original = { window: globalThis.window, WebSocket: globalThis.WebSocket, performance: globalThis.performance };
+  let timer, ws, now = 0;
+  const sent = [];
+  globalThis.performance = { now: () => now };
+  globalThis.window = { setTimeout: (callback) => { timer = callback; return 0; } };
+  globalThis.WebSocket = class {
+    static OPEN = 1;
+    readyState = 1;
+    constructor() { ws = this; }
+    send(raw) { sent.push(JSON.parse(raw)); }
+    close() { this.readyState = 3; this.onclose?.(); }
+  };
+  const client = new LanClient('ABCDE', info, 'http://192.168.1.2:12345');
+  try {
+    await client.start(); ws.onopen();
+    ws.onmessage({ data: JSON.stringify({ t: 'welcome', game: 'party', pid: 1 }) });
+    for (let i = 0; i < 20; i++) {
+      now += 2000; timer();
+      assert.equal(sent.at(-1).t, 'ping');
+      ws.onmessage({ data: JSON.stringify({ t: 'pong' }) });
+      assert.equal(client.linked, true);
+    }
+    now += 7000; timer(); assert.equal(client.state, 'lost', '真正失联仍会触发重连');
+  } finally { client.close(); Object.assign(globalThis, original); }
+});
+
 test('应用局域网大厅传递远端主机地址，重连仍使用同一主机', async () => {
   const original = { window: globalThis.window, location: globalThis.location, WebSocket: globalThis.WebSocket };
   const urls = [];

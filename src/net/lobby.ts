@@ -10,6 +10,8 @@ export interface LobbyInfo {
   playing: boolean;
   lock: boolean;
   ts: number; // 发布时间，用来过滤失效房间
+  game?: 'football' | 'adventure';
+  map?: number;
 }
 
 const TOPIC = 'info';
@@ -54,6 +56,8 @@ function parseLobbyInfo(payload: Uint8Array): LobbyInfo | null {
     playing: !!r.playing,
     lock: !!r.lock,
     ts: r.ts,
+    game: r.game === 'adventure' ? 'adventure' : 'football',
+    map: Number.isInteger(r.map) && Number(r.map) >= 0 && Number(r.map) < 3 ? r.map : 0,
   };
 }
 

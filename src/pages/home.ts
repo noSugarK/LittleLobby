@@ -5,11 +5,15 @@ import { bindSiteTools, icon, siteFooter, siteTools } from '../ui/site';
 import { HISTORY_KEY, brand, esc, isPin, normalizeCode, store } from '../ui/util';
 import { isLanPage, isNativeApp, stopLan } from '../net/lan-session';
 import { bindLanLobby, lanLobbyHtml } from '../ui/lan-lobby';
+import { GAMES, gameInfo, validGame, type GameId } from '../room/catalog';
+import './room.css';
 
 const CODE_LEN = 5;
 type Tab = 'host' | 'join' | 'lobby';
 
 export function mountHome(app: HTMLElement) {
+  const savedGame = store.get('littlelobby.game');
+  let selectedGame: GameId = validGame(savedGame) ? savedGame : 'football';
   const native = isNativeApp();
   const lan = isLanPage() || (native && store.get('sfb.network') !== 'online');
   if (native) void stopLan().catch(() => {});
@@ -22,7 +26,7 @@ export function mountHome(app: HTMLElement) {
   app.innerHTML = `
   <div class="site home${native || isLanPage() ? ' app-home' : ''}">
     <header class="site-hero">
-      <div class="site-bar"><span class="brand"><img class="logo-light" src="${brand('logo-white-sm.png')}" alt="${t('app.name')}"><img class="logo-dark" src="${brand('logo-dark-sm.png')}" alt="${t('app.name')}"></span>${siteTools()}</div>
+      <div class="site-bar"><span class="party-home-title">${t('app.name')}<small>LITTLE LOBBY</small></span>${siteTools()}</div>
       <div class="hero-body">
         <div class="hero-text">
           <h1>${t('app.name')}</h1>
@@ -34,6 +38,7 @@ export function mountHome(app: HTMLElement) {
       </div>
     </header>
     <main class="site-main">
+      <div class="party-game-selectors" role="group" aria-label="选择游戏">${GAMES.map((game) => `<button class="party-game-choice" data-game="${game.id}" aria-pressed="${selectedGame === game.id}"><span>${game.icon}</span><b>${game.name}</b><small>${game.caption}</small><small>${game.players}</small></button>`).join('')}</div>
       <div class="home-card">
         ${native ? `<div class="network-mode seg" role="group" aria-label="${t('lan.mode')}"><button data-network="online" class="${lan ? '' : 'on'}">${t('lan.online')}</button><button data-network="lan" class="${lan ? 'on' : ''}">${t('lan.local')}</button></div>` : ''}
         ${lan ? `<p class="hint lan-hint">${t('lan.hint')}</p>` : ''}
@@ -45,6 +50,7 @@ export function mountHome(app: HTMLElement) {
 
         <section data-pane="host">
           <h2 class="pane-title">${t('tab.host')}</h2>
+          <p class="party-selected-game">当前选择：<strong>${gameInfo(selectedGame).name}</strong> · 进入房间后房主也能切换</p>
           <div ${lan ? 'hidden' : ''}><label class="opt-row"><span>${icon.globe}${t('host.listed')}</span>
             <input type="checkbox" class="switch opt-listed"></label></div>
           <label class="pin-field">${icon.lock}<input class="opt-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="${t('host.pin')}"></label>
@@ -79,7 +85,7 @@ export function mountHome(app: HTMLElement) {
           <p class="hint" ${lan ? 'hidden' : ''}>${t('lobby.hint')}</p>
         </section>
       </div>
-      <a class="guide-link" href="#/adventure">${icon.stick}<span>软乎乎冒险 <small>换个小伙伴，一起跳跳闯关</small></span>${icon.right}</a>
+      <a class="guide-link" href="#/adventure-host?solo=1">${icon.stick}<span>一个人先逛逛 <small>软乎乎冒险 · 单人试玩</small></span>${icon.right}</a>
       <a class="guide-link" href="#/guide">${icon.book}<span>${t('guide.cta')}</span>${icon.right}</a>
     </main>
     ${siteFooter()}
@@ -87,6 +93,15 @@ export function mountHome(app: HTMLElement) {
 
   const $ = <T extends HTMLElement>(s: string) => app.querySelector(s) as T;
   bindSiteTools(app);
+  app.querySelectorAll<HTMLButtonElement>('[data-game]').forEach((button) => {
+    button.onclick = () => {
+      if (!validGame(button.dataset.game)) return;
+      selectedGame = button.dataset.game;
+      store.set('littlelobby.game', selectedGame);
+      app.querySelectorAll<HTMLElement>('[data-game]').forEach((el) => el.setAttribute('aria-pressed', String(el.dataset.game === selectedGame)));
+      $('.party-selected-game strong').textContent = gameInfo(selectedGame).name;
+    };
+  });
   app.querySelectorAll<HTMLButtonElement>('[data-network]').forEach((button) => {
     button.onclick = () => {
       store.set('sfb.network', button.dataset.network!);
@@ -119,6 +134,7 @@ export function mountHome(app: HTMLElement) {
       return;
     }
     store.set('sfb.roomopts', JSON.stringify({ listed: !lan && $<HTMLInputElement>('.opt-listed').checked, mode: lan ? 'lan' : undefined, pin: pin || undefined }), false);
+    store.set('littlelobby.game', selectedGame);
     // 每次从首页创建都换新房间码，避免旧房间的玩家绕过新设置的密码重连
     store.set('sfb.room', '', false);
     store.set('sfb.hostroom', '', false);
@@ -186,7 +202,7 @@ export function mountHome(app: HTMLElement) {
         const st = full ? ['full', t('lobby.full')] : r.playing ? ['live', t('lobby.live')] : ['open', t('lobby.open')];
         return `<button class="lrow ${full ? 'is-full' : ''}" role="row" data-code="${code}" data-lock="${r.lock ? 1 : ''}">
           <span class="mono code">${code}</span>
-          <span class="who">${r.host ? esc(r.host) : t('lobby.screen')}${r.lock ? `<i title="${t('lobby.locked')}">${icon.lock}</i>` : ''}</span>
+          <span class="who">${r.host ? esc(r.host) : t('lobby.screen')} · ${r.game === 'adventure' ? '软乎乎冒险' : '开踢'}${r.lock ? `<i title="${t('lobby.locked')}">${icon.lock}</i>` : ''}</span>
           <span class="mono">${r.n}/${r.max}</span>
           <span class="st ${st[0]}">${st[1]}</span>
         </button>`;

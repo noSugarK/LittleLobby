@@ -526,7 +526,7 @@ mod tests {
         let target = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("target");
         let json = serde_json::to_string(&info).unwrap();
         std::fs::write(target.join("lan-smoke.json"), &json).unwrap();
-        std::fs::write(target.join("lan-smoke.html"), format!(r#"<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="app"></div><script>sessionStorage.setItem('sfb.room','ABCDE');sessionStorage.setItem('sfb.hostroom','ABCDE');window.__TAURI__={{core:{{invoke:async(command)=>command==='start_lan'?{json}:undefined}}}};</script><script type="module" src="/src/main.ts"></script></body></html>"#)).unwrap();
+        std::fs::write(target.join("lan-smoke.html"), format!(r#"<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="app"></div><script>sessionStorage.setItem('sfb.room','ABCDE');sessionStorage.setItem('sfb.hostroom','ABCDE');sessionStorage.setItem('sfb.roomopts',JSON.stringify({{listed:false,mode:'lan'}}));localStorage.setItem('littlelobby.game','adventure');window.__TAURI__={{core:{{invoke:async(command)=>command==='start_lan'?{json}:undefined}}}};</script><script type="module" src="/src/main.ts"></script></body></html>"#)).unwrap();
         println!("Host fixture: http://127.0.0.1:1420/src-tauri/target/lan-smoke.html");
         println!("Player: http://127.0.0.1:{}/#/join/ABCDE?lan=1", info.port);
         let mut stop = state.0.lock().await.as_ref().unwrap().stop.subscribe();

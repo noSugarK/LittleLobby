@@ -1,6 +1,12 @@
 export const CHARACTERS = [
-  { name: '一二', sprite: 'yier', accent: '#f5a8b8', sky: '#fff3e9', grass: '#aad5aa', item: '草莓', subtitle: '草莓奶油 · 白色一二' },
-  { name: '布布', sprite: 'bubu', accent: '#eeb76b', sky: '#fff5dd', grass: '#c6cf91', item: '蜂蜜', subtitle: '蜂蜜饼干 · 棕色布布' },
+  { name: '一二', sprite: 'yier', accent: '#f5a8b8', subtitle: '白色小熊 · 小黑布鞋' },
+  { name: '布布', sprite: 'bubu', accent: '#eeb76b', subtitle: '棕色小熊 · 圆圆小脚' },
+] as const;
+/** Shared map art is independent of each player's chosen character. */
+export const MAP_THEMES = [
+  { sky: '#fff3e9', grass: '#aad5aa', accent: '#f5a8b8', item: '草莓', treat: 0 },
+  { sky: '#edf6fc', grass: '#b7d6cc', accent: '#eeb76b', item: '蜂蜜', treat: 1 },
+  { sky: '#eee9f8', grass: '#b9c4d9', accent: '#bfacd9', item: '星光点心', treat: 0 },
 ] as const;
 export const validSkin = (skin: unknown): skin is number => Number.isInteger(skin) && Number(skin) >= 0 && Number(skin) < CHARACTERS.length;
 export interface Rect { x: number; y: number; w: number; h: number; }
@@ -91,10 +97,11 @@ export class AdventureGame {
     c.jump = input.jump;
     c.seen = this.clock;
   }
-  start() {
+  start(selectedLevel?: number) {
     if (this.phase === 'playing' || ![...this.players.values()].some((p) => p.online)) return false;
-    this.level = this.phase === 'clear' ? this.level + 1 : 0;
-    if (this.level >= LEVELS.length) return false;
+    const level = selectedLevel ?? (this.phase === 'clear' ? this.level + 1 : 0);
+    if (!Number.isInteger(level) || level < 0 || level >= LEVELS.length) return false;
+    this.level = level;
     this.epoch++;
     this.time = 0; this.stars.clear(); this.defeated.clear();
     for (const p of this.players.values()) {

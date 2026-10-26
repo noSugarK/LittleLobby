@@ -64,6 +64,9 @@ export class LanClient {
     const watch = () => {
       if (this.socket !== ws || this.closed || this.rejected) return;
       if (performance.now() - this.lastRecv > 6000) { ws.close(); return; }
+      // Lobbies and background hosts may stop sending simulation snapshots.
+      // Keep the room alive independently of a game's render/tick rate.
+      this.sendJson({ t: 'ping', ts: Date.now() });
       this.timer = window.setTimeout(watch, 2000);
     };
     this.timer = window.setTimeout(watch, 2000);
