@@ -50,7 +50,7 @@ export interface Adventurer {
   grounded: boolean; facing: number; hearts: number; invulnerable: number; checkpoint: number;
   coins: number[]; deaths: number; reached: boolean;
 }
-interface Controls extends AdventureInput { seen: number; buffer: number; coyote: number; }
+interface Controls extends AdventureInput { seen: number; buffer: number; coyote: number; rise: number; }
 export interface AdventureView {
   t: 'adventure-state'; phase: 'lobby' | 'playing' | 'clear' | 'complete'; level: number;
   epoch: number; time: number; stars: number[]; defeated: number[]; players: Adventurer[]; paused: boolean; me: number;
@@ -77,7 +77,7 @@ export class AdventureGame {
   add(id: number, name: string, skin = 0) {
     if (this.players.has(id) || this.players.size >= 8) return false;
     this.players.set(id, { id, name: name.slice(0, 12), skin: validSkin(skin) ? skin : 0, online: true, x: 90 + (id % 4) * 42, y: 456, vx: 0, vy: 0, grounded: false, facing: 1, hearts: 3, invulnerable: 0, checkpoint: -1, coins: [], deaths: 0, reached: false });
-    this.controls.set(id, { axis: 0, jump: false, seen: this.clock, buffer: 0, coyote: 0 });
+    this.controls.set(id, { axis: 0, jump: false, seen: this.clock, buffer: 0, coyote: 0, rise: 0 });
     return true;
   }
   remove(id: number) { this.players.delete(id); this.controls.delete(id); }
@@ -110,7 +110,7 @@ export class AdventureGame {
     for (const p of this.players.values()) {
       p.checkpoint = -1; p.coins = []; p.deaths = 0; p.reached = false; p.hearts = 3;
       this.respawn(p, false);
-      const c = this.controls.get(p.id)!; c.buffer = c.coyote = 0; c.jump = false; c.axis = 0;
+      const c = this.controls.get(p.id)!; c.buffer = c.coyote = c.rise = 0; c.jump = false; c.axis = 0;
     }
     this.phase = 'playing';
     return true;
@@ -135,12 +135,14 @@ export class AdventureGame {
       if (this.clock - c.seen > 0.75) { c.axis = 0; c.jump = false; c.buffer = 0; }
       c.buffer = Math.max(0, c.buffer - dt);
       c.coyote = p.grounded ? 0.1 : Math.max(0, c.coyote - dt);
+      c.rise = Math.max(0, c.rise - dt);
       p.invulnerable = Math.max(0, p.invulnerable - dt);
       const target = c.axis * 260;
       p.vx += Math.max(-1900 * dt, Math.min(1900 * dt, target - p.vx));
       if (Math.abs(c.axis) > 0.1) p.facing = c.axis > 0 ? 1 : -1;
-      if (c.buffer > 0 && c.coyote > 0) { p.vy = -650; p.grounded = false; c.coyote = c.buffer = 0; }
-      if (!c.jump && p.vy < -380) p.vy = -380;
+      if (c.buffer > 0 && c.coyote > 0) { p.vy = -650; p.grounded = false; c.coyote = c.buffer = 0; c.rise = 0.1; }
+      // 手机点按时按下和松开常落在同一帧：保证最短上升时间，点一下也能跳上台阶，按住仍然最高
+      if (!c.jump && c.rise <= 0 && p.vy < -380) p.vy = -380;
       p.vy = Math.min(900, p.vy + 1600 * dt);
       p.x = Math.max(0, Math.min(level.width - W, p.x + p.vx * dt));
       for (const r of level.platforms) if (p.x < r.x + r.w && p.x + W > r.x && p.y < r.y + r.h - 0.1 && p.y + H > r.y + 0.1) {

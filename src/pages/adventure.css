@@ -112,3 +112,6 @@
   .adv-play .pad-btn.b { --size: 78px; }
   .adv-hud { font-size: 11px; padding: 4px 8px; }
 }
+/* 浅色地图上半透明白色摇杆几乎看不见，改用暖棕描边 */
+.adv-play .joy-base { background: rgba(110, 89, 77, 0.1); border-color: rgba(110, 89, 77, 0.4); }
+.adv-play .joy-knob { background: rgba(110, 89, 77, 0.4); }

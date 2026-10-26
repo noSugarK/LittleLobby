@@ -42,7 +42,7 @@ test('长按跳得更高，短按仍能跳起；台阶会落地，离线旧输�
     long.step(1 / 60); short.step(1 / 60);
     longMin = Math.min(longMin, long.players.get(1).y); shortMin = Math.min(shortMin, short.players.get(1).y);
   }
-  assert.ok(longMin < shortMin - 40); assert.ok(shortMin < 430);
+  assert.ok(longMin < shortMin - 15, `${longMin} vs ${shortMin}`); assert.ok(shortMin < 430);
   assert.equal(long.players.get(1).grounded, true);
   tick(long, 20, { axis: 1, jump: false });
   for (let i = 0; i < 100; i++) long.step(1 / 60);
@@ -142,4 +142,12 @@ test('足球同款手柄：摇杆过死区才移动，B 或上推到底跳跃，
   assert.deepEqual(padInput(0.5, -0.9, false, true), { axis: 1, jump: true });
   assert.deepEqual(padInput(0.7, -0.7, false, true), { axis: 1, jump: false });
   assert.deepEqual(padInput(1, -1, true, false), { axis: 0, jump: false });
+});
+
+test('手机点按：按下松开落在同一帧也能跳到约 100 像素，按住仍然更高', () => {
+  const g = game(), p = g.players.get(1), ground = p.y;
+  g.input(1, { axis: 0, jump: true }); g.input(1, { axis: 0, jump: false });
+  let top = ground;
+  for (let i = 0; i < 60; i++) { g.step(1 / 60); top = Math.min(top, p.y); }
+  assert.ok(ground - top > 90, `点按只跳了 ${ground - top}px`);
 });
