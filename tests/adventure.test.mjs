@@ -140,7 +140,9 @@ test('足球同款手柄：摇杆过死区才移动，B 或上推到底跳跃，
   assert.deepEqual(padInput(0.2, 0, false, true), { axis: 0, jump: false });
   assert.deepEqual(padInput(-0.6, 0.1, true, true), { axis: -1, jump: true });
   assert.deepEqual(padInput(0.5, -0.9, false, true), { axis: 1, jump: true });
-  assert.deepEqual(padInput(0.7, -0.7, false, true), { axis: 1, jump: false });
+  // 键盘 → + ↑ 被手柄归一化为 (0.71, -0.71)，边走边跳必须成立
+  assert.deepEqual(padInput(Math.SQRT1_2, -Math.SQRT1_2, false, true), { axis: 1, jump: true });
+  assert.deepEqual(padInput(0.9, -0.4, false, true), { axis: 1, jump: false });
   assert.deepEqual(padInput(1, -1, true, false), { axis: 0, jump: false });
 });
 

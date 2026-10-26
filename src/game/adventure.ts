@@ -44,9 +44,9 @@ export const LEVELS: Level[] = [
   },
 ];
 export interface AdventureInput { axis: number; jump: boolean; }
-/** 足球同款手柄映射到冒险：摇杆横向推过三成才移动；B 键或摇杆 / 方向键往上推到底都算跳。 */
+/** 足球同款手柄映射到冒险：摇杆横向推过三成才移动；B 键或摇杆 / 方向键明显往上（含键盘斜向 ↗ ≈ -0.71）都算跳。 */
 export const padInput = (jx: number, jy: number, b: boolean, enabled: boolean): AdventureInput =>
-  ({ axis: enabled && Math.abs(jx) > 0.3 ? Math.sign(jx) : 0, jump: enabled && (b || jy < -0.8) });
+  ({ axis: enabled && Math.abs(jx) > 0.3 ? Math.sign(jx) : 0, jump: enabled && (b || jy < -0.6) });
 export interface Adventurer {
   id: number; name: string; skin: number; online: boolean; x: number; y: number; vx: number; vy: number;
   grounded: boolean; facing: number; hearts: number; invulnerable: number; checkpoint: number;

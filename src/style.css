@@ -555,9 +555,6 @@ h1 {
   color: var(--fg);
   font: inherit;
 }
-.play:not(.joined) .top-actions .leave-room {
-  display: none;
-}
 .panel p {
   margin: 0;
 }

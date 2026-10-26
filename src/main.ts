@@ -8,6 +8,11 @@ import { applyTheme } from './ui/site';
 import { esc, normalizeCode, randomCode, roomOpts, store } from './ui/util';
 import { isLanPage, isNativeApp, lanBaseUrl, startLan, stopLan } from './net/lan-session';
 
+// 旧版 iOS（<16）与部分安卓 WebView 没有 roundRect：统一退回直角矩形，避免足球 / 冒险 / 二维码卡片绘制每帧抛错
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x: number, y: number, w: number, h: number) { this.rect(x, y, w, h); };
+}
+
 const app = document.getElementById('app')!;
 document.documentElement.lang = lang;
 document.title = lang === 'en' ? 'Little Lobby' : `${t('app.name')} · Little Lobby`;
@@ -73,7 +78,7 @@ async function route() {
     }
     if (q.get('game') === 'adventure' || q.get('game') === 'carry') {
       const { mountAdventure } = await import('./pages/adventure');
-      await mountAdventure(app, { room: normalizeCode(arg), lan: isLanPage() || !!server, server });
+      await mountAdventure(app, { room: normalizeCode(arg), lan: isLanPage() || !!server, server, pin: q.get('pin') ?? '' });
     } else mountPlay(app, { kind: 'client', room: normalizeCode(arg), forceRelay: q.has('relay'), pin: q.get('pin') ?? '', lock: q.has('lock'), lan: isLanPage() || !!server, server });
   } else mountHome(app);
 }

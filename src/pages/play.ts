@@ -367,7 +367,17 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     const ended = phase === Phase.Ended;
     const inMatch = !lobby && !ended;
     panel.hidden = !panelOpen || !joinEl.hidden;
-    if (panel.hidden || !roster) return;
+    if (panel.hidden) return;
+    if (!roster) {
+      // 还没连上主机时菜单也要能退出房间（顶栏不再单独放退出按钮）
+      panel.innerHTML = `<div class="panel-head"><span>${t('play.room', { room: `<b>${esc(room)}</b>` })}</span><button class="ghost close" aria-label="close">×</button></div><div class="pmeta"><button class="ghost leave-room">${t('play.leave')}</button></div>`;
+      panel.querySelector<HTMLElement>('.leave-room')!.onclick = leave;
+      panel.querySelector<HTMLElement>('.close')!.onclick = () => {
+        panelOpen = false;
+        renderPanel();
+      };
+      return;
+    }
     const r = roster;
     const me = players.find((p) => p.id === meId);
     const isOwner = meId >= 0 && meId === r.hostPid;

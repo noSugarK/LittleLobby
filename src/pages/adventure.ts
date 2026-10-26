@@ -8,10 +8,10 @@ import { LanClient } from '../net/lan-client';
 import { LanHost } from '../net/lan-host';
 import { isLanPage, isNativeApp, lanBaseUrl, lanSession, startLan, stopLan } from '../net/lan-session';
 import { bindLanAddress, lanInfoHtml } from '../ui/lan-room';
-import { canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, store, vibrate } from '../ui/util';
+import { canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, store, vibrate } from '../ui/util';
 import { Gamepad } from '../ui/gamepad';
 import { BTN_B } from '../game/types';
-import { t } from '../i18n';
+import { t, type Key } from '../i18n';
 import { switchHostGame } from '../room/catalog';
 import { sfxAdventure, unlockAudio } from '../ui/sound';
 
@@ -57,7 +57,7 @@ export async function mountAdventureMenu(app: HTMLElement) {
   window.addEventListener('pagehide', () => { closed = true; cancelAnimationFrame(frame); renderer.close(); }, { once: true });
 }
 
-interface AdventureMode { host?: boolean; solo?: boolean; screen?: boolean; lan?: boolean; room?: string; server?: string; }
+interface AdventureMode { host?: boolean; solo?: boolean; screen?: boolean; lan?: boolean; room?: string; server?: string; pin?: string; }
 /** 与足球手机页同一套布局：全屏画面、顶栏、浮动摇杆 + B 键跳跃、居中菜单面板。 */
 export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   document.addEventListener('gesturestart', (e) => e.preventDefault());
@@ -69,6 +69,9 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   // 与足球共用房间码键（手机开房 / 大屏），切换玩法时房间码不变
   const roomKey = mode.screen ? 'sfb.room' : 'sfb.hostroom';
   const room = mode.room || (mode.solo ? randomCode() : store.get(roomKey, false) || randomCode());
+  // 房间设置（密码 / 公开大厅）由首页开房时写入，冒险沿用，切回足球时也不丢
+  const roomPin = mode.host && !mode.solo ? roomOpts().pin : undefined;
+  const pinKey = `sfb.pin.${room}`;
   if (mode.host && !mode.solo) store.set(roomKey, room, false);
   const abort = new AbortController(), listen = { signal: abort.signal };
   const decoder = new TextDecoder();
@@ -98,6 +101,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       <h1>软乎乎冒险</h1>
       <p class="muted">房间 <b>${esc(room)}</b></p>
       <input class="name" maxlength="12" placeholder="给自己起个可爱的名字" aria-label="你的名字" value="${esc(store.get('adventure.name') || '')}">
+      <input class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="${t('play.pin')}" aria-label="${t('play.pin')}" value="${esc(mode.pin || store.get(pinKey, false) || '')}" hidden>
       <button class="primary go">加入小伙伴</button>
       <button class="ghost return-home">${t('play.home')}</button>
     </div>
@@ -112,7 +116,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     $('.status').className = `status ${ok ? 'p2p' : 'lost'}`;
     $('.status span').textContent = message;
   };
-  let toastTimer = 0;
+  let toastTimer = 0, rosterKey = '';
   const toast = (message: string, ms = 2200) => {
     const el = $('.toast'); el.textContent = message; el.hidden = false;
     clearTimeout(toastTimer); toastTimer = window.setTimeout(() => { el.hidden = true; }, ms);
@@ -157,7 +161,8 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   const leave = () => {
     if (!mode.solo && (host || client) && !confirm(t(host ? 'play.confirmCloseRoom' : 'play.confirmLeave'))) return;
     autoFs = false;
-    if (!mode.host) store.set(`adventure.joined.${room}`, '', false);
+    // 与足球一致：退出后清掉自动重连标记，下次开房 / 加入回到填写表单
+    store.set(mode.host ? 'sfb.hosting' : `adventure.joined.${room}`, '', false);
     location.hash = '#/';
   };
   app.querySelectorAll<HTMLButtonElement>('.leave-room, .return-home').forEach((button) => { button.onclick = leave; });
@@ -206,7 +211,8 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       $('.adv-next').hidden = !mode.host;
       $('.adv-next').textContent = state.phase === 'complete' ? '再去散一次步' : '下一站 →';
     }
-    $('.adv-roster').innerHTML = state.players.map((p) => `<span class="${p.online ? '' : 'is-offline'}"><i style="background:${CHARACTERS[p.skin]?.accent || '#ccc'}"></i>${esc(p.name)}${p.reached ? ' ✓' : !p.online ? ' · 重连中' : ''}</span>`).join('');
+    const key = JSON.stringify(state.players.map((p) => [p.id, p.name, p.skin, p.online, p.reached]));
+    if (key !== rosterKey) { rosterKey = key; $('.adv-roster').innerHTML = state.players.map((p) => `<span class="${p.online ? '' : 'is-offline'}"><i style="background:${CHARACTERS[p.skin]?.accent || '#ccc'}"></i>${esc(p.name)}${p.reached ? ' ✓' : !p.online ? ' · 重连中' : ''}</span>`).join(''); }
     const start = $<HTMLButtonElement>('.adv-start');
     start.hidden = !mode.host || state.phase !== 'lobby';
     start.disabled = !state.players.some((p) => p.online);
@@ -244,13 +250,12 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
 
   if (mode.host) {
     try {
-      store.set('sfb.roomopts', JSON.stringify({ listed: false, ...(mode.lan ? { mode: 'lan' } : {}) }), false);
       if (mode.lan) {
         if (!isNativeApp()) throw new Error('离线开房请使用原生应用，朋友可以用浏览器加入。');
         await startLan(room);
         if (closed) { await stopLan(); return; }
       }
-      host = new AdventureHost(room, mode.solo ? undefined : mode.lan ? (_r, cb) => new LanHost(lanSession()!, cb) : (r, cb) => new HostNet(r, cb));
+      host = new AdventureHost(room, mode.solo ? undefined : mode.lan ? (_r, cb) => new LanHost(lanSession()!, cb) : (r, cb) => new HostNet(r, cb), roomPin);
       if (!mode.screen) host.addLocal(store.get('adventure.name') || (mode.solo ? '小伙伴' : '房主'), skin);
       host.onView = receive;
       host.onStatus = (ok) => status(ok ? mode.solo ? '单人小旅行' : `${mode.lan ? '局域网 · ' : ''}房间 ${room}` : mode.lan ? '局域网服务已断开' : '正在恢复连接…', ok);
@@ -261,7 +266,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
         $('.adv-address').innerHTML = mode.lan ? lanInfoHtml() : '';
         let version = 0;
         const invite = async () => {
-          const current = ++version, url = new URL(joinUrl({ room }));
+          const current = ++version, url = new URL(joinUrl({ room, pin: roomPin }));
           const [path, query] = url.hash.slice(1).split('?'), params = new URLSearchParams(query); params.set('game', 'adventure'); url.hash = `${path}?${params}`;
           $('.adv-copy').dataset.url = url.href;
           try {
@@ -287,7 +292,9 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       let token = store.get(`adventure.token.${room}`); if (!token) { token = randomCode(16); store.set(`adventure.token.${room}`, token); }
       client?.close();
       joinEl.hidden = true; play.classList.add('joined'); renderPanel();
-      const info = { name, token, team: 'auto' as const };
+      const pin = $<HTMLInputElement>('.join .pin').value.replace(/\D/g, '') || undefined;
+      store.set(pinKey, pin ?? '', false);
+      const info = { name, token, team: 'auto' as const, pin };
       const connection = mode.lan || isLanPage() ? new LanClient(room, info, mode.server ? lanBaseUrl(mode.server) : undefined) : new ClientNet(room, info);
       client = connection; seq = 0; pid = -1;
       const showJoin = (message: string) => { connection.close(); pad.reset(); joinEl.hidden = false; play.classList.remove('joined'); store.set(joinedKey, '', false); renderPanel(); toast(message, 5000); };
@@ -312,7 +319,11 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       };
       connection.onJson = message;
       connection.onBinary = (bytes) => { try { message(JSON.parse(decoder.decode(bytes))); } catch { /* 丢弃畸形快照。 */ } };
-      connection.onReject = () => { if (!closed && client === connection) showJoin('没有找到房间，或小伙伴已满 8 人。'); };
+      connection.onReject = (reason) => {
+        if (closed || client !== connection) return;
+        if (reason.startsWith('pin')) { showJoin(t(`reject.${reason}` as Key)); const field = $<HTMLInputElement>('.join .pin'); field.hidden = false; field.value = ''; field.focus(); }
+        else showJoin('没有找到房间，或小伙伴已满 8 人。');
+      };
       status('正在连接…', false);
       try { await connection.start(); }
       catch { if (!closed && client === connection) showJoin('暂时没连上，确认网络后可以重试。'); }

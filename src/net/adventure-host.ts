@@ -16,12 +16,21 @@ export class AdventureHost {
   private nextId = 1;
   private timer = 0;
   private closed = false;
+  private pinFails: number[] = [];
 
-  constructor(room: string, factory?: HostTransportFactory) {
+  constructor(room: string, factory?: HostTransportFactory, pin?: string) {
     const cb: HostCallbacks = {
       onStatus: (ok) => this.onStatus(ok),
       onHello: (cid, hello) => {
         if (typeof hello.token !== 'string' || !hello.token || hello.token.length > 128) return 'full';
+        if (pin && hello.pin !== pin) {
+          // 与足球主机相同：10 秒内最多 5 次错误
+          const now = performance.now();
+          this.pinFails = this.pinFails.filter((t) => now - t < 10000);
+          if (this.pinFails.length >= 5) return 'pinThrottle';
+          this.pinFails.push(now);
+          return hello.pin ? 'pinWrong' : 'pinNeed';
+        }
         let id = this.tokens.get(hello.token);
         if (id === undefined) {
           if (this.game.players.size >= 8) {

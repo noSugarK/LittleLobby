@@ -3,8 +3,7 @@ import { MAP_THEMES, LEVELS, enemyX, type AdventureView } from './adventure';
 
 const INK = '#70594f';
 function round(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number, fill: string, stroke = '') {
-  // 旧版 iOS（<16）与部分安卓 WebView 没有 roundRect，退回直角矩形，避免每帧抛错导致黑屏
-  ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); ctx.fillStyle = fill; ctx.fill();
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fillStyle = fill; ctx.fill();
   if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
 }
 function oval(ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number, fill: string, stroke = '') {
