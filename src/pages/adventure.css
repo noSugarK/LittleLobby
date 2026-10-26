@@ -115,3 +115,23 @@
 /* 浅色地图上半透明白色摇杆几乎看不见，改用暖棕描边 */
 .adv-play .joy-base { background: rgba(110, 89, 77, 0.1); border-color: rgba(110, 89, 77, 0.4); }
 .adv-play .joy-knob { background: rgba(110, 89, 77, 0.4); }
+/* ---------- 角色下拉：当前角色头像 + 名字，展开后每项带头像预览 ---------- */
+.adv-picker { position: relative; width: 100%; max-width: 460px; justify-self: end; }
+.adv-picker > summary { list-style: none; display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 6px 12px 6px 6px; border: 1px solid #e2d9c9; border-radius: 14px; background: #fffcf7; }
+.adv-picker > summary::-webkit-details-marker { display: none; }
+.adv-picker > summary > span { display: grid; flex: 1; min-width: 0; text-align: left; }
+.adv-picker > summary small { color: var(--adv-muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adv-picker > summary > i { font-style: normal; transition: transform .15s; }
+.adv-picker[open] > summary > i { transform: rotate(180deg); }
+.adv-picked-avatar { width: 44px; height: 44px; flex: none; }
+.adv-options { position: absolute; z-index: 8; left: 0; right: 0; top: calc(100% + 6px); display: grid; gap: 4px; padding: 6px; max-height: 240px; overflow-y: auto; border: 1px solid #e2d9c9; border-radius: 14px; background: #fffcf7; box-shadow: 0 10px 30px #70594f26; }
+.adventure .adv-options .adv-character, .adv-play .adv-options .adv-character { display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 4px 10px 4px 4px; border-radius: 10px; text-align: left; }
+.adv-options .adv-character canvas { width: 40px; height: 40px; flex: none; }
+.adv-options .adv-character b { font-size: 13px; margin: 0; }
+.adv-options .adv-character small { display: inline; margin: 0 0 0 auto; font-size: 11px; color: var(--adv-muted); }
+.adv-options .adv-character[aria-pressed='true']::after { display: none; }
+/* 游戏内深色面板 */
+.adv-play .adv-picker { max-width: none; }
+.adv-play .adv-picker > summary, .adv-play .adv-options { background: var(--card, #1d2a22); border-color: var(--line, #ffffff26); color: var(--fg); }
+.adv-play .adv-options { position: static; margin-top: 6px; max-height: 168px; box-shadow: none; }
+.adv-play .adv-picker > summary small, .adv-play .adv-options .adv-character small { color: var(--muted); }

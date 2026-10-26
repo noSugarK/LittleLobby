@@ -1,6 +1,8 @@
 export const CHARACTERS = [
   { name: '一二', sprite: 'yier', accent: '#f5a8b8', subtitle: '白色小熊 · 小黑布鞋' },
   { name: '布布', sprite: 'bubu', accent: '#eeb76b', subtitle: '棕色小熊 · 圆圆小脚' },
+  { name: '小白', sprite: 'xiaobai', accent: '#c9d6e8', subtitle: '白色线条小狗 · 圆圆小耳朵' },
+  { name: '小金毛', sprite: 'jinmao', accent: '#f0c46f', subtitle: '金色线条小狗 · 红色小项圈' },
 ] as const;
 /** Shared map art is independent of each player's chosen character. */
 export const MAP_THEMES = [

@@ -13,3 +13,5 @@ promo/
 /public/adventure/characters/*
 !/public/adventure/characters/yier-atlas.png
 !/public/adventure/characters/bubu-atlas.png
+!/public/adventure/characters/xiaobai-atlas.png
+!/public/adventure/characters/jinmao-atlas.png

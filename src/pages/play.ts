@@ -24,6 +24,7 @@ import { bindLanAddress, lanInfoHtml } from '../ui/lan-room';
 import { SnapBuffer, separateViewBall, separateViewPlayers } from '../net/interp';
 import { decodeSnapshot, encodeInput } from '../net/protocol';
 import { CONFIG } from '../config';
+import { switchHostGame } from '../room/catalog';
 import { t, type Key } from '../i18n';
 import { Gamepad } from '../ui/gamepad';
 import { saveQrCard } from '../ui/qrcard';
@@ -308,6 +309,9 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
         if (m.game === 'adventure') {
           const token = store.get(`sfb.token.${room}`);
           if (token) store.set(`adventure.token.${room}`, token);
+          // 房主换成冒险：带着昵称自动进入，不用重新填写
+          store.set(`adventure.joined.${room}`, '1', false);
+          if (!store.get('adventure.name')) store.set('adventure.name', store.get('sfb.name') || t('player.default'));
           const [path, query] = location.hash.split('?');
           const params = new URLSearchParams(query);
           params.set('game', 'adventure');
@@ -435,7 +439,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     }
     // 教程在新标签页打开，不打断当前连接
     const tip = watching ? t('play.watchTip') : lobby ? t(isHost ? 'play.hostTip' : 'play.warmup') : '';
-    html += `<div class="pmeta">${tip ? `<span>${tip}</span>` : ''}<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a><button class="ghost leave-room">${t('play.leave')}</button></div></div>`;
+    html += `<div class="pmeta">${tip ? `<span>${tip}</span>` : ''}<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a>${isHost ? '<button class="ghost switch-game">换成软乎乎冒险</button>' : ''}<button class="ghost leave-room">${t('play.leave')}</button></div></div>`;
     panel.innerHTML = html;
     if (local) bindLanAddress(panel, () => {
       QRCode.toDataURL(joinUrl({ room, pin: opts?.pin }), { width: 220, margin: 1 }).then((url) => {
@@ -470,6 +474,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     on('.end', () => confirm(t('play.confirmEnd')) && game?.endMatch());
     on('.back', () => game?.toLobby());
     on('.leave-room', leave);
+    on('.switch-game', () => switchHostGame('adventure'));
     on('.close', () => {
       panelOpen = false;
       renderPanel();

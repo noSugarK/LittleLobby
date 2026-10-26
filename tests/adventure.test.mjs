@@ -30,8 +30,8 @@ test('一二与布布切换只改造型，保留位置、收集与检查点；�
     g.skin(1, skin); assert.equal(p.skin, skin);
     assert.deepEqual([p.x, p.y, p.hearts, p.checkpoint, p.coins], before);
   }
-  for (const invalid of [-1, 2, 3, 4, '1', NaN, null]) g.skin(1, invalid);
-  assert.equal(p.skin, 1);
+  for (const invalid of [-1, CHARACTERS.length, 99, '1', NaN, null]) g.skin(1, invalid);
+  assert.equal(p.skin, CHARACTERS.length - 1);
 });
 
 test('长按跳得更高，短按仍能跳起；台阶会落地，离线旧输入会停下', () => {
