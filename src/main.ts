@@ -3,6 +3,7 @@ import { lang, t } from './i18n';
 import { mountGuide } from './pages/guide';
 import { mountHome } from './pages/home';
 import { mountPlay } from './pages/play';
+import { mountScreen } from './pages/screen';
 import { applyTheme } from './ui/site';
 import { esc, normalizeCode, randomCode, roomOpts, store } from './ui/util';
 import { isLanPage, isNativeApp, lanBaseUrl, startLan, stopLan } from './net/lan-session';
@@ -41,6 +42,11 @@ async function route() {
     location.hash = `#/join/${window.__SCANKICK_LAN__!.room}?lan=1`;
     return;
   }
+  if ((page === 'screen' || page === 'host') && store.get('littlelobby.game') === 'adventure') {
+    const { mountAdventure } = await import('./pages/adventure');
+    await mountAdventure(app, { host: true, screen: page === 'screen', lan: roomOpts().mode === 'lan' });
+    return;
+  }
   if ((page === 'screen' || page === 'host') && roomOpts().mode === 'lan') {
     app.innerHTML = `<div class="site"><main class="site-main"><p>${t('lan.starting')}</p></main></div>`;
     try {
@@ -55,10 +61,8 @@ async function route() {
       return;
     }
   }
-  if (page === 'screen' || page === 'host') {
-    const { mountRoom } = await import('./pages/room');
-    await mountRoom(app, { host: true, screen: page === 'screen', lan: roomOpts().mode === 'lan' });
-  }
+  if (page === 'screen') mountScreen(app);
+  else if (page === 'host') mountPlay(app, { kind: 'host' });
   else if (page === 'guide') mountGuide(app);
   else if (page === 'join' && arg) {
     const q = new URLSearchParams(query);
@@ -70,12 +74,8 @@ async function route() {
     if (q.get('game') === 'adventure' || q.get('game') === 'carry') {
       const { mountAdventure } = await import('./pages/adventure');
       await mountAdventure(app, { room: normalizeCode(arg), lan: isLanPage() || !!server, server });
-    } else {
-      const { mountRoom } = await import('./pages/room');
-      await mountRoom(app, { room: normalizeCode(arg), pin: q.get('pin') || '', lan: isLanPage() || !!server, server });
-    }
-  } else if (page === 'legacy-join' && arg) mountPlay(app, { kind: 'client', room: normalizeCode(arg), forceRelay: false, pin: '', lock: false, lan: isLanPage() });
-  else mountHome(app);
+    } else mountPlay(app, { kind: 'client', room: normalizeCode(arg), forceRelay: q.has('relay'), pin: q.get('pin') ?? '', lock: q.has('lock'), lan: isLanPage() || !!server, server });
+  } else mountHome(app);
 }
 
 // 安卓 App 由原生层提供状态栏/刘海的安全区（WebView 的 env(safe-area-inset-*) 不可靠）

@@ -53,7 +53,7 @@ export function mountHome(app: HTMLElement) {
 
         <section data-pane="host">
           <h2 class="pane-title"><span class="pane-number">01</span>${t('tab.host')}<small>邀请朋友来玩</small></h2>
-          <p class="party-selected-game">当前选择：<strong>${gameInfo(selectedGame).name}</strong> · 进入房间后房主也能切换</p>
+          <p class="party-selected-game">当前选择：<strong>${gameInfo(selectedGame).name}</strong></p>
           <div ${lan ? 'hidden' : ''}><label class="opt-row"><span>${icon.globe}${t('host.listed')}</span>
             <input type="checkbox" class="switch opt-listed"></label></div>
           <label class="pin-field">${icon.lock}<input class="opt-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="${t('host.pin')}"></label>

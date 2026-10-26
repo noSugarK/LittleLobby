@@ -17,7 +17,7 @@ registerHooks({
     return { format: 'module', shortCircuit: true, source: ts.transpile(readFileSync(new URL(url), 'utf8'), { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }) };
   },
 });
-const { AdventureGame, LEVELS, CHARACTERS, enemyX } = await import('../src/game/adventure.ts');
+const { AdventureGame, LEVELS, CHARACTERS, enemyX, padInput } = await import('../src/game/adventure.ts');
 const { AdventureHost } = await import('../src/net/adventure-host.ts');
 const { joinHashFromQr } = await import('../src/ui/scan.ts');
 const tick = (g, frames, input = { axis: 0, jump: false }) => { for (let i = 0; i < frames; i++) { g.input(1, input); g.step(1 / 60); } };
@@ -134,4 +134,12 @@ test('主机过滤乱序、旧关卡和越界输入；按身份重连，角色�
 test('扫码只透传闯关玩法和有效密码', () => {
   assert.equal(joinHashFromQr('https://example.com/#/join/ABCDE?game=adventure&evil=1'), '#/join/ABCDE?game=adventure');
   assert.equal(joinHashFromQr('https://example.com/#/join/ABCDE?game=other'), '#/join/ABCDE');
+});
+
+test('足球同款手柄：摇杆过死区才移动，B 或上推到底跳跃，非游戏中不出输入', () => {
+  assert.deepEqual(padInput(0.2, 0, false, true), { axis: 0, jump: false });
+  assert.deepEqual(padInput(-0.6, 0.1, true, true), { axis: -1, jump: true });
+  assert.deepEqual(padInput(0.5, -0.9, false, true), { axis: 1, jump: true });
+  assert.deepEqual(padInput(0.7, -0.7, false, true), { axis: 1, jump: false });
+  assert.deepEqual(padInput(1, -1, true, false), { axis: 0, jump: false });
 });

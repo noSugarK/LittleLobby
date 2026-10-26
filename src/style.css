@@ -1868,6 +1868,12 @@ li.open .row-actions {
   margin: 0;
   font-size: 11px;
 }
+.pmeta .ghost {
+  flex: none;
+  padding: 4px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
 
 /* 大屏大厅：左二维码，右侧字标 / 两队 / 设置 / 开始 */
 .lobby {

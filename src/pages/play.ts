@@ -85,7 +85,6 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
         <button class="ghost fs-btn" hidden>${t('play.fullscreen')}</button>
         <button class="ghost cam">${t('play.follow')}</button>
         <button class="ghost menu">${t('play.menu')}</button>
-        <button class="ghost leave-room">${t('play.leave')}</button>
       </div>
     </div>
     <div class="pad"></div>
@@ -436,7 +435,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     }
     // 教程在新标签页打开，不打断当前连接
     const tip = watching ? t('play.watchTip') : lobby ? t(isHost ? 'play.hostTip' : 'play.warmup') : '';
-    html += `<div class="pmeta">${tip ? `<span>${tip}</span>` : ''}<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a></div></div>`;
+    html += `<div class="pmeta">${tip ? `<span>${tip}</span>` : ''}<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a><button class="ghost leave-room">${t('play.leave')}</button></div></div>`;
     panel.innerHTML = html;
     if (local) bindLanAddress(panel, () => {
       QRCode.toDataURL(joinUrl({ room, pin: opts?.pin }), { width: 220, margin: 1 }).then((url) => {
@@ -470,6 +469,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     on('.surrender', () => send({ t: 'surrender' }));
     on('.end', () => confirm(t('play.confirmEnd')) && game?.endMatch());
     on('.back', () => game?.toLobby());
+    on('.leave-room', leave);
     on('.close', () => {
       panelOpen = false;
       renderPanel();
