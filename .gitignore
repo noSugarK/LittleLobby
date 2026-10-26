@@ -4,4 +4,12 @@ dist
 .DS_Store
 .claude
 promo/
-tmp/imagegen/deps/
+/tmp/
+
+# Local generation artifacts and development records are not project sources.
+/docs/
+/output/
+/scripts/
+/public/adventure/characters/*
+!/public/adventure/characters/yier-atlas.png
+!/public/adventure/characters/bubu-atlas.png

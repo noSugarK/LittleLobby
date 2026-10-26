@@ -14,7 +14,7 @@ registerHooks({
   },
   load(url, context, next) {
     if (!url.endsWith('.ts')) return next(url, context);
-    return { format: 'module', shortCircuit: true, source: ts.transpile(readFileSync(new URL(url), 'utf8').replace('import.meta.env.BASE_URL', '"/scankick/"'), { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }) };
+    return { format: 'module', shortCircuit: true, source: ts.transpile(readFileSync(new URL(url), 'utf8').replace('import.meta.env.BASE_URL', '"/LittleLobby/"'), { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }) };
   },
 });
 const { buddyFrame, loadCharacterSprites, drawBuddyImage } = await import('../src/game/adventure-sprites.ts');
@@ -53,7 +53,7 @@ test('本地精灵加载失败可重试，成功后复用图片，绘制直接�
     await assert.rejects(loadCharacterSprites(), /角色图片未能加载/);
     fail = false; await loadCharacterSprites(); const count = urls.length; await loadCharacterSprites();
     assert.equal(urls.length, count);
-    assert.ok(urls.every((url) => url.startsWith('/scankick/adventure/characters/')));
+    assert.ok(urls.every((url) => url.startsWith('/LittleLobby/adventure/characters/')));
     assert.ok(urls.some((url) => url.endsWith('yier-atlas.png')));
     assert.ok(urls.some((url) => url.endsWith('bubu-atlas.png')));
     const calls = []; drawBuddyImage({ drawImage: (...args) => calls.push(args) }, 100, 200, 1, 'run', .2, -1);
