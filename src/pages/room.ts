@@ -27,17 +27,17 @@ export async function mountRoom(app: HTMLElement, mode: PartyRoomMode) {
   const room = mode.room || store.get(mode.screen ? 'sfb.room' : 'sfb.hostroom', false) || randomCode();
   if (mode.host) store.set(mode.screen ? 'sfb.room' : 'sfb.hostroom', room, false);
   document.title = `房间 ${room} · 小聚场 Little Lobby`;
-  app.innerHTML = `<main class="party-room">
-    <header class="party-nav"><a href="#/" class="party-brand">小聚场<small>LITTLE LOBBY</small></a><span class="party-room-code">ROOM <b>${esc(room)}</b></span><div>${siteTools()}<button class="party-full">全屏 ↗</button></div></header>
+  app.innerHTML = `<main class="party-room${mode.screen ? ' is-screen' : ''}">
+    <header class="party-nav"><a href="#/" class="party-brand">小聚场<small>LITTLE LOBBY</small></a><span class="party-room-code">房间 <b>${esc(room)}</b></span><div>${siteTools()}<button class="party-full">全屏 ↗</button></div></header>
     <div class="party-status" role="status">正在准备聚会房间…</div>
     <form class="party-join" ${mode.host ? 'hidden' : ''}><h1>朋友都在这里</h1><p>加入后可以自己选角色，和朋友一起开玩。</p><label>你的昵称<input name="name" maxlength="12" required autocomplete="nickname" value="${esc(store.get('littlelobby.name') || store.get('adventure.name') || '')}" placeholder="给自己起个名字"></label><label>房间密码（如有）<input name="pin" inputmode="numeric" maxlength="6" value="${esc(mode.pin || '')}"></label><label><input type="checkbox" name="watch">先旁观，不占玩家名额</label><button type="submit">加入小聚场 →</button></form>
     <div class="party-layout" hidden>
-      <section class="party-main"><div class="party-game-top"><div><span class="party-eyebrow">TONIGHT, WE PLAY</span><h1 class="party-game-title"></h1><p class="party-map-label"></p></div><span class="party-phase">等待伙伴</span></div>
+      <section class="party-main"><div class="party-game-top"><div><span class="party-eyebrow">LET’S PLAY TOGETHER</span><h1 class="party-game-title"></h1><p class="party-map-label"></p></div><span class="party-phase">等待伙伴</span></div>
         <div class="party-stage"><canvas class="party-canvas" aria-label="当前游戏预览与实时画面"></canvas><div class="party-hud"></div></div>
         <div class="party-options" ${mode.host ? '' : 'hidden'}><label>当前游戏<select class="party-game-select" aria-label="当前游戏">${GAMES.map((game) => `<option value="${game.id}">${game.name}</option>`).join('')}</select></label><label class="party-map-control">地图<select class="party-map-select" aria-label="地图">${LEVELS.map((level, i) => `<option value="${i}">${level.name}</option>`).join('')}</select></label><label class="party-football-control">比赛规则<select class="party-match-select" aria-label="比赛规则"><option value="0">经典计时</option><option value="1">抢三球</option><option value="2">金球加时</option></select></label><label class="party-football-control">派对道具<select class="party-rule-select" aria-label="派对道具"><option value="0">标准足球</option><option value="1">巨型足球</option><option value="2">无限体力</option><option value="3">强反弹</option></select></label></div>
         <p class="party-switch-note" ${mode.host ? '' : 'hidden'}>游戏中换游戏或地图会结束本局，房间和伙伴都保留。</p>
         <div class="party-actions"><button class="party-start" ${mode.host ? '' : 'hidden'}>开始游戏</button><button class="party-next" hidden>下一关 →</button><button class="party-back" ${mode.host ? '' : 'hidden'}>回到大厅</button><button class="party-ready" ${mode.screen ? 'hidden' : ''}>准备好了</button><button class="party-watch">我先旁观</button></div>
-        <p class="party-instructions"></p><div class="party-pad"></div>
+        <p class="party-instructions"></p><p class="party-touch-tip"></p><div class="party-pad"></div>
       </section>
       <aside class="party-sidebar"><section class="party-card party-me"><span class="party-eyebrow">YOUR LITTLE BUDDY</span><h2>今天和谁一起玩？</h2><div class="party-characters">${CHARACTERS.map((c, i) => `<button data-skin="${i}" aria-label="选择${c.name}"><canvas width="112" height="112"></canvas><b>${c.name}</b></button>`).join('')}</div><div class="party-team"><span>选择球队</span><button data-team="0">红队</button><button data-team="1">蓝队</button></div></section>
         <section class="party-card"><div class="party-card-heading"><h2>房间里的伙伴</h2><span class="party-count"></span></div><div class="party-members"></div></section>
@@ -84,6 +84,7 @@ export async function mountRoom(app: HTMLElement, mode: PartyRoomMode) {
     if (state && next.revision < state.revision) return;
     const changed = !state || state.revision !== next.revision;
     state = next;
+    $('.party-room').classList.toggle('is-playing', state.phase === 'playing');
     if (changed) { adventure = undefined; football = undefined; roster = undefined; seq = 0; pad.reset(); }
     $('.party-join').hidden = true; $('.party-layout').hidden = false;
     document.title = `${gameInfo(state.game).name} · 房间 ${room} · Little Lobby`;
@@ -97,6 +98,7 @@ export async function mountRoom(app: HTMLElement, mode: PartyRoomMode) {
     app.querySelectorAll<HTMLElement>('.party-football-control').forEach((el) => { el.hidden = state!.game !== 'football'; });
     $('.party-map-control').hidden = state.game !== 'adventure';
     $('.party-team').hidden = state.game !== 'football';
+    $('.party-touch-tip').textContent = state.game === 'adventure' ? '左边控制方向，右边跳跃 · 按住跳得更高' : '左边控制方向，右边传球、射门和冲刺';
     $('.party-characters').hidden = state.game !== 'adventure';
     $('.party-me h2').textContent = state.game === 'adventure' ? '今天和谁一起玩？' : '穿上你的球队颜色';
     const mine = member();
@@ -105,6 +107,7 @@ export async function mountRoom(app: HTMLElement, mode: PartyRoomMode) {
     $('.party-watch').hidden = !mine || state.phase !== 'lobby';
     $('.party-watch').textContent = mine?.watch ? '我也参加' : '我先旁观';
     $('.party-pad').hidden = state.phase !== 'playing' || !mine || mine.watch;
+    $('.party-touch-tip').hidden = state.phase !== 'playing' || !mine || mine.watch;
     $('.party-pad').classList.toggle('is-adventure', state.game === 'adventure');
     $('.party-pad .pad-btn.b span').textContent = state.game === 'adventure' ? '跳跃' : t('pad.b');
     $('.party-back').hidden = !mode.host || state.phase === 'lobby';

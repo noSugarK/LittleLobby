@@ -2,11 +2,12 @@ import { t } from '../i18n';
 import { LOBBY_STALE_MS, watchLobby, type LobbyInfo } from '../net/lobby';
 import { openScanner } from '../ui/scan';
 import { bindSiteTools, icon, siteFooter, siteTools } from '../ui/site';
-import { HISTORY_KEY, brand, esc, isPin, normalizeCode, store } from '../ui/util';
+import { HISTORY_KEY, esc, isPin, normalizeCode, store } from '../ui/util';
 import { isLanPage, isNativeApp, stopLan } from '../net/lan-session';
 import { bindLanLobby, lanLobbyHtml } from '../ui/lan-lobby';
 import { GAMES, gameInfo, validGame, type GameId } from '../room/catalog';
-import './room.css';
+import './home.css';
+import { drawBuddyAvatar, loadCharacterSprites } from '../game/adventure-sprites';
 
 const CODE_LEN = 5;
 type Tab = 'host' | 'join' | 'lobby';
@@ -26,19 +27,21 @@ export function mountHome(app: HTMLElement) {
   app.innerHTML = `
   <div class="site home${native || isLanPage() ? ' app-home' : ''}">
     <header class="site-hero">
-      <div class="site-bar"><span class="party-home-title">${t('app.name')}<small>LITTLE LOBBY</small></span>${siteTools()}</div>
+      <div class="site-bar"><a class="lobby-wordmark" href="#/" aria-label="小聚场首页"><span class="lobby-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>${t('app.name')}<small>LITTLE LOBBY</small></span></a>${siteTools()}</div>
       <div class="hero-body">
         <div class="hero-text">
-          <h1>${t('app.name')}</h1>
-          <p>${t('app.tagline')}</p>
+          <span class="home-eyebrow">GOOD FRIENDS. GREAT LITTLE MOMENTS.</span>
+          <h1>${t('app.tagline').replace('，', '，<br>')}</h1>
           <p class="hero-desc">${t('app.desc')}</p>
+          <div class="home-perks"><span>✦ 1–8 人一起玩</span><span>⌁ 支持离线局域网</span><span>▧ 手机就是手柄</span></div>
         </div>
-        <img class="hero-icon logo-light" src="${brand('icon-white.png')}" alt="">
-        <img class="hero-icon logo-dark" src="${brand('icon-dark.png')}" alt="">
+        <div class="welcome-scene" aria-label="一二和布布等你一起玩"><span class="scene-note">给快乐，留个位置。</span><span class="scene-sun" aria-hidden="true">✳</span><div class="scene-hill"></div><canvas class="welcome-buddy buddy-one" data-buddy="0" width="112" height="112" aria-hidden="true"></canvas><canvas class="welcome-buddy buddy-two" data-buddy="1" width="112" height="112" aria-hidden="true"></canvas><span class="scene-flower" aria-hidden="true">✿</span><span class="scene-caption">YOU + ME + A LITTLE PLAY</span></div>
       </div>
     </header>
     <main class="site-main">
-      <div class="party-game-selectors" role="group" aria-label="选择游戏">${GAMES.map((game) => `<button class="party-game-choice" data-game="${game.id}" aria-pressed="${selectedGame === game.id}"><span>${game.icon}</span><b>${game.name}</b><small>${game.caption}</small><small>${game.players}</small></button>`).join('')}</div>
+      <div class="home-section-title"><div><span class="home-eyebrow">PICK YOUR HAPPY</span><h2>今天，玩点什么？</h2></div><p>选个游戏，叫上你的搭子。</p></div>
+      <div class="party-game-selectors" role="group" aria-label="选择游戏">${GAMES.map((game, i) => `<button class="party-game-choice game-${game.id}" data-game="${game.id}" aria-pressed="${selectedGame === game.id}"><span class="game-art" aria-hidden="true">${game.id === 'football' ? '<span class="mini-pitch"><i></i></span><span class="game-ball">⚽</span><span class="art-spark">✦</span>' : '<span class="art-cloud"></span><canvas data-buddy="0" width="112" height="112"></canvas><canvas data-buddy="1" width="112" height="112"></canvas><span class="art-star">★</span>'}<span class="game-number">0${i + 1}</span></span><span class="game-copy"><span class="game-meta">${game.players}</span><b>${game.name}</b><small>${game.caption}</small></span><span class="game-selected">已选择 ✓</span><span class="game-arrow" aria-hidden="true">↗</span></button>`).join('')}</div>
+      <div class="home-section-title play-heading"><div><span class="home-eyebrow">MAKE ROOM FOR FRIENDS</span><h2>人齐了，就开场。</h2></div><p>一个房间，装下今晚的快乐。</p></div>
       <div class="home-card">
         ${native ? `<div class="network-mode seg" role="group" aria-label="${t('lan.mode')}"><button data-network="online" class="${lan ? '' : 'on'}">${t('lan.online')}</button><button data-network="lan" class="${lan ? 'on' : ''}">${t('lan.local')}</button></div>` : ''}
         ${lan ? `<p class="hint lan-hint">${t('lan.hint')}</p>` : ''}
@@ -49,7 +52,7 @@ export function mountHome(app: HTMLElement) {
         </div>
 
         <section data-pane="host">
-          <h2 class="pane-title">${t('tab.host')}</h2>
+          <h2 class="pane-title"><span class="pane-number">01</span>${t('tab.host')}<small>邀请朋友来玩</small></h2>
           <p class="party-selected-game">当前选择：<strong>${gameInfo(selectedGame).name}</strong> · 进入房间后房主也能切换</p>
           <div ${lan ? 'hidden' : ''}><label class="opt-row"><span>${icon.globe}${t('host.listed')}</span>
             <input type="checkbox" class="switch opt-listed"></label></div>
@@ -60,7 +63,7 @@ export function mountHome(app: HTMLElement) {
         </section>
 
         <section data-pane="join">
-          <h2 class="pane-title">${t('tab.join')}</h2>
+          <h2 class="pane-title"><span class="pane-number">02</span>${t('tab.join')}<small>去朋友的房间</small></h2>
           <div ${lan ? 'hidden' : ''}><button class="scan-btn">${icon.scan}<b>${t('join.scan')}</b><small>${t('join.scanDesc')}</small></button></div>
           ${lan ? `<p class="hint">${t('lan.hint')}</p>` : ''}
           <div ${lan && native ? 'hidden' : ''}>
@@ -76,7 +79,7 @@ export function mountHome(app: HTMLElement) {
         </section>
 
         <section data-pane="lobby">
-          <h2 class="pane-title">${t('tab.lobby')} <span class="count"></span></h2>
+          <h2 class="pane-title"><span class="pane-number">✦</span>${t('tab.lobby')} <span class="count"></span></h2>
           ${lan && native ? lanLobbyHtml() : ''}
           <div class="lobby-table" role="table" ${lan ? 'hidden' : ''}>
             <div class="lrow lhead" role="row"><span>${t('lobby.room')}</span><span>${t('lobby.host')}</span><span>${t('lobby.players')}</span><span>${t('lobby.state')}</span></div>
@@ -93,6 +96,10 @@ export function mountHome(app: HTMLElement) {
 
   const $ = <T extends HTMLElement>(s: string) => app.querySelector(s) as T;
   bindSiteTools(app);
+  void loadCharacterSprites().then(() => {
+    if (!app.querySelector('.home')) return;
+    app.querySelectorAll<HTMLCanvasElement>('[data-buddy]').forEach((canvas) => drawBuddyAvatar(canvas, Number(canvas.dataset.buddy)));
+  }).catch(() => { /* Decorative characters do not block joining a room. */ });
   app.querySelectorAll<HTMLButtonElement>('[data-game]').forEach((button) => {
     button.onclick = () => {
       if (!validGame(button.dataset.game)) return;
