@@ -5,12 +5,19 @@ import { bindSiteTools, icon, siteFooter, siteTools } from '../ui/site';
 import { HISTORY_KEY, esc, isPin, normalizeCode, store } from '../ui/util';
 import { isLanPage, isNativeApp, stopLan } from '../net/lan-session';
 import { bindLanLobby, lanLobbyHtml } from '../ui/lan-lobby';
-import { GAMES, gameInfo, validGame, type GameId } from '../room/catalog';
+import { GAMES, validGame, type GameId } from '../room/catalog';
+import { CHARACTERS } from '../game/adventure';
 import './home.css';
 import { drawBuddyAvatar, loadCharacterSprites } from '../game/adventure-sprites';
 
 const CODE_LEN = 5;
-type Tab = 'host' | 'join' | 'lobby';
+
+/* 足球缩略图：手绘球场 + 球，与冒险的角色缩略图同一尺寸 */
+const pitchArt = `<svg class="lh-pitch" viewBox="0 0 160 100" aria-hidden="true">
+  <rect x="4" y="4" width="152" height="92" rx="10" class="lh-pitch-turf"/>
+  <g class="lh-pitch-line"><rect x="12" y="12" width="136" height="76" rx="3"/><path d="M80 12v76"/><circle cx="80" cy="50" r="13"/><rect x="12" y="34" width="14" height="32"/><rect x="134" y="34" width="14" height="32"/></g>
+  <g transform="translate(104 58)"><circle r="12" class="lh-ball"/><path class="lh-ball-patch" d="M0-5l4.8 3.5-1.8 5.6h-6l-1.8-5.6z"/></g>
+</svg>`;
 
 export function mountHome(app: HTMLElement) {
   const savedGame = store.get('littlelobby.game');
@@ -20,93 +27,117 @@ export function mountHome(app: HTMLElement) {
   if (native) void stopLan().catch(() => {});
   // 回到首页即离开了房间（主机随页面关闭），房间战绩一并删除
   store.clear(HISTORY_KEY, false);
-  const saved = store.get('sfb.tab', false) as Tab | null;
-  const tabs: Tab[] = isLanPage() ? ['join'] : lan ? ['host', 'lobby'] : ['host', 'join', 'lobby'];
-  let tab: Tab = lan && native && saved === 'join' ? 'lobby' : tabs.includes(saved as Tab) ? saved as Tab : tabs[0];
+  // 局域网页面只能加入；原生局域网模式由应用内大厅加入，没有房间码表单
+  const showJoin = isLanPage() || !lan;
+  const showHost = !isLanPage();
+  const showLobby = !isLanPage();
+  const gameArt = (id: GameId) => id === 'football' ? pitchArt
+    : `<span class="lh-buddies" aria-hidden="true"><canvas data-buddy="0" width="112" height="112"></canvas><canvas data-buddy="1" width="112" height="112"></canvas></span>`;
 
   app.innerHTML = `
   <div class="site home${native || isLanPage() ? ' app-home' : ''}">
-    <header class="site-hero">
-      <div class="site-bar"><a class="lobby-wordmark" href="#/" aria-label="小聚场首页"><span class="lobby-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>${t('app.name')}<small>LITTLE LOBBY</small></span></a>${siteTools()}</div>
-      <div class="hero-body">
-        <div class="hero-text">
-          <span class="home-eyebrow">GOOD FRIENDS. GREAT LITTLE MOMENTS.</span>
-          <h1>${t('app.tagline').replace('，', '，<br>')}</h1>
-          <p class="hero-desc">${t('app.desc')}</p>
-          <div class="home-perks"><span>✦ 1–8 人一起玩</span><span>⌁ 支持离线局域网</span><span>▧ 手机就是手柄</span></div>
-        </div>
-        <div class="welcome-scene" aria-label="一二和布布等你一起玩"><span class="scene-note">给快乐，留个位置。</span><span class="scene-sun" aria-hidden="true">✳</span><div class="scene-hill"></div><canvas class="welcome-buddy buddy-one" data-buddy="0" width="112" height="112" aria-hidden="true"></canvas><canvas class="welcome-buddy buddy-two" data-buddy="1" width="112" height="112" aria-hidden="true"></canvas><span class="scene-flower" aria-hidden="true">✿</span><span class="scene-caption">YOU + ME + A LITTLE PLAY</span></div>
-      </div>
+    <header class="lh-top">
+      <a class="lh-wordmark" href="#/" aria-label="${t('app.name')}"><span class="lh-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>${t('app.name')}<small>Little Lobby</small></span></a>
+      ${siteTools()}
     </header>
-    <main class="site-main">
-      <div class="home-section-title"><div><span class="home-eyebrow">PICK YOUR HAPPY</span><h2>今天，玩点什么？</h2></div><p>选个游戏，叫上你的搭子。</p></div>
-      <div class="party-game-selectors" role="group" aria-label="选择游戏">${GAMES.map((game, i) => `<button class="party-game-choice game-${game.id}" data-game="${game.id}" aria-pressed="${selectedGame === game.id}"><span class="game-art" aria-hidden="true">${game.id === 'football' ? '<span class="mini-pitch"><i></i></span><span class="game-ball">⚽</span><span class="art-spark">✦</span>' : '<span class="art-cloud"></span><canvas data-buddy="0" width="112" height="112"></canvas><canvas data-buddy="1" width="112" height="112"></canvas><span class="art-star">★</span>'}<span class="game-number">0${i + 1}</span></span><span class="game-copy"><span class="game-meta">${game.players}</span><b>${game.name}</b><small>${game.caption}</small></span><span class="game-selected">已选择 ✓</span><span class="game-arrow" aria-hidden="true">↗</span></button>`).join('')}</div>
-      <div class="home-section-title play-heading"><div><span class="home-eyebrow">MAKE ROOM FOR FRIENDS</span><h2>人齐了，就开场。</h2></div><p>一个房间，装下今晚的快乐。</p></div>
-      <div class="home-card">
-        ${native ? `<div class="network-mode seg" role="group" aria-label="${t('lan.mode')}"><button data-network="online" class="${lan ? '' : 'on'}">${t('lan.online')}</button><button data-network="lan" class="${lan ? 'on' : ''}">${t('lan.local')}</button></div>` : ''}
-        ${lan ? `<p class="hint lan-hint">${t('lan.hint')}</p>` : ''}
-        <div class="tabs" role="tablist">
-          ${tabs
-            .map((k) => `<button role="tab" data-tab="${k}">${t(`tab.${k}`)}${k === 'lobby' ? ' <span class="count"></span>' : ''}</button>`)
-            .join('')}
-        </div>
+    <main class="lh-main">
+      <section class="lh-intro">
+        <div><h1 class="lh-title">${t('app.tagline').replace('，', '，<br>').replace(', ', ',<br>')}</h1>
+        <p class="lh-lede">${t('app.desc')}</p></div>
+        <div class="lh-cast" aria-hidden="true">${CHARACTERS.map((_, i) => `<canvas data-buddy="${i}" width="112" height="112" style="--i:${i}"></canvas>`).join('')}</div>
+      </section>
+      ${native ? `<div class="network-mode seg lh-network" role="group" aria-label="${t('lan.mode')}"><button data-network="online" class="${lan ? '' : 'on'}">${t('lan.online')}</button><button data-network="lan" class="${lan ? 'on' : ''}">${t('lan.local')}</button></div>` : ''}
+      ${lan ? `<p class="lh-note">${t('lan.hint')}</p>` : ''}
 
-        <section data-pane="host">
-          <h2 class="pane-title"><span class="pane-number">01</span>${t('tab.host')}<small>邀请朋友来玩</small></h2>
-          <p class="party-selected-game">当前选择：<strong>${gameInfo(selectedGame).name}</strong></p>
-          <div ${lan ? 'hidden' : ''}><label class="opt-row"><span>${icon.globe}${t('host.listed')}</span>
-            <input type="checkbox" class="switch opt-listed"></label></div>
-          <label class="pin-field">${icon.lock}<input class="opt-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="${t('host.pin')}"></label>
-          <p class="field-err" hidden>${t('host.pinBad')}</p>
-          <button class="choice create">${icon.tv}<span><b>${t('host.screen')}</b><small>${t('host.screenDesc')}</small></span>${icon.right}</button>
-          <button class="choice host">${icon.phone}<span><b>${t('host.phone')}</b><small>${t('host.phoneDesc')}</small></span>${icon.right}</button>
-        </section>
-
-        <section data-pane="join">
-          <h2 class="pane-title"><span class="pane-number">02</span>${t('tab.join')}<small>去朋友的房间</small></h2>
-          <div ${lan ? 'hidden' : ''}><button class="scan-btn">${icon.scan}<b>${t('join.scan')}</b><small>${t('join.scanDesc')}</small></button></div>
-          ${lan ? `<p class="hint">${t('lan.hint')}</p>` : ''}
-          <div ${lan && native ? 'hidden' : ''}>
-          <div class="divider"><span>${t('join.or')}</span></div>
-          <form class="code-form">
-            <label class="code-boxes">
+      <div class="lh-actions${showJoin && showHost ? '' : ' is-single'}">
+        ${showJoin ? `<section class="lh-panel lh-join" aria-labelledby="lh-join-title">
+          <h2 id="lh-join-title">${t('home.joinTitle')}</h2>
+          <p class="lh-panel-desc">${t('home.joinDesc')}</p>
+          <form class="code-form lh-code-form">
+            <label class="code-boxes lh-code-boxes">
               ${'<span></span>'.repeat(CODE_LEN)}
               <input class="code" maxlength="${CODE_LEN}" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="${t('join.codeLabel')}">
             </label>
-            <button type="submit" class="join-btn">${t('join.go')}</button>
+            <button type="submit" class="lh-btn lh-btn-ink join-btn">${t('join.go')}${icon.right}</button>
           </form>
-          </div>
-        </section>
+          ${lan ? '' : `<button type="button" class="lh-btn lh-btn-line scan-btn">${icon.scan}<span>${t('join.scan')}</span></button>`}
+        </section>` : ''}
 
-        <section data-pane="lobby">
-          <h2 class="pane-title"><span class="pane-number">✦</span>${t('tab.lobby')} <span class="count"></span></h2>
-          ${lan && native ? lanLobbyHtml() : ''}
-          <div class="lobby-table" role="table" ${lan ? 'hidden' : ''}>
-            <div class="lrow lhead" role="row"><span>${t('lobby.room')}</span><span>${t('lobby.host')}</span><span>${t('lobby.players')}</span><span>${t('lobby.state')}</span></div>
-            <div class="lbody"></div>
+        ${showHost ? `<section class="lh-panel lh-host" aria-labelledby="lh-host-title">
+          <h2 id="lh-host-title">${t('home.hostTitle')}</h2>
+          <p class="lh-panel-desc">${t('home.hostDesc')}</p>
+          <div class="lh-picker" role="radiogroup" aria-label="${t('home.game')}">
+            ${GAMES.map((game) => `<button type="button" class="lh-pick" role="radio" data-game="${game.id}" aria-checked="${selectedGame === game.id}">
+              <span class="lh-pick-art lh-art-${game.id}">${gameArt(game.id)}</span>
+              <span class="lh-pick-text"><b>${game.name}</b><small>${game.players}</small></span>
+            </button>`).join('')}
           </div>
-          <p class="hint" ${lan ? 'hidden' : ''}>${t('lobby.hint')}</p>
-        </section>
+          <details class="lh-options">
+            <summary>${t('home.options')}</summary>
+            <div class="lh-options-body">
+              <label class="opt-row" ${lan ? 'hidden' : ''}><span>${icon.globe}${t('host.listed')}</span><input type="checkbox" class="switch opt-listed"></label>
+              <label class="pin-field">${icon.lock}<input class="opt-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="${t('host.pin')}"></label>
+              <p class="field-err" hidden>${t('host.pinBad')}</p>
+            </div>
+          </details>
+          <div class="lh-host-btns">
+            <button type="button" class="lh-btn lh-btn-accent create">${icon.tv}<span><b>${t('host.screen')}</b><small>${t('host.screenDesc')}</small></span></button>
+            <button type="button" class="lh-btn lh-btn-line host">${icon.phone}<span><b>${t('host.phone')}</b><small>${t('host.phoneDesc')}</small></span></button>
+          </div>
+        </section>` : ''}
       </div>
-      <a class="guide-link" href="#/adventure-host?solo=1">${icon.stick}<span>一个人先逛逛 <small>软乎乎冒险 · 单人试玩</small></span>${icon.right}</a>
-      <a class="guide-link" href="#/guide">${icon.book}<span>${t('guide.cta')}</span>${icon.right}</a>
+
+      ${showLobby ? `<section class="lh-section lh-lobby" aria-labelledby="lh-lobby-title">
+        <div class="lh-section-head"><h2 id="lh-lobby-title">${t('tab.lobby')} <span class="count"></span></h2>${lan ? '' : `<p>${t('lobby.hint')}</p>`}</div>
+        ${lan && native ? `<div class="lh-lan">${lanLobbyHtml()}</div>` : ''}
+        <div class="lobby-table" role="table" ${lan ? 'hidden' : ''}>
+          <div class="lrow lhead" role="row"><span>${t('lobby.room')}</span><span>${t('lobby.host')}</span><span>${t('lobby.players')}</span><span>${t('lobby.state')}</span></div>
+          <div class="lbody"></div>
+        </div>
+      </section>` : ''}
+
+      <section class="lh-section lh-games" aria-labelledby="lh-games-title">
+        <div class="lh-section-head"><h2 id="lh-games-title">${t('home.games')}</h2></div>
+        ${GAMES.map((game) => `<article class="lh-game lh-game-${game.id}">
+          <div class="lh-game-art lh-art-${game.id}">${gameArt(game.id)}</div>
+          <div class="lh-game-text">
+            <h3>${game.name}</h3>
+            <p class="lh-game-meta">${game.players}</p>
+            <p>${game.caption}</p>
+            <div class="lh-game-links">
+              ${showHost ? `<button type="button" class="lh-link" data-use-game="${game.id}">${t('home.useGame')}${icon.right}</button>` : ''}
+              ${game.id === 'adventure' ? `<a class="lh-link" href="#/adventure-host?solo=1">${t('home.solo')}${icon.right}</a>` : ''}
+            </div>
+          </div>
+        </article>`).join('')}
+        <a class="lh-guide" href="#/guide">${icon.book}<span>${t('guide.cta')}</span>${icon.right}</a>
+      </section>
     </main>
     ${siteFooter()}
   </div>`;
 
-  const $ = <T extends HTMLElement>(s: string) => app.querySelector(s) as T;
+  const $ = <T extends HTMLElement>(s: string) => app.querySelector(s) as T | null;
   bindSiteTools(app);
   void loadCharacterSprites().then(() => {
     if (!app.querySelector('.home')) return;
     app.querySelectorAll<HTMLCanvasElement>('[data-buddy]').forEach((canvas) => drawBuddyAvatar(canvas, Number(canvas.dataset.buddy)));
   }).catch(() => { /* Decorative characters do not block joining a room. */ });
+
+  const pickGame = (game: GameId) => {
+    selectedGame = game;
+    store.set('littlelobby.game', game);
+    app.querySelectorAll<HTMLElement>('[data-game]').forEach((el) => el.setAttribute('aria-checked', String(el.dataset.game === game)));
+  };
   app.querySelectorAll<HTMLButtonElement>('[data-game]').forEach((button) => {
+    button.onclick = () => { if (validGame(button.dataset.game)) pickGame(button.dataset.game); };
+  });
+  app.querySelectorAll<HTMLButtonElement>('[data-use-game]').forEach((button) => {
     button.onclick = () => {
-      if (!validGame(button.dataset.game)) return;
-      selectedGame = button.dataset.game;
-      store.set('littlelobby.game', selectedGame);
-      app.querySelectorAll<HTMLElement>('[data-game]').forEach((el) => el.setAttribute('aria-pressed', String(el.dataset.game === selectedGame)));
-      $('.party-selected-game strong').textContent = gameInfo(selectedGame).name;
+      if (!validGame(button.dataset.useGame)) return;
+      pickGame(button.dataset.useGame);
+      const host = $('.lh-host');
+      host?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+      host?.querySelector<HTMLElement>(`[data-game="${button.dataset.useGame}"]`)?.focus({ preventScroll: true });
     };
   });
   app.querySelectorAll<HTMLButtonElement>('[data-network]').forEach((button) => {
@@ -116,70 +147,66 @@ export function mountHome(app: HTMLElement) {
     };
   });
 
-  // ---------- 分页 ----------
-  const showTab = (k: Tab) => {
-    tab = k;
-    store.set('sfb.tab', k, false);
-    app.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === k)));
-    app.querySelectorAll<HTMLElement>('[data-pane]').forEach((p) => (p.hidden = p.dataset.pane !== k));
-  };
-  app.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => (b.onclick = () => showTab(b.dataset.tab as Tab)));
-  showTab(tab);
-
   // ---------- 开房 ----------
   const pinEl = $<HTMLInputElement>('.opt-pin');
   const pinErr = $('.field-err');
-  pinEl.oninput = () => {
-    pinEl.value = pinEl.value.replace(/\D/g, '');
-    pinErr.hidden = true;
-  };
-  const create = (hash: string) => {
-    const pin = pinEl.value;
-    if (pin && !isPin(pin)) {
-      pinErr.hidden = false;
-      pinEl.focus();
-      return;
-    }
-    store.set('sfb.roomopts', JSON.stringify({ listed: !lan && $<HTMLInputElement>('.opt-listed').checked, mode: lan ? 'lan' : undefined, pin: pin || undefined }), false);
-    store.set('littlelobby.game', selectedGame);
-    // 每次从首页创建都换新房间码，避免旧房间的玩家绕过新设置的密码重连
-    store.set('sfb.room', '', false);
-    store.set('sfb.hostroom', '', false);
-    location.hash = hash;
-  };
-  $('.create').onclick = () => create('#/screen');
-  $('.host').onclick = () => create('#/host');
+  if (pinEl && pinErr) {
+    pinEl.oninput = () => {
+      pinEl.value = pinEl.value.replace(/\D/g, '');
+      pinErr.hidden = true;
+    };
+    const create = (hash: string) => {
+      const pin = pinEl.value;
+      if (pin && !isPin(pin)) {
+        pinErr.hidden = false;
+        $<HTMLDetailsElement>('.lh-options')!.open = true;
+        pinEl.focus();
+        return;
+      }
+      store.set('sfb.roomopts', JSON.stringify({ listed: !lan && $<HTMLInputElement>('.opt-listed')!.checked, mode: lan ? 'lan' : undefined, pin: pin || undefined }), false);
+      store.set('littlelobby.game', selectedGame);
+      // 每次从首页创建都换新房间码，避免旧房间的玩家绕过新设置的密码重连
+      store.set('sfb.room', '', false);
+      store.set('sfb.hostroom', '', false);
+      location.hash = hash;
+    };
+    $('.create')!.onclick = () => create('#/screen');
+    $('.host')!.onclick = () => create('#/host');
+  }
 
   // ---------- 加入：房间码格子 ----------
   const codeEl = $<HTMLInputElement>('.code');
-  if (isLanPage()) codeEl.value = window.__SCANKICK_LAN__!.room;
-  const boxes = [...app.querySelectorAll<HTMLElement>('.code-boxes span')];
-  const paint = () => {
-    const v = codeEl.value;
-    const focused = document.activeElement === codeEl;
-    boxes.forEach((b, i) => {
-      b.textContent = v[i] ?? '';
-      b.classList.toggle('filled', i < v.length);
-      b.classList.toggle('cur', focused && i === Math.min(v.length, CODE_LEN - 1));
-    });
-  };
-  const go = () => {
-    const code = normalizeCode(codeEl.value);
-    if (code.length === CODE_LEN) location.hash = `#/join/${code}${lan ? '?lan=1' : ''}`;
-    else codeEl.focus();
-  };
-  codeEl.oninput = () => {
-    codeEl.value = normalizeCode(codeEl.value).slice(0, CODE_LEN);
+  if (codeEl) {
+    if (isLanPage()) codeEl.value = window.__SCANKICK_LAN__!.room;
+    const boxes = [...app.querySelectorAll<HTMLElement>('.code-boxes span')];
+    const paint = () => {
+      const v = codeEl.value;
+      const focused = document.activeElement === codeEl;
+      boxes.forEach((b, i) => {
+        b.textContent = v[i] ?? '';
+        b.classList.toggle('filled', i < v.length);
+        b.classList.toggle('cur', focused && i === Math.min(v.length, CODE_LEN - 1));
+      });
+    };
+    const go = () => {
+      const code = normalizeCode(codeEl.value);
+      if (code.length === CODE_LEN) location.hash = `#/join/${code}${lan ? '?lan=1' : ''}`;
+      else codeEl.focus();
+    };
+    codeEl.oninput = () => {
+      codeEl.value = normalizeCode(codeEl.value).slice(0, CODE_LEN);
+      paint();
+      if (codeEl.value.length === CODE_LEN) go();
+    };
+    codeEl.onfocus = codeEl.onblur = paint;
+    $<HTMLFormElement>('.code-form')!.onsubmit = (e) => {
+      e.preventDefault();
+      go();
+    };
     paint();
-    if (codeEl.value.length === CODE_LEN) go();
-  };
-  codeEl.onfocus = codeEl.onblur = paint;
-  $<HTMLFormElement>('.code-form').onsubmit = (e) => {
-    e.preventDefault();
-    go();
-  };
-  paint();
-  $('.scan-btn').onclick = () => openScanner(app);
+    const scan = $('.scan-btn');
+    if (scan) scan.onclick = () => openScanner(app);
+  }
 
   if (lan) {
     if (native) bindLanLobby(app);
@@ -188,7 +215,7 @@ export function mountHome(app: HTMLElement) {
 
   // ---------- 公开大厅：订阅所有房间的保留消息 ----------
   let rooms = new Map<string, LobbyInfo>();
-  const body = $('.lbody');
+  const body = $('.lbody')!;
   const countEls = app.querySelectorAll<HTMLElement>('.count');
   let state: 'loading' | 'ready' | 'failed' = 'loading';
 

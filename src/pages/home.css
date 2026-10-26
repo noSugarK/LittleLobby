@@ -1,107 +1,182 @@
-/* Little Lobby: a warm, playful home, using the existing game artwork. */
+/* 小聚场首页：派对游戏官网的标准结构（对标 Jackbox / AirConsole / Kahoot!）——
+   首屏就是「输入房间码加入」与「开房」两块同等分量的面板，其后是公开大厅与游戏介绍。
+   中文用系统黑体：中文网页字体动辄数 MB，Google Fonts 在国内也不可用。 */
 .site.home {
-  --s-bg: #faf8f2; --s-card: #fffefa; --s-fg: #343e34; --s-mu: #767e70;
-  --s-line: #e1e5d8; --s-ac: #637d50; --s-acfg: #fff; --s-hero: #faf8f2;
-  --s-herofg: #343e34; --s-tab: #eeefe5; --s-tabon: #fffefa;
-  --s-soft: #e9efdf; --s-softfg: #52693f;
-  font-family: 'Microsoft YaHei', system-ui, sans-serif;
-  background: var(--s-bg); color: var(--s-fg); color-scheme: light;
+  --h-bg: #f4f5fa; --h-panel: #fff; --h-ink: #141824; --h-mu: #545b6e; --h-line: #dde0ea;
+  --h-ac: #4b4be8; --h-acfg: #fff; --h-ac-soft: #ececff; --h-sun: #ffcf3f; --h-sun-ink: #241c00; --h-sun-mu: #5c4a0c;
+  --h-turf: #3aa865; --h-art-ball: #dcf1e3; --h-art-buddy: #ffe4d4;
+  --s-bg: var(--h-bg); --s-card: var(--h-panel); --s-fg: var(--h-ink); --s-mu: var(--h-mu); --s-line: var(--h-line);
+  --s-ac: var(--h-ac); --s-acfg: var(--h-acfg); --s-tab: #eceef5; --s-tabon: var(--h-panel); --s-soft: var(--h-ac-soft); --s-softfg: var(--h-ac);
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
+  background: var(--h-bg); color: var(--h-ink); color-scheme: light;
+  caret-color: var(--h-ac); accent-color: var(--h-ac);
+  scrollbar-color: color-mix(in srgb, var(--h-ink) 25%, transparent) transparent;
 }
 [data-theme='dark'] .site.home {
-  --s-bg: #232a25; --s-card: #2d352d; --s-fg: #f2f0e5; --s-mu: #b0b8a8;
-  --s-line: #45513f; --s-ac: #adc593; --s-acfg: #263321; --s-hero: #232a25;
-  --s-herofg: #f2f0e5; --s-tab: #232c24; --s-tabon: #3c4937;
-  --s-soft: #35432e; --s-softfg: #c6d8b4; color-scheme: dark;
+  --h-bg: #0f121a; --h-panel: #181c28; --h-ink: #eef0f7; --h-mu: #a7adc0; --h-line: #2b3144;
+  --h-ac: #9393ff; --h-acfg: #0f1030; --h-ac-soft: #25274c;
+  --h-art-ball: #15301f; --h-art-buddy: #3a2620; --s-tab: #141824;
+  color-scheme: dark;
 }
-.home .site-hero { background: transparent; padding: 0 32px; }
-.home .site-hero > *, .home .site-main { width: 100%; max-width: 1160px; margin-inline: auto; }
-.home .site-bar { min-height: 92px; border-bottom: 1px solid var(--s-line); }
-.lobby-wordmark { display: flex; align-items: center; gap: 11px; text-decoration: none; font-size: 23px; font-weight: 900; letter-spacing: 2px; }
-.lobby-wordmark small { display: block; font-size: 8px; letter-spacing: 2.5px; margin-top: 3px; }
-.lobby-mark { display: grid; grid-template-columns: repeat(2, 13px); gap: 3px; transform: rotate(-7deg); }
-.lobby-mark i { width: 13px; height: 13px; border-radius: 5px; background: #a9bc8d; }
-.lobby-mark i:nth-child(2) { background: #e8b4a1; }.lobby-mark i:nth-child(3) { background: #efd086; }.lobby-mark i:nth-child(4) { background: #b5ccd0; }
-.home .site-tools { gap: 9px; }
-.home .site-hero .icon-btn, .home .site-hero .lang-select { background: var(--s-card); border: 1px solid var(--s-line); color: var(--s-fg); border-radius: 12px; }
-.home .hero-body { display: grid; grid-template-columns: 1.15fr 1fr; gap: 65px; align-items: center; padding: 30px 0; margin-top: 0; }
-.home-eyebrow { display: block; color: var(--s-ac); font-size: 10px; letter-spacing: 2.5px; font-weight: 750; }
-.home .hero-text h1 { max-width: 510px; font-size: clamp(34px, 4vw, 48px); line-height: 1.3; letter-spacing: -2px; margin: 14px 0; text-wrap: balance; font-weight: 850; }
-.home .hero-desc { display: block; font-size: 14px; line-height: 1.9; color: var(--s-mu); opacity: 1; max-width: 400px; }
-.home-perks { display: flex; flex-wrap: wrap; gap: 8px 17px; font-size: 11px; color: var(--s-mu); margin-top: 20px; }
-.welcome-scene { position: relative; height: 220px; background: #eeeeda; border-radius: 130px 130px 40px 40px; overflow: hidden; color: #66754d; isolation: isolate; }
-.scene-note { position: absolute; top: 24px; left: 34px; font-size: 13px; transform: rotate(-7deg); z-index: 2; }
-.scene-sun { position: absolute; right: 24px; top: 17px; font-size: 42px; line-height: 1; color: #db9f5d; }
-.scene-hill { position: absolute; width: 125%; height: 160px; border-radius: 50% 50% 0 0; background: #d3deb8; bottom: -45px; left: -15%; transform: rotate(7deg); }
-.welcome-buddy { position: absolute; width: 160px; height: 160px; object-fit: contain; bottom: 28px; }
-.buddy-one { left: 50px; transform: rotate(-6deg); }.buddy-two { right: 35px; transform: rotate(6deg); }
-.scene-flower { position: absolute; bottom: 39px; left: 27px; font-size: 35px; color: #fff9eb; }
-.scene-caption { position: absolute; bottom: 16px; left: 0; width: 100%; text-align: center; font-size: 8px; letter-spacing: 3px; }
-.home .site-main { padding: 0 0 30px; flex: none; }
-.home-section-title { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin: 10px 0 20px; }
-.home-section-title h2 { margin: 8px 0 0; font-size: 26px; letter-spacing: -.6px; }
-.home-section-title p { font-size: 12px; color: var(--s-mu); margin: 0 0 4px; }
-.home .party-game-selectors { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px; margin: 0; }
-.home .party-game-choice { position: relative; display: block; padding: 0; border: 2px solid var(--s-line); border-radius: 26px; background: var(--s-card); text-align: left; color: var(--s-fg); overflow: hidden; cursor: pointer; transition: transform .18s, box-shadow .18s, border-color .18s; }
-.home .party-game-choice:hover { transform: translateY(-4px); box-shadow: 0 12px 25px #24341a0c; }
-.home .party-game-choice[aria-pressed=true] { border-color: var(--s-ac); box-shadow: 0 0 0 3px color-mix(in srgb,var(--s-ac) 12%,transparent); }
-.game-art { display: block; position: relative; height: 140px; overflow: hidden; isolation: isolate; }
-.game-football .game-art { background: #dce7c9; }.game-adventure .game-art { background: #f4dfcf; }
-.game-number { position: absolute; top: 18px; left: 22px; font-size: 11px; letter-spacing: 2px; color: #57684b; border: 1px solid #75826540; padding: 5px 8px; border-radius: 7px; }
-.mini-pitch { position: absolute; width: 250px; height: 135px; border: 2px solid #fff9e5b0; border-radius: 12px; top: 28px; left: calc(50% - 125px); transform: rotate(-12deg); }
-.mini-pitch:before { content: ''; position: absolute; width: 56px; height: 56px; border-radius: 50%; border: 2px solid #fff9e5b0; top: 36px; left: 93px; }
-.mini-pitch:after { content: ''; position: absolute; left: 50%; height: 100%; border-left: 2px solid #fff9e5b0; }
-.game-ball { position: absolute; top: 35px; left: calc(50% - 45px); font-size: 90px; line-height: 1; filter: drop-shadow(0 11px 0 #6d845d24); transform: rotate(-12deg); }
-.art-spark { position: absolute; font-size: 38px; right: 18%; top: 22px; color: #7c9464; }
-.game-art canvas { position: absolute; height: 150px; width: 150px; bottom: -5px; left: calc(50% - 125px); transform: rotate(-7deg); }
-.game-art canvas + canvas { left: calc(50% - 10px); transform: rotate(7deg); }
-.art-star { position: absolute; top: 21px; right: 20%; color: #d9a85f; font-size: 37px; transform: rotate(12deg); }
-.art-cloud { position: absolute; width: 135px; height: 135px; border-radius: 50%; background: #fff5e773; right: -20px; bottom: -60px; box-shadow: -95px 28px 0 40px #fff5e773; }
-.game-copy { display: block; padding: 18px 25px 20px; }
-.game-copy .game-meta { font-size: 10px; color: var(--s-mu); letter-spacing: 1px; }
-.game-copy b { display: block; font-size: 24px; margin: 8px 0; }
-.game-copy small { display: block; color: var(--s-mu); font-size: 12px; }
-.game-arrow { position: absolute; bottom: 27px; right: 24px; display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--s-line); border-radius: 50%; font-size: 21px; }
-.game-selected { position: absolute; right: 16px; top: 16px; background: #fffdf2; color: #526a40; border-radius: 20px; padding: 7px 12px; font-size: 11px; visibility: hidden; }
-[aria-pressed=true] .game-selected { visibility: visible; }
-.play-heading { margin-top: 39px; }
-.home .home-card, .site.home.app-home .home-card { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 0; max-width: none; border: 0; background: transparent; padding: 0; box-shadow: none; }
-.home .home-card [data-pane], .home .home-card [data-pane][hidden] { display: flex; padding: 25px; border: 1px solid var(--s-line); border-radius: 22px; background: var(--s-card); gap: 13px; min-width: 0; }
-.home .home-card [data-pane=join] { background: color-mix(in srgb,var(--s-card) 80%,#e8cb8c 20%); }
-.home .home-card [data-pane=lobby] { grid-column: 1/-1; }
-.home .home-card [data-pane] + [data-pane] { border-left: 1px solid var(--s-line); }
-.home .home-card .tabs { display: none; }
-.home .pane-title { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; font-size: 19px; }
-.pane-title .pane-number { font-size: 10px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--s-soft); color: var(--s-ac); }
-.pane-title small { font-size: 11px; font-weight: 400; margin-left: auto; color: var(--s-mu); }
-.party-selected-game { font-size: 11px; line-height: 1.8; color: var(--s-mu); margin: 0 0 2px; }
-.party-selected-game strong { color: var(--s-ac); }
-.home .choice { min-height: 67px; border-radius: 13px; padding: 14px 16px; }
-.home .choice.create { background: var(--s-ac); color: var(--s-acfg); border-color: var(--s-ac); }
-.home .choice.create .ico, .home .choice.create small { color: inherit; }.home .choice.create small { opacity: .8; }
-.home .choice b { font-size: 14px; }.home .choice small { font-size: 11px; margin-top: 4px; }
-.home .scan-btn { background: var(--s-card); border: 1px dashed color-mix(in srgb,var(--s-ac) 55%,transparent); border-radius: 15px; padding: 19px; color: var(--s-fg); gap: 4px; }
-.home .scan-btn .ico { color: var(--s-ac); width: 26px; height: 26px; margin-bottom: 4px; }
-.home .code-boxes { gap: 8px; }.home .code-boxes span { border-radius: 10px; background: var(--s-card); height: 44px; }
-.home .join-btn { border-radius: 12px; min-height: 44px; background: var(--s-ac); color: var(--s-acfg); }
-.home .divider { margin-block: 5px; }
-.home .lobby-table { border: 1px solid var(--s-line); border-radius: 12px; overflow: hidden; }
-.home .lrow { padding: 12px; }.home .lhead { background: var(--s-tab); font-size: 11px; }.home .hint { font-size: 11px; line-height: 1.8; }
-.home .network-mode, .home .lan-hint { grid-column: 1/-1; margin: 0; }
-.home .guide-link { display: inline-flex; width: calc(50% - 12px); border: 0; background: transparent; margin: 18px 0 0; padding: 8px 0; font-size: 12px; box-shadow: none; gap: 10px; }
-.home .guide-link small { font-size: 10px; }.home .site-footer { margin-top: auto; border-top: 1px solid var(--s-line); padding: 22px; font-size: 10px; }
-.site.home.app-home .home-card .tabs { display: flex; grid-column: 1/-1; padding: 5px; margin: 0; }
-.site.home.app-home .home-card [data-pane][hidden] { display: none; }
-.site.home.app-home .home-card [data-pane] { grid-column: 1/-1; }
-.home button:focus-visible, .home a:focus-visible { outline: 3px solid var(--s-ac); outline-offset: 4px; }
-@media(max-width:1230px) { .home .site-main { width: auto; margin-inline: 32px; }.home .hero-body { gap: 30px; }.buddy-one { left: 22px; }.buddy-two { right: 12px; } }
-@media(max-width:700px) {
-  .home .site-hero { padding-inline: 20px; }.home .site-bar { min-height: 75px; }.lobby-wordmark { font-size: 20px; }.home .site-tools { gap: 5px; }
-  .home .hero-body { grid-template-columns: 1fr; gap: 24px; padding: 30px 0; }.home .hero-text h1 { font-size: 38px; max-width: 330px; letter-spacing: -1px; }.home .hero-desc { display: block; font-size: 12px; }.home-perks { font-size: 10px; gap: 12px; margin-top: 15px; }
-  .welcome-scene { height: 200px; border-radius: 85px 85px 25px 25px; }.welcome-buddy { width: 155px; height: 155px; bottom: 12px; }.buddy-one { left: calc(50% - 137px); }.buddy-two { right: calc(50% - 137px); }.scene-note { top: 25px; left: 30px; font-size: 11px; }.scene-sun { font-size: 50px; top: 15px; right: 30px; }.scene-caption { bottom: 10px; font-size: 7px; }
-  .home .site-main { margin-inline: 20px; }.home-section-title { gap: 10px; }.home-section-title h2 { font-size: 23px; }.home-section-title p { display: none; }.home-eyebrow { font-size: 8px; letter-spacing: 2px; }
-  .home .party-game-selectors { gap: 12px; }.home .party-game-choice { border-radius: 19px; }.game-art { height: 125px; }.game-copy { padding: 16px 14px 20px; }.game-copy b { font-size: 19px; }.game-copy small { font-size: 10px; line-height: 1.7; max-width: 120px; }.game-copy .game-meta { font-size: 8px; letter-spacing: 0; }.game-arrow { display: none; }.game-number { left: 10px; top: 11px; font-size: 9px; padding: 3px 6px; }.game-selected { font-size: 9px; top: 10px; right: 8px; padding: 5px 7px; }
-  .game-art canvas { width: 100px; height: 100px; left: calc(50% - 83px); bottom: 0; }.game-art canvas + canvas { left: calc(50% - 15px); }.art-star { top: 27px; right: 13%; font-size: 26px; }.game-ball { font-size: 65px; left: calc(50% - 32px); top: 42px; }.mini-pitch { width: 170px; height: 100px; top: 35px; left: calc(50% - 85px); }.mini-pitch:before { left: 57px; top: 18px; }.art-spark { font-size: 24px; right: 11%; top: 25px; }
-  .play-heading { margin-top: 30px; }.home .home-card, .site.home.app-home .home-card { display: block; }.home .home-card [data-pane], .home .home-card [data-pane][hidden] { padding: 20px; margin-top: 14px; }.home .home-card [data-pane][hidden] { display: none; }.home .home-card .tabs { display: flex; padding: 5px; margin-bottom: 12px; border-radius: 13px; }.home .pane-title { font-size: 18px; }
-  .home .network-mode { margin-bottom: 12px; }.home .guide-link { width: 100%; margin-top: 12px; }.home .site-footer { padding: 18px; }.home .lang-select { font-size: 11px; padding: 6px; }
+.site.home ::selection { background: var(--h-ac); color: var(--h-acfg); }
+.home :where(button, a, summary, input):focus-visible { outline: 3px solid var(--h-ac); outline-offset: 3px; }
+
+/* ---------- 顶栏 ---------- */
+.lh-top, .lh-main { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: 32px; }
+.lh-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 84px; padding-top: var(--safe-top, env(safe-area-inset-top, 0px)); }
+.lh-wordmark { display: flex; align-items: center; gap: 12px; text-decoration: none; font-size: 22px; font-weight: 850; letter-spacing: .06em; }
+.lh-wordmark small { display: block; font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--h-mu); margin-top: 2px; }
+.lh-mark { display: grid; grid-template-columns: repeat(2, 13px); gap: 3px; transform: rotate(-8deg); }
+.lh-mark i { width: 13px; height: 13px; border-radius: 4px; background: var(--h-ac); }
+.lh-mark i:nth-child(2) { background: var(--h-sun); } .lh-mark i:nth-child(3) { background: #ff7a59; } .lh-mark i:nth-child(4) { background: var(--h-turf); }
+.home .site-tools { gap: 8px; }
+.home .site-tools .icon-btn, .home .site-tools .lang-select { background: var(--h-panel); border: 1px solid var(--h-line); color: var(--h-ink); border-radius: 12px; }
+
+/* ---------- 首屏：标题 + 角色 ---------- */
+.lh-main { flex: 1 0 auto; padding-bottom: 56px; }
+.lh-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 24px; padding: 28px 0 0; }
+.lh-title { margin: 0; font-size: clamp(36px, 4.8vw, 60px); line-height: 1.12; font-weight: 850; letter-spacing: -.02em; text-wrap: balance; }
+.lh-lede { margin: 16px 0 28px; max-width: 34em; font-size: 17px; line-height: 1.7; color: var(--h-mu); }
+/* 四个角色站在面板上沿：唯一的入场动效是依次轻跳一下 */
+.lh-cast { display: flex; align-items: flex-end; margin-bottom: -18px; position: relative; z-index: 1; }
+.lh-cast canvas { width: 104px; height: 104px; margin-left: -18px; animation: lh-hop .9s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--i) * 110ms + 150ms); }
+.lh-cast canvas:nth-child(odd) { transform: rotate(-4deg); } .lh-cast canvas:nth-child(even) { transform: rotate(4deg); }
+@keyframes lh-hop { 0% { translate: 0 0; } 35% { translate: 0 -16px; } 70% { translate: 0 2px; } 100% { translate: 0 0; } }
+
+.lh-network { margin: 0 0 14px; max-width: 360px; }
+.lh-note { margin: 0 0 16px; font-size: 14px; line-height: 1.7; color: var(--h-mu); }
+
+/* ---------- 两块主面板 ---------- */
+.lh-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.lh-actions.is-single { grid-template-columns: minmax(0, 640px); justify-content: center; }
+.lh-panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 30px; border-radius: 28px; }
+.lh-panel h2 { margin: 0; font-size: 28px; font-weight: 850; letter-spacing: -.01em; }
+.lh-panel-desc { margin: -6px 0 6px; font-size: 15px; line-height: 1.6; }
+.lh-join { background: var(--h-sun); color: var(--h-sun-ink); box-shadow: 0 18px 40px -22px #8a6a00; }
+.lh-join .lh-panel-desc { color: var(--h-sun-mu); }
+.lh-host { background: var(--h-panel); border: 1px solid var(--h-line); box-shadow: 0 18px 40px -26px #1a1f3a40; }
+.lh-host .lh-panel-desc { color: var(--h-mu); }
+
+/* 房间码：五个大格子，真正的输入框透明覆盖在上面 */
+.home .lh-code-form { gap: 12px; }
+.home .lh-code-boxes { gap: 10px; }
+.home .lh-code-boxes span { height: 72px; border-radius: 16px; background: #fffdf3; border: 2px solid #2a210033; color: var(--h-sun-ink); font: 750 34px/1 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; transition: border-color .15s, transform .15s; }
+.home .lh-code-boxes span.filled { border-color: var(--h-sun-ink); }
+.home .lh-code-boxes span.cur { border-color: var(--h-ac); box-shadow: 0 0 0 4px color-mix(in srgb, var(--h-ac) 30%, transparent); transform: translateY(-2px); }
+
+/* 按钮 */
+.home .lh-btn { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px; min-height: 56px; padding: 12px 18px; border-radius: 16px; font-size: 17px; font-weight: 750; cursor: pointer; transition: transform .15s, background-color .15s, box-shadow .15s; }
+.home .lh-btn:active { transform: translateY(1px); }
+.home .lh-btn .ico { width: 22px; height: 22px; }
+.home .lh-btn-ink { background: var(--h-sun-ink); color: #fff8dc; border: 0; }
+.home .lh-btn-ink:hover { background: #3a2f05; }
+.home .lh-join .lh-btn-line { background: transparent; color: var(--h-sun-ink); border: 2px solid #2a210059; }
+.home .lh-join .lh-btn-line:hover { background: #fff6cf; }
+.home .lh-btn-accent { background: var(--h-ac); color: var(--h-acfg); border: 0; box-shadow: 0 10px 22px -12px var(--h-ac); }
+.home .lh-btn-accent:hover { background: color-mix(in srgb, var(--h-ac) 88%, #000); }
+.home .lh-host .lh-btn-line { background: var(--h-panel); color: var(--h-ink); border: 1.5px solid var(--h-line); }
+.home .lh-host .lh-btn-line:hover { border-color: var(--h-ac); }
+.home .lh-host-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: auto; }
+.home .lh-host-btns .lh-btn { justify-content: flex-start; text-align: left; min-height: 72px; }
+.home .lh-host-btns span { display: grid; gap: 3px; min-width: 0; }
+.home .lh-host-btns small { font-size: 12px; font-weight: 500; opacity: .92; line-height: 1.4; }
+
+/* 游戏选择：两个单选块 */
+.lh-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.home .lh-pick { position: relative; display: grid; gap: 0; padding: 0; border: 2px solid var(--h-line); border-radius: 18px; background: var(--h-panel); text-align: left; overflow: hidden; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.home .lh-pick:hover { border-color: color-mix(in srgb, var(--h-ac) 55%, var(--h-line)); }
+.home .lh-pick[aria-checked='true'] { border-color: var(--h-ac); box-shadow: 0 0 0 4px var(--h-ac-soft); }
+.home .lh-pick[aria-checked='true']::after { content: ''; position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--h-ac) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 15px no-repeat; }
+.lh-pick-art { display: grid; place-items: center; height: 86px; }
+.lh-pick-text { display: grid; gap: 2px; padding: 10px 14px 12px; }
+.lh-pick-text b { font-size: 17px; }
+.lh-pick-text small { font-size: 12px; color: var(--h-mu); }
+
+/* 游戏插图（选择块与介绍共用） */
+.lh-art-football { background: var(--h-art-ball); }
+.lh-art-adventure { background: var(--h-art-buddy); }
+.lh-pitch { width: 118px; height: auto; }
+.lh-pitch-turf { fill: var(--h-turf); }
+.lh-pitch-line { fill: none; stroke: #fff; stroke-width: 2.4; opacity: .85; }
+.lh-ball { fill: #fff; stroke: #141824; stroke-width: 1.6; }
+.lh-ball-patch { fill: #141824; }
+.lh-buddies { display: flex; align-items: flex-end; height: 100%; }
+.lh-buddies canvas { width: 76px; height: 76px; }
+.lh-buddies canvas + canvas { margin-left: -14px; }
+
+/* 房间设置：默认收起，密码填错时自动展开 */
+.lh-options { border-top: 1px solid var(--h-line); padding-top: 12px; }
+.lh-options summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-size: 14px; font-weight: 650; color: var(--h-mu); }
+.lh-options summary::-webkit-details-marker { display: none; }
+.lh-options summary::after { content: ''; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .15s; }
+.lh-options[open] summary::after { transform: rotate(-135deg) translateY(-2px); }
+.lh-options-body { display: grid; gap: 10px; padding-top: 12px; }
+.home .lh-options .opt-row, .home .lh-options .pin-field { font-size: 14px; }
+
+/* ---------- 公开大厅 / 游戏介绍 ---------- */
+.lh-section { margin-top: 64px; }
+.lh-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.lh-section-head h2 { margin: 0; font-size: 26px; font-weight: 850; display: flex; align-items: center; gap: 10px; }
+.lh-section-head p { margin: 0; font-size: 14px; color: var(--h-mu); }
+.home .lh-lobby .lobby-table { border: 1px solid var(--h-line); border-radius: 20px; background: var(--h-panel); }
+.home .lh-lobby .lrow { padding: 14px 20px; font-size: 15px; grid-template-columns: 84px minmax(0, 1fr) 56px 72px; }
+.home .lh-lobby .lhead { font-size: 13px; background: var(--s-tab); }
+.home .lh-lobby .lbody .lrow:hover { background: var(--h-ac-soft); }
+.home .lh-lobby .lempty { padding: 28px 20px; text-align: center; color: var(--h-mu); font-size: 14px; }
+.lh-lan { display: grid; gap: 12px; padding: 22px; border: 1px solid var(--h-line); border-radius: 20px; background: var(--h-panel); }
+
+.lh-game { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: center; gap: 36px; padding: 18px 0; }
+.lh-game + .lh-game { border-top: 1px solid var(--h-line); }
+.lh-game:nth-of-type(even) { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.lh-game:nth-of-type(even) .lh-game-art { order: 2; }
+.lh-game-art { display: grid; place-items: center; height: 220px; border-radius: 24px; overflow: hidden; }
+.lh-game-art .lh-pitch { width: 240px; }
+.lh-game-art .lh-buddies canvas { width: 150px; height: 150px; }
+.lh-game-art .lh-buddies canvas + canvas { margin-left: -28px; }
+.lh-game-text h3 { margin: 0; font-size: 30px; font-weight: 850; }
+.lh-game-meta { margin: 6px 0 12px; font-size: 14px; font-weight: 650; color: var(--h-ac); }
+.lh-game-text p:not(.lh-game-meta) { margin: 0; font-size: 17px; line-height: 1.7; color: var(--h-mu); max-width: 30em; }
+.lh-game-links { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 18px; }
+.home .lh-link { display: inline-flex; align-items: center; gap: 4px; padding: 6px 0; border: 0; background: none; color: var(--h-ac); font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.home .lh-link .ico { width: 18px; height: 18px; transition: transform .15s; }
+.home .lh-link:hover .ico { transform: translateX(3px); }
+.home .lh-guide { display: flex; align-items: center; gap: 12px; margin-top: 28px; padding: 18px 22px; border-radius: 18px; background: var(--h-ac-soft); color: var(--h-ink); font-size: 16px; font-weight: 650; text-decoration: none; }
+.home .lh-guide span { flex: 1; }
+.home .lh-guide .ico { color: var(--h-ac); }
+.home .site-footer { border-top: 1px solid var(--h-line); padding: 22px; font-size: 13px; color: var(--h-mu); }
+
+/* ---------- 平板 / 手机 ---------- */
+@media (max-width: 900px) {
+  .lh-actions { grid-template-columns: minmax(0, 1fr); }
+  .lh-cast canvas { width: 84px; height: 84px; }
 }
-@media(prefers-reduced-motion:reduce) { .home .party-game-choice { transition: none; }.home .party-game-choice:hover { transform: none; } }
+@media (max-width: 640px) {
+  .lh-top, .lh-main { padding-inline: 18px; }
+  .lh-top { min-height: 68px; }
+  .lh-wordmark { font-size: 19px; gap: 10px; } .lh-wordmark small { font-size: 10px; }
+  .home .site-tools { gap: 6px; } .home .lang-select { font-size: 13px; padding: 6px; }
+  .lh-intro { grid-template-columns: minmax(0, 1fr); padding-top: 12px; gap: 0; }
+  .lh-title { font-size: 36px; }
+  .lh-lede { font-size: 15px; margin: 12px 0 8px; }
+  .lh-cast { justify-content: center; margin-bottom: -14px; }
+  .lh-cast canvas { width: 76px; height: 76px; margin-left: -12px; }
+  .lh-panel { padding: 22px 18px; border-radius: 24px; }
+  .lh-panel h2 { font-size: 24px; }
+  .home .lh-code-boxes { gap: 7px; } .home .lh-code-boxes span { height: 60px; font-size: 28px; border-radius: 14px; }
+  .home .lh-host-btns { grid-template-columns: minmax(0, 1fr); }
+  .home .lh-host-btns .lh-btn { min-height: 64px; }
+  .lh-pick-art { height: 72px; }
+  .lh-section { margin-top: 44px; }
+  .lh-section-head { flex-direction: column; gap: 6px; }
+  .lh-section-head h2 { font-size: 22px; }
+  .home .lh-lobby .lrow { padding: 12px 14px; font-size: 14px; grid-template-columns: 64px minmax(0, 1fr) 42px 58px; }
+  .lh-game, .lh-game:nth-of-type(even) { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 14px 0 22px; }
+  .lh-game:nth-of-type(even) .lh-game-art { order: 0; }
+  .lh-game-art { height: 170px; }
+  .lh-game-text h3 { font-size: 24px; }
+  .lh-game-text p:not(.lh-game-meta) { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lh-cast canvas { animation: none; }
+  .home .lh-btn, .home .lh-pick, .home .lh-code-boxes span, .home .lh-link .ico { transition: none; }
+}
