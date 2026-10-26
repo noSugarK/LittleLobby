@@ -17,6 +17,18 @@ applyTheme();
 async function route() {
   const [path, query = ''] = location.hash.replace(/^#\/?/, '').split('?');
   const [page, arg] = path.split('/');
+  if (page === 'carry' || page === 'carry-host') {
+    location.hash = page === 'carry' ? '#/adventure' : `#/adventure-host${query ? '?' + query.replace('demo=1', 'solo=1') : ''}`;
+    return;
+  }
+  if (page === 'adventure' || page === 'adventure-host') {
+    const { mountAdventure, mountAdventureMenu } = await import('./pages/adventure');
+    const q = new URLSearchParams(query);
+    if (page === 'adventure') await mountAdventureMenu(app);
+    else if (isLanPage() && !q.has('solo')) location.hash = `#/join/${window.__SCANKICK_LAN__!.room}?lan=1&game=adventure`;
+    else await mountAdventure(app, { host: true, solo: q.has('solo'), lan: !q.has('solo') && q.has('lan') });
+    return;
+  }
   if ((page === 'screen' || page === 'host') && isLanPage()) {
     location.hash = `#/join/${window.__SCANKICK_LAN__!.room}?lan=1`;
     return;
@@ -45,7 +57,10 @@ async function route() {
       try { server = lanBaseUrl(q.get('server')!); }
       catch { location.hash = '#/'; return; }
     }
-    mountPlay(app, { kind: 'client', room: normalizeCode(arg), forceRelay: q.has('relay'), pin: q.get('pin') ?? '', lock: q.has('lock'), lan: isLanPage() || !!server, server });
+    if (q.get('game') === 'adventure' || q.get('game') === 'carry') {
+      const { mountAdventure } = await import('./pages/adventure');
+      await mountAdventure(app, { room: normalizeCode(arg), lan: isLanPage() || !!server, server });
+    } else mountPlay(app, { kind: 'client', room: normalizeCode(arg), forceRelay: q.has('relay'), pin: q.get('pin') ?? '', lock: q.has('lock'), lan: isLanPage() || !!server, server });
   } else mountHome(app);
 }
 

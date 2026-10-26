@@ -16,6 +16,19 @@ export function audioReady() {
   return ctx?.state === 'running';
 }
 
+/** 软萌闯关使用轻柔的木琴声，不复用足球的号角和哨声。 */
+export function sfxAdventure(kind: 'jump' | 'collect' | 'clear' | 'hurt') {
+  if (!ctx || ctx.state !== 'running') return;
+  const notes = kind === 'clear' ? [523, 659, 784, 1047] : kind === 'collect' ? [880, 1175] : kind === 'jump' ? [440, 660] : [330, 262];
+  notes.forEach((frequency, i) => {
+    const at = ctx!.currentTime + i * .075;
+    const oscillator = ctx!.createOscillator(), gain = ctx!.createGain();
+    oscillator.type = 'sine'; oscillator.frequency.value = frequency;
+    gain.gain.setValueAtTime(.09, at); gain.gain.exponentialRampToValueAtTime(.001, at + .22);
+    oscillator.connect(gain).connect(ctx!.destination); oscillator.start(at); oscillator.stop(at + .24);
+  });
+}
+
 function noise(dur: number) {
   const c = ctx!;
   const buf = c.createBuffer(1, Math.floor(c.sampleRate * dur), c.sampleRate);

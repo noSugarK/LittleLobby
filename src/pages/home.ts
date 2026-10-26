@@ -79,6 +79,7 @@ export function mountHome(app: HTMLElement) {
           <p class="hint" ${lan ? 'hidden' : ''}>${t('lobby.hint')}</p>
         </section>
       </div>
+      <a class="guide-link" href="#/adventure">${icon.stick}<span>软乎乎冒险 <small>换个小伙伴，一起跳跳闯关</small></span>${icon.right}</a>
       <a class="guide-link" href="#/guide">${icon.book}<span>${t('guide.cta')}</span>${icon.right}</a>
     </main>
     ${siteFooter()}

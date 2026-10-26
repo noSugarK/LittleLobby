@@ -305,6 +305,16 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   function onMsg(m: any) {
     switch (m.t) {
       case 'welcome':
+        // 手输房间码或从局域网大厅进入时，由主机告知实际玩法。
+        if (m.game === 'adventure') {
+          const token = store.get(`sfb.token.${room}`);
+          if (token) store.set(`adventure.token.${room}`, token);
+          const [path, query] = location.hash.split('?');
+          const params = new URLSearchParams(query);
+          params.set('game', 'adventure');
+          location.hash = `${path}?${params}`;
+          return;
+        }
         meId = m.pid;
         setWatching(m.pid < 0);
         renderPanel();

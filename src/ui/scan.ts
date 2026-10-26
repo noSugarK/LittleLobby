@@ -11,7 +11,10 @@ export function joinHashFromQr(text: string): string | null {
     // Local QR codes must open the host's origin, not this site's online room.
     if (query.get('lan') === '1') return null;
     const pin = query.get('pin');
-    return `#/join/${normalizeCode(m[1])}${isPin(pin) ? `?pin=${pin}` : ''}`;
+    const params = new URLSearchParams();
+    if (isPin(pin)) params.set('pin', pin);
+    if (query.get('game') === 'adventure') params.set('game', 'adventure');
+    return `#/join/${normalizeCode(m[1])}${params.size ? `?${params}` : ''}`;
   }
   const code = text.trim();
   return /^[A-Za-z0-9]{5}$/.test(code) ? `#/join/${normalizeCode(code)}` : null;
