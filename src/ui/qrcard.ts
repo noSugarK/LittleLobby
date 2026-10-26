@@ -76,7 +76,7 @@ export async function saveQrCard(ref: RoomRef) {
   const { room } = ref;
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
   if (!blob) return;
-  const file = new File([blob], `scankick-${room}.png`, { type: 'image/png' });
+  const file = new File([blob], `littlelobby-${room}.png`, { type: 'image/png' });
   // 触屏设备优先系统分享：iOS / Android 可以直接存到相册或发给朋友
   if (matchMedia('(pointer: coarse)').matches && navigator.canShare?.({ files: [file] })) {
     try {

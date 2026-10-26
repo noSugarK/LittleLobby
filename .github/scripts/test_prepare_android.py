@@ -57,7 +57,7 @@ class AndroidConfigTest(unittest.TestCase):
                     self.assertEqual(root.find("application").get(f"{{{namespace}}}icon"), "@mipmap/ic_launcher")
                     self.assertEqual(root.find("application").get(f"{{{namespace}}}roundIcon"), "@mipmap/ic_launcher")
                     self.assertEqual(root.find("application/activity").get(f"{{{namespace}}}screenOrientation"), "fullSensor")
-                    for folder, title in {"values": "ScanKick", "values-zh": "开踢", "values-zh-rTW": "開踢", "values-zh-rHK": "開踢"}.items():
+                    for folder, title in {"values": "Little Lobby", "values-zh": "小聚场", "values-zh-rTW": "小聚場", "values-zh-rHK": "小聚場"}.items():
                         resources = ET.parse(app / "src/main/res" / folder / "strings.xml").getroot()
                         self.assertEqual(resources.find("string[@name='app_name']").text, title)
                     network = ET.parse(app / "src/main/res/xml/scankick_network_security.xml").getroot()

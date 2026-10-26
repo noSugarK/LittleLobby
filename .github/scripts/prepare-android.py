@@ -38,7 +38,7 @@ application.set(f"{{{android}}}icon", "@mipmap/ic_launcher")
 application.set(f"{{{android}}}roundIcon", "@mipmap/ic_launcher")
 application.set(f"{{{android}}}label", "@string/app_name")
 # Keep the English name and localize the launcher name for Chinese devices.
-for folder, title in {"values": "ScanKick", "values-zh": "开踢", "values-zh-rTW": "開踢", "values-zh-rHK": "開踢"}.items():
+for folder, title in {"values": "Little Lobby", "values-zh": "小聚场", "values-zh-rTW": "小聚場", "values-zh-rHK": "小聚場"}.items():
     strings = app / "src/main/res" / folder / "strings.xml"
     strings.parent.mkdir(parents=True, exist_ok=True)
     resources = ET.parse(strings) if strings.exists() else ET.ElementTree(ET.Element("resources"))

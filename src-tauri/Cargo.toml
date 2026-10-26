@@ -1,8 +1,8 @@
 [package]
 name = "scankick"
 version = "0.1.0-beta.5"
-description = "ScanKick desktop and mobile app"
-repository = "https://github.com/noSugarK/scankick"
+description = "Little Lobby local party games for desktop and mobile"
+repository = "https://github.com/noSugarK/LittleLobby"
 edition = "2021"
 rust-version = "1.77.2"
 

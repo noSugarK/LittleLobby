@@ -25,7 +25,7 @@ export function lanSession(): LanSession | null {
 }
 
 export async function startLan(room: string) {
-  if (!window.__TAURI__) throw new Error('LAN hosting requires the ScanKick app');
+  if (!window.__TAURI__) throw new Error('LAN hosting requires the Little Lobby app');
   const info = await window.__TAURI__.core.invoke<Omit<LanSession, 'room' | 'baseUrl'>>('start_lan', { room });
   const session: LanSession = { ...info, room, baseUrl: info.addresses[0]?.url || `http://127.0.0.1:${info.port}` };
   store.set('sfb.lan', JSON.stringify(session), false);

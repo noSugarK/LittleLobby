@@ -1,6 +1,6 @@
 # 小聚场 · Little Lobby
 
-朋友线下聚会的多游戏平台。选择开踢或软乎乎冒险，沿用大屏／手机开房、扫码加入；同一房间可切换游戏和地图。内部工程名与仓库地址暂保留 ScanKick。
+朋友线下聚会的多游戏平台。选择开踢或软乎乎冒险，沿用大屏／手机开房、扫码加入；同一房间可切换游戏和地图。内部包名暂保留 ScanKick，仓库已迁移至 LittleLobby。
 
 <p align="center">
   <picture>
@@ -16,20 +16,20 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/noSugarK/scankick/stargazers"><img src="https://img.shields.io/github/stars/noSugarK/scankick?style=flat&logo=github&color=2fa866" alt="GitHub stars"></a>
-  <a href="https://github.com/noSugarK/scankick/actions/workflows/deploy.yml"><img src="https://img.shields.io/github/actions/workflow/status/noSugarK/scankick/deploy.yml?branch=main&label=deploy" alt="Deploy"></a>
-  <a href="https://github.com/noSugarK/scankick/commits/main"><img src="https://img.shields.io/github/last-commit/noSugarK/scankick" alt="Last commit"></a>
+  <a href="https://github.com/noSugarK/LittleLobby/stargazers"><img src="https://img.shields.io/github/stars/noSugarK/LittleLobby?style=flat&logo=github&color=2fa866" alt="GitHub stars"></a>
+  <a href="https://github.com/noSugarK/LittleLobby/actions/workflows/deploy.yml"><img src="https://img.shields.io/github/actions/workflow/status/noSugarK/LittleLobby/deploy.yml?branch=main&label=deploy" alt="Deploy"></a>
+  <a href="https://github.com/noSugarK/LittleLobby/commits/main"><img src="https://img.shields.io/github/last-commit/noSugarK/LittleLobby" alt="Last commit"></a>
   <img src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white" alt="TypeScript">
   <br>
-  <a href="https://github.com/noSugarK/scankick/releases"><img src="https://img.shields.io/github/v/release/noSugarK/scankick?include_prereleases&sort=semver&label=release&color=2fa866" alt="Latest release"></a>
-  <a href="https://github.com/noSugarK/scankick/releases"><img src="https://img.shields.io/github/downloads/noSugarK/scankick/total?label=downloads&color=2fa866" alt="Downloads"></a>
-  <a href="https://github.com/noSugarK/scankick/actions/workflows/release-app.yml"><img src="https://img.shields.io/github/actions/workflow/status/noSugarK/scankick/release-app.yml?label=installers" alt="Installers"></a>
+  <a href="https://github.com/noSugarK/LittleLobby/releases"><img src="https://img.shields.io/github/v/release/noSugarK/LittleLobby?include_prereleases&sort=semver&label=release&color=2fa866" alt="Latest release"></a>
+  <a href="https://github.com/noSugarK/LittleLobby/releases"><img src="https://img.shields.io/github/downloads/noSugarK/LittleLobby/total?label=downloads&color=2fa866" alt="Downloads"></a>
+  <a href="https://github.com/noSugarK/LittleLobby/actions/workflows/release-app.yml"><img src="https://img.shields.io/github/actions/workflow/status/noSugarK/LittleLobby/release-app.yml?label=installers" alt="Installers"></a>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android-informational" alt="Platforms">
 </p>
 
 <p align="center">
-  <a href="https://nosugark.github.io/scankick/"><b>立即开玩</b></a> ·
-  <a href="https://nosugark.github.io/scankick/#/guide">玩法教程</a> ·
+  <a href="https://nosugark.github.io/LittleLobby/"><b>立即开玩</b></a> ·
+  <a href="https://nosugark.github.io/LittleLobby/#/guide">玩法教程</a> ·
   <a href="#下载应用">下载应用</a> ·
   <a href="https://www.bilibili.com/video/BV1gfJf6iEEY/">宣传片</a> ·
   简体中文 · <a href="README.en.md">English</a>
@@ -85,7 +85,7 @@
 
 开发分支新增 **「软乎乎冒险」**：使用一二、布布原图 PNG 帧动画的可爱横版平台闯关，点心、场景配色随主题切换。支持单人试玩与原生应用离线扫码联机，三关合作收集星星、检查点复活。入口位于首页「软乎乎冒险」，详见 [试玩说明](docs/cozy-adventure.md)。当前已发布版本尚不包含此玩法。
 
-1. 在电视或电脑上打开 **[nosugark.github.io/scankick](https://nosugark.github.io/scankick/)**，选择「开房 → 大屏开房」。
+1. 在电视或电脑上打开 **[nosugark.github.io/LittleLobby](https://nosugark.github.io/LittleLobby/)**，选择「开房 → 大屏开房」。
 2. 每个人用手机扫大屏上的二维码，起个昵称，选好队伍。
 3. 横过手机，等房主点「开始比赛」。
 
@@ -94,7 +94,7 @@
 ## 下载应用
 
 网页版打开即玩，玩家永远不需要安装任何东西。想在没有外网的地方开局域网房间，或在安卓上横屏全屏游玩，可以安装应用。
-安装包在 [GitHub Releases](https://github.com/noSugarK/scankick/releases)，网页版右上角的下载按钮也会列出最新版本。
+安装包在 [GitHub Releases](https://github.com/noSugarK/LittleLobby/releases)，网页版右上角的下载按钮也会列出最新版本。
 
 | 系统 | 安装包 | 要求与说明 |
 |---|---|---|
@@ -208,10 +208,10 @@ Android 开发入口为 `cargo tauri android dev`，构建入口为 `cargo tauri
 
 | 平台 | 安装包命名示例 |
 | --- | --- |
-| Windows x64 | `ScanKick_0.1.0_windows-x64.exe`、`ScanKick_0.1.0_windows-x64.msi` |
-| macOS Intel / Apple Silicon 通用版 | `ScanKick_0.1.0_macos-universal.dmg` |
-| Linux x64 | `ScanKick_0.1.0_linux-x64.deb`、`ScanKick_0.1.0_linux-x64.rpm` |
-| Android ARM64 | `ScanKick_0.1.0_android-arm64.apk`，未配置正式签名时带 `-test-signed` 后缀 |
+| Windows x64 | `LittleLobby_0.1.0_windows-x64.exe`、`LittleLobby_0.1.0_windows-x64.msi` |
+| macOS Intel / Apple Silicon 通用版 | `LittleLobby_0.1.0_macos-universal.dmg` |
+| Linux x64 | `LittleLobby_0.1.0_linux-x64.deb`、`LittleLobby_0.1.0_linux-x64.rpm` |
+| Android ARM64 | `LittleLobby_0.1.0_android-arm64.apk`，未配置正式签名时带 `-test-signed` 后缀 |
 
 只上传以上安装包，不上传 AppImage、裸可执行文件、`.app` 目录、AAB 或构建目录。Actions 下载归档保留 14 天；GitHub Release 自带的源码下载链接由 GitHub 自动提供。
 Android SDK/NDK 和安卓工程在 CI 中自动准备，不要求本机预先生成安卓工程；本机 `npm run app:build` 仍只构建当前桌面平台。

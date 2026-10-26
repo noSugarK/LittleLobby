@@ -105,7 +105,7 @@ jobs:
         run: |
           mkdir -p installers
           while IFS= read -r -d '' package; do
-            cp "$package" "installers/ScanKick_${APP_VERSION}_${PLATFORM}.${package##*.}"
+            cp "$package" "installers/LittleLobby_${APP_VERSION}_${PLATFORM}.${package##*.}"
           done < <(find "src-tauri/target/$TARGET/release/bundle" -type f \( -name '*.exe' -o -name '*.msi' -o -name '*.dmg' -o -name '*.deb' -o -name '*.rpm' \) -print0)
       - uses: actions/upload-artifact@v6
         with:
@@ -173,7 +173,7 @@ jobs:
           suffix=''
           if [[ "$SIGNED" != true ]]; then suffix='-test-signed'; fi
           mkdir -p installers
-          cp "${packages[0]}" "installers/ScanKick_${APP_VERSION}_android-arm64${suffix}.apk"
+          cp "${packages[0]}" "installers/LittleLobby_${APP_VERSION}_android-arm64${suffix}.apk"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "${packages[0]}"
           badging="$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "${packages[0]}")"
           if [[ "$badging" == *application-debuggable* ]]; then
@@ -212,7 +212,7 @@ jobs:
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" installers/* --clobber
           else
-            args=(--verify-tag --title "开踢 · ScanKick $RELEASE_TAG" --generate-notes)
+            args=(--verify-tag --title "小聚场 · Little Lobby $RELEASE_TAG" --generate-notes)
             if [[ "${RELEASE_TAG#v}" == *-* ]]; then args+=(--prerelease); fi
             gh release create "$RELEASE_TAG" installers/* "${args[@]}"
           fi

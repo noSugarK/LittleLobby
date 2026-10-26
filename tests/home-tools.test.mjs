@@ -150,7 +150,7 @@ test('下载失败可重新打开重试，加载中和成功后不会重复请�
     await menu.listener();
     assert.equal(requests, 2, '失败后重试，加载期间去重');
     finish({ ok: true, json: async () => [{
-      tag_name: 'v1', assets: [{ name: 'ScanKick_v1_windows-x64.exe', size: 1048576, browser_download_url: 'https://example.com/app.exe' }],
+      tag_name: 'v1', assets: [{ name: 'LittleLobby_v1_windows-x64.exe', size: 1048576, browser_download_url: 'https://example.com/app.exe' }],
     }] });
     await pending;
     assert.match(msg.outerHTML, /https:\/\/example.com\/app.exe/);

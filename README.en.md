@@ -1,6 +1,6 @@
 # Little Lobby · 小聚场
 
-A local party game collection with football and Cozy Adventure. Host on a big screen or join as a player, scan in with phones, and switch games and maps in the same room. Offline LAN play uses the native app. Internal package and repository names remain ScanKick.
+A local party game collection with football and Cozy Adventure. Host on a big screen or join as a player, scan in with phones, and switch games and maps in the same room. Offline LAN play uses the native app. The repository is LittleLobby; internal package names remain ScanKick.
 
 <p align="center">
   <picture>
@@ -15,20 +15,20 @@ A local party game collection with football and Cozy Adventure. Host on a big sc
 </p>
 
 <p align="center">
-  <a href="https://github.com/noSugarK/scankick/stargazers"><img src="https://img.shields.io/github/stars/noSugarK/scankick?style=flat&logo=github&color=2fa866" alt="GitHub stars"></a>
-  <a href="https://github.com/noSugarK/scankick/actions/workflows/deploy.yml"><img src="https://img.shields.io/github/actions/workflow/status/noSugarK/scankick/deploy.yml?branch=main&label=deploy" alt="Deploy"></a>
-  <a href="https://github.com/noSugarK/scankick/commits/main"><img src="https://img.shields.io/github/last-commit/noSugarK/scankick" alt="Last commit"></a>
+  <a href="https://github.com/noSugarK/LittleLobby/stargazers"><img src="https://img.shields.io/github/stars/noSugarK/LittleLobby?style=flat&logo=github&color=2fa866" alt="GitHub stars"></a>
+  <a href="https://github.com/noSugarK/LittleLobby/actions/workflows/deploy.yml"><img src="https://img.shields.io/github/actions/workflow/status/noSugarK/LittleLobby/deploy.yml?branch=main&label=deploy" alt="Deploy"></a>
+  <a href="https://github.com/noSugarK/LittleLobby/commits/main"><img src="https://img.shields.io/github/last-commit/noSugarK/LittleLobby" alt="Last commit"></a>
   <img src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white" alt="TypeScript">
   <br>
-  <a href="https://github.com/noSugarK/scankick/releases"><img src="https://img.shields.io/github/v/release/noSugarK/scankick?include_prereleases&sort=semver&label=release&color=2fa866" alt="Latest release"></a>
-  <a href="https://github.com/noSugarK/scankick/releases"><img src="https://img.shields.io/github/downloads/noSugarK/scankick/total?label=downloads&color=2fa866" alt="Downloads"></a>
-  <a href="https://github.com/noSugarK/scankick/actions/workflows/release-app.yml"><img src="https://img.shields.io/github/actions/workflow/status/noSugarK/scankick/release-app.yml?label=installers" alt="Installers"></a>
+  <a href="https://github.com/noSugarK/LittleLobby/releases"><img src="https://img.shields.io/github/v/release/noSugarK/LittleLobby?include_prereleases&sort=semver&label=release&color=2fa866" alt="Latest release"></a>
+  <a href="https://github.com/noSugarK/LittleLobby/releases"><img src="https://img.shields.io/github/downloads/noSugarK/LittleLobby/total?label=downloads&color=2fa866" alt="Downloads"></a>
+  <a href="https://github.com/noSugarK/LittleLobby/actions/workflows/release-app.yml"><img src="https://img.shields.io/github/actions/workflow/status/noSugarK/LittleLobby/release-app.yml?label=installers" alt="Installers"></a>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android-informational" alt="Platforms">
 </p>
 
 <p align="center">
-  <a href="https://nosugark.github.io/scankick/"><b>Play now</b></a> ·
-  <a href="https://nosugark.github.io/scankick/#/guide">How to play</a> ·
+  <a href="https://nosugark.github.io/LittleLobby/"><b>Play now</b></a> ·
+  <a href="https://nosugark.github.io/LittleLobby/#/guide">How to play</a> ·
   <a href="#download-the-app">Download the app</a> ·
   <a href="https://www.bilibili.com/video/BV1gfJf6iEEY/">Trailer</a> ·
   <a href="README.md">简体中文</a> · English
@@ -82,7 +82,7 @@ A local party game collection with football and Cozy Adventure. Host on a big sc
 
 ## Quick start
 
-1. Open **[nosugark.github.io/scankick](https://nosugark.github.io/scankick/)** on a TV or computer and choose Host → Host on big screen.
+1. Open **[nosugark.github.io/LittleLobby](https://nosugark.github.io/LittleLobby/)** on a TV or computer and choose Host → Host on big screen.
 2. Everyone scans the QR code with their phone, picks a nickname and a team.
 3. Turn your phone sideways and wait for the room host to start the match.
 
@@ -91,7 +91,7 @@ No big screen? Choose Host → Host on phone, and others scan the QR code on tha
 ## Download the app
 
 The website is all you need, and players never install anything. Install the app to host LAN rooms without internet access, or for fullscreen landscape play on Android.
-Installers are on [GitHub Releases](https://github.com/noSugarK/scankick/releases); the download button at the top right of the website also lists the latest version.
+Installers are on [GitHub Releases](https://github.com/noSugarK/LittleLobby/releases); the download button at the top right of the website also lists the latest version.
 
 | System | Installer | Requirements and notes |
 |---|---|---|
@@ -198,10 +198,10 @@ Run `Build app installers` manually to download installers from Actions Artifact
 
 Installer names include the version, OS, and architecture:
 
-- Windows: `ScanKick_0.1.0_windows-x64.exe` and `.msi`.
-- macOS Intel / Apple Silicon: `ScanKick_0.1.0_macos-universal.dmg`.
-- Linux: `ScanKick_0.1.0_linux-x64.deb` and `.rpm`.
-- Android: `ScanKick_0.1.0_android-arm64.apk`, with `-test-signed` before `.apk` when production signing secrets are absent.
+- Windows: `LittleLobby_0.1.0_windows-x64.exe` and `.msi`.
+- macOS Intel / Apple Silicon: `LittleLobby_0.1.0_macos-universal.dmg`.
+- Linux: `LittleLobby_0.1.0_linux-x64.deb` and `.rpm`.
+- Android: `LittleLobby_0.1.0_android-arm64.apk`, with `-test-signed` before `.apk` when production signing secrets are absent.
 
 Only installers are uploaded. No AppImage, raw binaries, `.app` directories, AAB, or build directories are uploaded. Actions artifacts expire after 14 days; GitHub separately provides its automatic source archive links on Releases. CI installs the Android SDK/NDK and initializes the Android project if absent; local `npm run app:build` still builds only the current desktop platform.
 
