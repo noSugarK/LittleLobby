@@ -257,7 +257,8 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     if (state && view.epoch < state.epoch) return;
     if (state && view.epoch === state.epoch && view.time < state.time) return;
     const oldMe = state?.players.find((p) => p.id === state!.me);
-    previous = state; state = { ...view, me: host ? host.localId ?? -1 : pid >= 0 ? pid : view.me }; received = performance.now();
+    if (!host && pid < 0 && view.me >= 0) pid = view.me;
+    previous = state; state = { ...view, me: host ? host.localId ?? -1 : pid }; received = performance.now();
     if (lastEpoch !== state.epoch) { lastEpoch = state.epoch; previous = null; pad.reset(); }
     // 大厅里显示所选玩法的第一关；关卡编号按玩法内计数
     const levels = modeLevels(state.mode), shown = state.phase === 'lobby' ? levels[0] : state.level;
@@ -329,7 +330,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     $('.adv-seat').hidden = !mode.host || !!mode.solo || state.phase !== 'lobby';
     $('.adv-lobby').hidden = !mode.host || !!mode.solo || state.phase === 'lobby';
     $('.adv-seat').textContent = host?.localId === undefined ? '我也加入冒险' : '仅当大屏观看';
-    const playing = !!me && state.phase === 'playing' && !state.paused;
+    const playing = !!me && state.phase === 'playing' && !state.paused && (!!host || !!client?.linked);
     $('.pad').hidden = !playing;
     play.classList.toggle('watching', !me);
     if (!playing) pad.reset();
@@ -414,6 +415,8 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       store.set('adventure.name', name); store.set(joinedKey, '1', false);
       let token = store.get(`adventure.token.${room}`); if (!token) { token = randomCode(16); store.set(`adventure.token.${room}`, token); }
       client?.close();
+      state = previous = null; lastEpoch = -1; lastPhase = ''; rosterKey = '';
+      pad.reset(); $('.pad').hidden = true;
       joinEl.hidden = true; play.classList.add('joined'); renderPanel();
       const pin = $<HTMLInputElement>('.join .pin').value.replace(/\D/g, '') || undefined;
       store.set(pinKey, pin ?? '', false);
@@ -424,7 +427,11 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       connection.onState = (s) => {
         if (closed || client !== connection) return;
         status(connection.linked ? `${s === 'lan' ? '局域网' : s === 'p2p' ? '直连' : '中继'} · 房间 ${room}` : s === 'lost' ? '正在找回连接…' : '正在连接…', connection.linked);
-        if (!connection.linked) pad.reset();
+        if (!connection.linked) {
+          pad.reset(); $('.pad').hidden = true;
+          // 主机重开后 epoch / time 从头计数，不能拿旧房间的快照拦截新状态。
+          state = previous = null; lastEpoch = -1; lastPhase = '';
+        }
         else connection.sendJson({ t: 'adventure-skin', skin });
       };
       const message = (m: any) => {
@@ -437,7 +444,11 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
           location.hash = `#/join/${room}${params.toString() ? `?${params}` : ''}`;
           return;
         }
-        if (m.t === 'welcome') { pid = m.pid; connection.sendJson({ t: 'adventure-skin', skin }); }
+        if (m.t === 'welcome') {
+          pid = m.pid;
+          if (state) receive(state);
+          connection.sendJson({ t: 'adventure-skin', skin });
+        }
         else if (m.t === 'adventure-state') receive(m);
       };
       connection.onJson = message;

@@ -64,7 +64,9 @@ export class AdventureHost {
             typeof m.jump !== 'boolean' || (m.act !== undefined && typeof m.act !== 'boolean') || !Number.isSafeInteger(m.seq) || m.seq < 0 || m.seq <= (this.seq.get(cid) ?? -1)) return;
         this.seq.set(cid, m.seq); this.game.input(id, { axis: m.axis, jump: m.jump, act: m.act === true });
       },
-      onBinary: () => {}, onLink: () => {},
+      onBinary: () => {},
+      // 首次 welcome 走 MQTT，可能丢失；链路就绪后再同步身份和当前关卡。
+      onLink: (cid) => cb.onPeer(cid),
       onLeave: (cid) => {
         const id = this.peers.get(cid);
         this.peers.delete(cid); this.seq.delete(cid);

@@ -122,6 +122,11 @@ test('主机过滤乱序、旧关卡和越界输入；按身份重连，角色�
   });
   assert.equal(cb.onHello('one', { token: 't', name: 'P' }), null); cb.onPeer('one');
   assert.equal(sent[0][1].game, 'adventure'); host.game.start();
+  sent.length = 0;
+  cb.onLink('one', 'relay');
+  assert.equal(sent[0][1].pid, 1, '首次握手丢失后，在可用链路补发玩家身份');
+  assert.equal(sent[1][1].phase, 'playing');
+  assert.equal(sent[1][1].me, 1);
   const deliver = (patch) => cb.onJson('one', { t: 'adventure-input', epoch: host.game.epoch, seq: 5, axis: 1, jump: false, ...patch });
   deliver({}); deliver({ seq: 4, axis: -1 }); deliver({ seq: 6, axis: NaN }); deliver({ seq: 6, epoch: 0, axis: -1 });
   tick(host.game, 0); host.game.step(1 / 60); assert.ok(host.game.players.get(1).vx > 0);

@@ -6,6 +6,14 @@ import test from 'node:test';
 import ts from 'typescript';
 const hostUrl = new URL('../src/net/adventure-host.ts', import.meta.url).href;
 const mocks = {
+  '../net/client': `export class ClientNet {
+    linked = false; sent = [];
+    constructor() { globalThis.__adventureClient = this; }
+    async start() {}
+    sendJson(message) { this.sent.push(message); }
+    close() { this.linked = false; }
+  }`,
+  '../net/lan-client': `export {ClientNet as LanClient} from 'test:adventure/../net/client';`,
   '../net/adventure-host': `import {AdventureHost as Base} from ${JSON.stringify(hostUrl)};export class AdventureHost extends Base {constructor(...a){super(...a);globalThis.__adventureHost=this;}}`,
   '../game/adventure-render': 'export class AdventureRenderer {draw(){} close(){}} export const drawAvatar=()=>{}; export const loadCharacterSprites=async()=>{};',
   // 手柄只保留页面依赖的接口：input / onButtons / reset，由测试直接驱动
@@ -38,7 +46,7 @@ registerHooks({
 });
 class Element extends EventTarget {
   innerHTML = ''; textContent = ''; hidden = false; disabled = false; open = false; value = ''; dataset = {}; style = { setProperty() {} };
-  children = new Map(); classList = { toggle() {}, add() {}, remove() {} };
+  children = new Map(); classList = { toggle() {}, add() {}, remove() {}, contains() { return false; } };
   querySelector(key) { if (!this.children.has(key)) this.children.set(key, new Element()); return this.children.get(key); }
   querySelectorAll(key) { return this.children.get(`all:${key}`) || []; }
   setAttribute() {}
@@ -81,5 +89,52 @@ test('手柄输入驱动主机：键盘斜向也能边走边跳，换装不打�
     globalThis.__adventureHost?.close();
     for (const k of keys) globalThis[k] = originals[k];
     delete globalThis.__adventureHost; delete globalThis.__pad;
+  }
+});
+
+test('扫码玩家开局显示按键，延迟身份和主机重开后仍能加入并发送输入', async () => {
+  const keys = ['window', 'document', 'requestAnimationFrame', 'cancelAnimationFrame', 'matchMedia', 'localStorage', 'sessionStorage'];
+  const originals = Object.fromEntries(keys.map((k) => [k, globalThis[k]]));
+  const intervals = [];
+  globalThis.window = Object.assign(new EventTarget(), { setInterval: (fn) => { const id = setInterval(fn, 100000); intervals.push(id); return id; }, setTimeout, clearTimeout });
+  globalThis.document = Object.assign(new EventTarget(), { visibilityState: 'visible', documentElement: {}, title: '' });
+  globalThis.requestAnimationFrame = () => 1; globalThis.cancelAnimationFrame = () => {};
+  globalThis.matchMedia = () => ({ matches: false });
+  const storage = () => { const m = new Map(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) }; };
+  globalThis.localStorage = storage(); globalThis.sessionStorage = storage();
+  try {
+    const { mountAdventure } = await import('../src/pages/adventure.ts');
+    const { AdventureGame } = await import('../src/game/adventure.ts');
+    for (const lan of [false, true]) {
+      const app = new Element();
+      app.querySelector('.join .name').value = '扫码伙伴';
+      await mountAdventure(app, { room: 'ABCDE', lan });
+      app.querySelector('.go').onclick();
+      const client = globalThis.__adventureClient, pad = globalThis.__pad;
+      client.linked = true; client.onState(lan ? 'lan' : 'relay');
+      const game = new AdventureGame(); game.add(2, '扫码伙伴'); game.start();
+      game.epoch = 4; game.time = 90;
+      client.onJson(game.view()); // 快照先到，welcome 后到
+      assert.equal(app.querySelector('.pad').hidden, true);
+      client.onJson({ t: 'welcome', game: 'adventure', pid: 2 });
+      assert.equal(app.querySelector('.pad').hidden, false, '身份晚到也应立即恢复按键');
+      const move = () => { Object.assign(pad.input, { jx: 1, jy: 0, btn: 2 }); pad.onButtons(); };
+      move();
+      assert.deepEqual(client.sent.at(-1), { t: 'adventure-input', epoch: 4, seq: 0, axis: 1, jump: true, act: false });
+      client.linked = false; client.onState('lost');
+      assert.equal(app.querySelector('.pad').hidden, true);
+      client.linked = true; client.onState(lan ? 'lan' : 'relay');
+      game.epoch = 1; game.time = 0;
+      client.onJson({ t: 'welcome', game: 'adventure', pid: 2 });
+      client.onBinary(new TextEncoder().encode(JSON.stringify(game.view())));
+      assert.equal(app.querySelector('.pad').hidden, false, '主机重开后的较小 epoch 不能被当作过期快照');
+      move();
+      assert.equal(client.sent.at(-1).epoch, 1);
+      window.dispatchEvent(new Event('pagehide'));
+    }
+  } finally {
+    for (const id of intervals) clearInterval(id);
+    for (const k of keys) globalThis[k] = originals[k];
+    delete globalThis.__adventureClient; delete globalThis.__pad;
   }
 });
