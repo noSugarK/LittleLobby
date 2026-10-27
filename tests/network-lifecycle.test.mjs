@@ -27,6 +27,22 @@ const { LanClient } = await import('../src/net/lan-client.ts');
 const { lanJoinHash, lanSocketUrl } = await import('../src/net/lan-session.ts');
 const info = { token: 'player', name: 'P', team: 'auto' };
 
+test('冒险中继短按和松开使用可靠消息，直连继续使用有序控制通道', () => {
+  const client = new ClientNet('ABCDE', info), sent = [];
+  client.signal = { pub: (...args) => sent.push(args), close() {} };
+  const press = { t: 'adventure-input', epoch: 1, seq: 1, axis: 0, jump: true, act: false };
+  const release = { ...press, seq: 2, jump: false };
+  try {
+    client.state = 'relay'; client.relay = true;
+    client.sendJson(press, 1); client.sendJson(release, 1);
+    assert.deepEqual(sent.map(([, message, retain, qos]) => [message, retain, qos]), [[press, false, 1], [release, false, 1]]);
+    client.ctl = { readyState: 'open', send: (data) => sent.push(JSON.parse(data)) };
+    client.fast = { readyState: 'open' };
+    client.sendJson(press, 1); client.sendJson(release, 1);
+    assert.deepEqual(sent.slice(2), [press, release]);
+  } finally { client.close(); }
+});
+
 test('局域网大厅即使没有游戏快照也持续发送心跳', async () => {
   const original = { window: globalThis.window, WebSocket: globalThis.WebSocket, performance: globalThis.performance };
   let timer, ws, now = 0;

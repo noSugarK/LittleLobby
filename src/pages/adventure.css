@@ -79,6 +79,8 @@
 /* 游戏信息在顶栏正中，和足球的比分同一个位置 */
 .adv-hud { position: absolute; left: 50%; top: max(8px, var(--safe-top, env(safe-area-inset-top))); translate: -50% 0; font-size: 12px; padding: 5px 12px; border-radius: 20px; background: rgba(0, 0, 0, 0.45); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .adv-hud:empty { display: none; }
+.adv-paused { position: absolute; top: 30%; left: 50%; translate: -50% 0; width: min(420px, calc(100% - 32px)); z-index: 5; text-align: center; pointer-events: none; }
+.adv-paused[hidden] { display: none; }
 /* 窄屏时顶栏放不下三样：游戏信息挪到第二行 */
 @media (max-width: 560px) { .adv-hud { top: calc(max(8px, var(--safe-top, env(safe-area-inset-top))) + 36px); } }
 /* 浅色天空上白色虚线看不见，空位改用暖棕色 */

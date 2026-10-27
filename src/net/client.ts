@@ -241,10 +241,10 @@ export class ClientNet {
     else if (this.relay) this.signal.pub(`h/${this.cid}`, bin, false, 1);
   }
 
-  sendJson(obj: object) {
+  sendJson(obj: object, qos: 0 | 1 = 0) {
     if (this.closed) return;
     if (this.p2pOpen()) this.ctl!.send(JSON.stringify(obj));
-    else this.signal.pub(`h/${this.cid}`, obj);
+    else this.signal.pub(`h/${this.cid}`, obj, false, qos);
   }
 
   private teardownPeer() {

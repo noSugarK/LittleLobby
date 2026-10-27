@@ -76,7 +76,8 @@ export class LanClient {
   sendInput(data: Uint8Array) {
     if (this.linked && this.socket?.readyState === WebSocket.OPEN) this.socket.send(data as Uint8Array<ArrayBuffer>);
   }
-  sendJson(message: object) {
+  // WebSocket 始终可靠有序，qos 仅供同接口的 MQTT 客户端选择投递等级。
+  sendJson(message: object, _qos: 0 | 1 = 0) {
     if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify(message));
   }
   retryDirect() {

@@ -61,16 +61,23 @@ test('待机和跑动循环，起跳与下落停留在末帧，左右采样各�
 
 test('本地精灵加载失败可重试，成功后复用图片，绘制直接采样 PNG 帧', async () => {
   const original = globalThis.Image, urls = [];
-  let fail = true;
+  let fail = () => true;
   globalThis.Image = class {
     naturalWidth = 1024; naturalHeight = 1280;
-    set src(value) { urls.push(value); queueMicrotask(() => fail ? this.onerror() : this.onload()); }
+    set src(value) { this.url = value; urls.push(value); queueMicrotask(() => fail(value) ? this.onerror() : this.onload()); }
   };
   serveLocal();
   try {
     await assert.rejects(loadCharacterSprites(), /角色图片未能加载/);
     assert.deepEqual(CHARACTERS.map((c) => c.id), manifest.characters);
-    fail = false; await loadCharacterSprites(); const count = urls.length; await loadCharacterSprites();
+    fail = (url) => url.endsWith('/yier/atlas.png') || url.endsWith('/bubu/full-atlas.png');
+    await loadCharacterSprites();
+    const fallback = []; drawBuddyImage({ drawImage: (...args) => fallback.push(args) }, 100, 200, 'yier', 'idle', 0);
+    assert.equal(fallback.length, 1, '默认角色图片损坏仍使用可用角色绘制');
+    assert.ok(!fallback[0][0].url.endsWith('/yier/atlas.png'));
+    const normal = []; drawBuddyImage({ drawImage: (...args) => normal.push(args) }, 100, 200, 'bubu', 'idle', 0, 1, true);
+    assert.ok(normal[0][0].url.endsWith('/bubu/atlas.png'), '大肚肚图损坏回退到普通造型');
+    fail = () => false; await loadCharacterSprites(); const count = urls.length; await loadCharacterSprites();
     assert.equal(urls.length, count);
     assert.ok(urls.every((url) => url.startsWith('/LittleLobby/characters/')));
     assert.ok(urls.includes('/LittleLobby/characters/yier/atlas.png'));

@@ -1,4 +1,4 @@
-import { CHARACTERS, DEFAULT_SKIN, characterOf, characterUrl, loadCharacters } from './characters';
+import { DEFAULT_SKIN, characterOf, characterUrl, loadCharacters } from './characters';
 
 export type BuddyAction = 'idle' | 'run' | 'jump' | 'fall';
 export const SPRITE_CELL = { width: 128, height: 160, baseline: 146, columns: 8, rows: 8 };
@@ -23,27 +23,36 @@ const sheets = new Map<string, HTMLImageElement>();
 export function loadSheet(url: string, name: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
+    const timer = setTimeout(() => reject(new Error(`${name}的角色图片加载超时，请刷新重试`)), 10000);
     image.onload = () => {
+      clearTimeout(timer);
       if (image.naturalWidth !== SPRITE_CELL.width * SPRITE_CELL.columns || image.naturalHeight !== SPRITE_CELL.height * SPRITE_CELL.rows) {
         reject(new Error(`${name}的精灵表尺寸不正确`)); return;
       }
       resolve(image);
     };
-    image.onerror = () => reject(new Error(`${name}的角色图片未能加载，请刷新重试`));
+    image.onerror = () => { clearTimeout(timer); reject(new Error(`${name}的角色图片未能加载，请刷新重试`)); };
     image.src = url;
   });
 }
 let loading: Promise<void> | undefined;
 /** 先读本机角色清单，再加载每个角色的两张精灵表；角色有增减时再调用会补齐新的。 */
 export function loadCharacterSprites(): Promise<void> {
-  if (!loading) loading = loadCharacters().then((list) => Promise.all(list.flatMap((character) => (['', ':full'] as const)
+  if (!loading) loading = loadCharacters().then((list) => Promise.allSettled(list.flatMap((character) => (['', ':full'] as const)
     .filter((variant) => !sheets.has(character.id + variant))
     .map(async (variant) => { sheets.set(character.id + variant, await loadSheet(characterUrl(character.id, variant ? 'full-atlas.png' : 'atlas.png'), character.name)); }))))
-    .then(() => {}).finally(() => { loading = undefined; });
+    .then((results) => {
+      // 任意普通造型可用就能游玩，坏掉的其他角色和大肚肚图不阻塞加入。
+      if (![...sheets.keys()].some((key) => !key.endsWith(':full'))) {
+        const failed = results.find((result) => result.status === 'rejected');
+        throw failed?.status === 'rejected' ? failed.reason : new Error('没有可用的角色图片，请刷新重试');
+      }
+    }).finally(() => { loading = undefined; });
   return loading;
 }
 
-const sheetOf = (skin: string) => sheets.get(characterOf(skin)?.id ?? DEFAULT_SKIN) || sheets.get(DEFAULT_SKIN) || sheets.get(CHARACTERS[0]?.id);
+const sheetOf = (skin: string) => sheets.get(characterOf(skin)?.id ?? DEFAULT_SKIN) || sheets.get(DEFAULT_SKIN)
+  || [...sheets].find(([key]) => !key.endsWith(':full'))?.[1];
 
 export function drawBuddyImage(ctx: CanvasRenderingContext2D, x: number, feet: number, skin: string, action: BuddyAction, seconds: number, facing: number, full = false) {
   const normal = sheetOf(skin);

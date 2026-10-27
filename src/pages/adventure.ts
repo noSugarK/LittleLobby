@@ -106,6 +106,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
         <button class="ghost menu">${t('play.menu')}</button>
       </div>`}
     </div>
+    <div class="card adv-paused" role="status" hidden>房主已切到后台，冒险暂停中。<br>请房主回到游戏，大家就能继续。</div>
     <div class="pad" hidden></div>
     <div class="panel card adv-panel drawer" hidden>
       <nav class="prail"><button class="pcollapse" aria-label="收起菜单">${icon.right}</button><button data-tab="room" class="on" aria-pressed="true">${icon.home}<span>房间</span></button><button data-tab="controls" aria-pressed="false">${icon.pad}<span>${t('ctl.title')}</span></button></nav>
@@ -171,8 +172,17 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     const el = $('.toast'); el.textContent = message; el.hidden = false;
     clearTimeout(toastTimer); toastTimer = window.setTimeout(() => { el.hidden = true; }, ms);
   };
+  const joinButton = $<HTMLButtonElement>('.go');
+  joinButton.disabled = true; joinButton.textContent = '正在加载角色…';
+  $('.return-home').onclick = () => { location.hash = '#/'; };
   try { await avatars(app); }
-  catch (error) { status(`角色图片加载失败，请刷新重试`, false); toast(String(error), 6000); return; }
+  catch (error) {
+    status('角色图片加载失败，请重试', false); toast(String(error), 6000);
+    joinButton.disabled = false; joinButton.textContent = '图片加载失败，点击重试';
+    joinButton.onclick = () => location.reload();
+    return;
+  }
+  joinButton.disabled = false; joinButton.textContent = '加入小伙伴';
   skin = characterOf(skin).id;
   const renderer = new AdventureRenderer($<HTMLCanvasElement>('.stage'));
   // 和足球同一套菱形键位：B 跳跃在右、A 吃 / 吐在下；X、Y 用不到，留淡淡的空位
@@ -205,7 +215,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     if (host) {
       host.localInput = { ...input };
       if (host.localId !== undefined) host.game.input(host.localId, input);
-    } else if (client?.linked) client.sendJson({ t: 'adventure-input', epoch: state.epoch, seq: seq++, ...input });
+    } else if (client?.linked) client.sendJson({ t: 'adventure-input', epoch: state.epoch, seq: seq++, ...input }, 1);
   }
   function updateInput() {
     const enabled = state?.phase === 'playing' && !state.paused && (host ? host.localId !== undefined : !!client?.linked);
@@ -331,6 +341,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     $('.adv-lobby').hidden = !mode.host || !!mode.solo || state.phase === 'lobby';
     $('.adv-seat').textContent = host?.localId === undefined ? '我也加入冒险' : '仅当大屏观看';
     const playing = !!me && state.phase === 'playing' && !state.paused && (!!host || !!client?.linked);
+    $('.adv-paused').hidden = !state.paused || state.phase !== 'playing';
     $('.pad').hidden = !playing;
     play.classList.toggle('watching', !me);
     if (!playing) pad.reset();
@@ -416,14 +427,14 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       let token = store.get(`adventure.token.${room}`); if (!token) { token = randomCode(16); store.set(`adventure.token.${room}`, token); }
       client?.close();
       state = previous = null; lastEpoch = -1; lastPhase = ''; rosterKey = '';
-      pad.reset(); $('.pad').hidden = true;
+      pad.reset(); $('.pad').hidden = true; $('.adv-paused').hidden = true;
       joinEl.hidden = true; play.classList.add('joined'); renderPanel();
       const pin = $<HTMLInputElement>('.join .pin').value.replace(/\D/g, '') || undefined;
       store.set(pinKey, pin ?? '', false);
       const info = { name, token, team: 'auto' as const, pin };
       const connection = mode.lan || isLanPage() ? new LanClient(room, info, mode.server ? lanBaseUrl(mode.server) : undefined) : new ClientNet(room, info);
       client = connection; seq = 0; pid = -1;
-      const showJoin = (message: string) => { connection.close(); pad.reset(); joinEl.hidden = false; play.classList.remove('joined'); store.set(joinedKey, '', false); renderPanel(); toast(message, 5000); };
+      const showJoin = (message: string) => { connection.close(); pad.reset(); $('.adv-paused').hidden = true; joinEl.hidden = false; play.classList.remove('joined'); store.set(joinedKey, '', false); renderPanel(); toast(message, 5000); };
       connection.onState = (s) => {
         if (closed || client !== connection) return;
         status(connection.linked ? `${s === 'lan' ? '局域网' : s === 'p2p' ? '直连' : '中继'} · 房间 ${room}` : s === 'lost' ? '正在找回连接…' : '正在连接…', connection.linked);
@@ -431,6 +442,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
           pad.reset(); $('.pad').hidden = true;
           // 主机重开后 epoch / time 从头计数，不能拿旧房间的快照拦截新状态。
           state = previous = null; lastEpoch = -1; lastPhase = '';
+          $('.adv-paused').hidden = true;
         }
         else connection.sendJson({ t: 'adventure-skin', skin });
       };

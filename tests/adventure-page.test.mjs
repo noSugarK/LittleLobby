@@ -10,12 +10,12 @@ const mocks = {
     linked = false; sent = [];
     constructor() { globalThis.__adventureClient = this; }
     async start() {}
-    sendJson(message) { this.sent.push(message); }
+    sendJson(message, qos = 0) { this.sent.push(message); this.lastQos = qos; }
     close() { this.linked = false; }
   }`,
   '../net/lan-client': `export {ClientNet as LanClient} from 'test:adventure/../net/client';`,
   '../net/adventure-host': `import {AdventureHost as Base} from ${JSON.stringify(hostUrl)};export class AdventureHost extends Base {constructor(...a){super(...a);globalThis.__adventureHost=this;}}`,
-  '../game/adventure-render': 'export class AdventureRenderer {draw(){} close(){}} export const drawAvatar=()=>{}; export const loadCharacterSprites=async()=>{};',
+  '../game/adventure-render': 'export class AdventureRenderer {draw(){} close(){}} export const drawAvatar=()=>{}; export const loadCharacterSprites=async()=>{if(globalThis.__adventureSpriteError) throw new Error("图片加载失败");};',
   // 手柄只保留页面依赖的接口：input / onButtons / reset，由测试直接驱动
   '../ui/gamepad': `export class Gamepad {
     constructor() { this.input = { jx: 0, jy: 0, btn: 0 }; this.onButtons = () => {}; this.onPress = () => {}; globalThis.__pad = this; window.addEventListener('blur', () => this.reset()); }
@@ -121,6 +121,13 @@ test('扫码玩家开局显示按键，延迟身份和主机重开后仍能加�
       const move = () => { Object.assign(pad.input, { jx: 1, jy: 0, btn: 2 }); pad.onButtons(); };
       move();
       assert.deepEqual(client.sent.at(-1), { t: 'adventure-input', epoch: 4, seq: 0, axis: 1, jump: true, act: false });
+      assert.equal(client.lastQos, 1, '冒险按键应请求可靠中继');
+      game.paused = true; client.onJson(game.view());
+      assert.equal(app.querySelector('.adv-paused').hidden, false, '暂停原因不必打开菜单就能看到');
+      assert.equal(app.querySelector('.pad').hidden, true);
+      game.paused = false; client.onJson(game.view());
+      assert.equal(app.querySelector('.adv-paused').hidden, true);
+      assert.equal(app.querySelector('.pad').hidden, false);
       client.linked = false; client.onState('lost');
       assert.equal(app.querySelector('.pad').hidden, true);
       client.linked = true; client.onState(lan ? 'lan' : 'relay');
@@ -132,9 +139,18 @@ test('扫码玩家开局显示按键，延迟身份和主机重开后仍能加�
       assert.equal(client.sent.at(-1).epoch, 1);
       window.dispatchEvent(new Event('pagehide'));
     }
+    globalThis.__adventureSpriteError = true;
+    window.setTimeout = () => 0;
+    const failed = new Element();
+    await mountAdventure(failed, { room: 'ABCDE' });
+    assert.equal(failed.querySelector('.go').disabled, false);
+    assert.match(failed.querySelector('.go').textContent, /重试/);
+    assert.equal(typeof failed.querySelector('.go').onclick, 'function');
+    assert.equal(typeof failed.querySelector('.return-home').onclick, 'function');
   } finally {
     for (const id of intervals) clearInterval(id);
     for (const k of keys) globalThis[k] = originals[k];
     delete globalThis.__adventureClient; delete globalThis.__pad;
+    delete globalThis.__adventureSpriteError;
   }
 });
