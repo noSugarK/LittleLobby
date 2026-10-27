@@ -2,7 +2,7 @@ import { t } from '../i18n';
 import { LOBBY_STALE_MS, watchLobby, type LobbyInfo } from '../net/lobby';
 import { openScanner } from '../ui/scan';
 import { bindSiteTools, icon, siteFooter, siteTools } from '../ui/site';
-import { HISTORY_KEY, esc, isPin, normalizeCode, store } from '../ui/util';
+import { HISTORY_KEY, brand, esc, isPin, normalizeCode, store } from '../ui/util';
 import { isLanPage, isNativeApp, stopLan } from '../net/lan-session';
 import { bindLanLobby, lanLobbyHtml } from '../ui/lan-lobby';
 import { GAMES, validGame, type GameId } from '../room/catalog';
@@ -37,7 +37,7 @@ export function mountHome(app: HTMLElement) {
   app.innerHTML = `
   <div class="site home${native || isLanPage() ? ' app-home' : ''}">
     <header class="lh-top">
-      <a class="lh-wordmark" href="#/" aria-label="${t('app.name')}"><span class="lh-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>${t('app.name')}<small>Little Lobby</small></span></a>
+      <a class="lh-wordmark" href="#/" aria-label="${t('app.name')}"><img class="lh-mark on-light" src="${brand('mark.svg')}" alt="" width="50" height="35"><img class="lh-mark on-dark" src="${brand('mark-light.svg')}" alt="" width="50" height="35"><span>${t('app.name')}<small>Little Lobby</small></span></a>
       ${siteTools()}
     </header>
     <main class="lh-main">

@@ -83,7 +83,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   <div class="play">
     <canvas class="stage"></canvas>
     <div class="topbar">
-      <div class="topbar-left"><img class="game-logo" src="${brand('logo-dark-sm.png')}" alt=""><div class="status"><i></i><span></span></div></div>
+      <div class="topbar-left"><img class="game-logo" src="${brand('logo-white-sm.png')}" alt=""><div class="status"><i></i><span></span></div></div>
       <div class="top-actions">
         <button class="ghost fs-btn" hidden>${t('play.fullscreen')}</button>
         <button class="ghost cam">${t('play.follow')}</button>
@@ -93,7 +93,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     <div class="pad"></div>
     <div class="panel card drawer" hidden></div>
     <div class="join card">
-      <img class="join-logo" src="${brand('logo-dark.png')}" alt="${t('app.name')}">
+      <img class="join-logo" src="${brand('logo-white.png')}" alt="${t('app.name')}">
       ${isHost ? `<h1>${t('play.noScreen')}</h1>` : ''}
       <p class="muted">${isHost ? t('play.noScreenDesc') : t('play.room', { room: `<b>${esc(room)}</b>` })}</p>
       <input class="name" maxlength="12" value="${esc(savedName)}" placeholder="${t('play.name')}" aria-label="${t('play.name')}">

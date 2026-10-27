@@ -30,7 +30,7 @@ export function mountScreen(app: HTMLElement) {
     <div class="corner-qr" hidden>
       <canvas></canvas><div>${t('screen.scanJoin')} · <b>${room}</b>${opts.pin ? ` · ${t('play.pinLine')} ${opts.pin}` : ''}</div>
     </div>
-    <img class="game-logo screen-logo" src="${brand('logo-dark-sm.png')}" alt="">
+    <img class="game-logo screen-logo" src="${brand('logo-white-sm.png')}" alt="">
     <div class="net-badge"><i></i><span>${t(local ? 'lan.starting' : 'status.connectingSignal')}</span></div>
     <div class="screen-actions">
       <button class="ghost end-btn" hidden>${t('screen.end')}</button>
@@ -50,7 +50,7 @@ export function mountScreen(app: HTMLElement) {
       </div>
       <div class="lobby-side">
         <div class="lobby-head">
-          <img class="lobby-logo" src="${brand('wordmark-dark.png')}" alt="${t('app.name')}">
+          <img class="lobby-logo" src="${brand('wordmark-white.png')}" alt="${t('app.name')}">
           <span class="muted small"><span class="watchers"></span>${t('play.swipeHint')}</span>
         </div>
         <div class="tcards"></div>

@@ -26,9 +26,10 @@
 .lh-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 84px; padding-top: var(--safe-top, env(safe-area-inset-top, 0px)); }
 .lh-wordmark { display: flex; align-items: center; gap: 12px; text-decoration: none; font-size: 22px; font-weight: 850; letter-spacing: .06em; }
 .lh-wordmark small { display: block; font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--h-mu); margin-top: 2px; }
-.lh-mark { display: grid; grid-template-columns: repeat(2, 13px); gap: 3px; transform: rotate(-8deg); }
-.lh-mark i { width: 13px; height: 13px; border-radius: 4px; background: var(--h-ac); }
-.lh-mark i:nth-child(2) { background: var(--h-sun); } .lh-mark i:nth-child(3) { background: #ff7a59; } .lh-mark i:nth-child(4) { background: var(--h-turf); }
+/* 品牌图形：客厅沙发手柄（public/brand/mark.svg） */
+.lh-mark { width: 50px; height: auto; display: block; }
+.lh-mark.on-dark, [data-theme='dark'] .lh-mark.on-light { display: none; }
+[data-theme='dark'] .lh-mark.on-dark { display: block; }
 .home .site-tools { gap: 8px; }
 .home .site-tools .icon-btn, .home .site-tools .lang-select { background: var(--h-panel); border: 1px solid var(--h-line); color: var(--h-ink); border-radius: 12px; }
 
