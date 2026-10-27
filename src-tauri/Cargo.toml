@@ -2,6 +2,7 @@
 name = "little-lobby"
 version = "0.2.0-beta.1"
 description = "Little Lobby local party games for desktop and mobile"
+license = "MIT"
 repository = "https://github.com/noSugarK/LittleLobby"
 edition = "2021"
 rust-version = "1.77.2"

@@ -1,5 +1,5 @@
 // 统一发版入口。版本号只写在 package.json；其余文件由这里同步，CI 用 --check 校验同一套规则。
-//   npm run release -- 0.2.0-beta.2   同步版本号、跑测试和构建，然后打印 WSL 里的提交 / 打标签 / 推送命令
+//   npm run release -- 0.2.0-beta.2   同步版本号、跑测试和构建，然后打印提交 / 打标签 / 推送命令
 //   node .github/scripts/release.mjs --check [--tag v0.2.0-beta.2]   只校验（CI 用）
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
@@ -82,14 +82,14 @@ function main(args) {
   const git = (cmd) => execSync(`git ${cmd}`, { encoding: 'utf8' }).trim();
   assert.equal(git('branch --show-current'), 'main', 'Release from main');
   assert.equal(git('status --porcelain --untracked-files=no'), '', 'Commit or stash tracked changes first');
-  // 只查本地标签：Windows 侧的 git 没有 SSH 权限，远端已有同名标签时 WSL 里的 push 会直接拒绝
+  // 只查本地标签：远端已有同名标签时 push 会直接拒绝
   assert.equal(git(`tag --list ${tag}`), '', `Tag ${tag} already exists`);
 
   write('.', version);
   execSync('npm test', { stdio: 'inherit' });
   execSync('npm run build', { stdio: 'inherit' });
   const files = Object.values(FILES).join(' ');
-  console.log(`\nVersion ${version} is ready. Commit, tag and push through WSL Git:\n
+  console.log(`\nVersion ${version} is ready. Commit, tag and push:\n
   git add ${files}
   git commit -m "chore: release ${tag}"
   git tag -a ${tag} -m "${tag}"
