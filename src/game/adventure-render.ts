@@ -1,5 +1,5 @@
 import { drawBuddyImage, type BuddyAction } from './adventure-sprites';
-import { MAP_THEMES, LEVELS, enemyX, type AdventureView } from './adventure';
+import { MAP_THEMES, LEVELS, ROPE, enemyX, type AdventureView, type Rect } from './adventure';
 
 const INK = '#70594f';
 function round(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number, fill: string, stroke = '') {
@@ -55,7 +55,7 @@ export class AdventureRenderer {
   }
   close() { this.observer.disconnect(); }
   draw(s: AdventureView, _skin: number) {
-    const ctx = this.ctx, theme = MAP_THEMES[s.level], level = LEVELS[s.level];
+    const ctx = this.ctx, level = LEVELS[s.level], theme = MAP_THEMES[level.theme];
     const now = performance.now(), dt = Math.min(.05, (now - this.last) / 1000); this.last = now;
     const scale = this.height / 460, worldWidth = this.width / scale;
     const me = s.players.find((p) => p.id === s.me);
@@ -65,9 +65,9 @@ export class AdventureRenderer {
     this.camera += (target - this.camera) * Math.min(1, dt * 9);
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); ctx.clearRect(0, 0, this.width, this.height);
     ctx.save(); ctx.scale(scale, scale); ctx.translate(0, -100); ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    const gradient = ctx.createLinearGradient(0, 100, 0, 590); gradient.addColorStop(0, s.level === 1 ? '#edf6fc' : s.level === 2 ? '#eee9f8' : theme.sky); gradient.addColorStop(1, '#fffcf3'); ctx.fillStyle = gradient; ctx.fillRect(0, 100, worldWidth, 590);
-    oval(ctx, worldWidth - 100, 155, 32, 32, s.level === 2 ? '#fff9d9' : '#ffe7a6'); oval(ctx, worldWidth - 110, 153, 2, 3, INK); oval(ctx, worldWidth - 90, 153, 2, 3, INK); smile(ctx, worldWidth - 100, 160);
-    if (s.level === 2) for (let i = 0; i < 12; i++) { ctx.lineWidth = 1; star(ctx, i * 131 + 20, 125 + i % 3 * 39, 3, '#fff6ca'); }
+    const gradient = ctx.createLinearGradient(0, 100, 0, 590); gradient.addColorStop(0, theme.sky); gradient.addColorStop(1, '#fffcf3'); ctx.fillStyle = gradient; ctx.fillRect(0, 100, worldWidth, 590);
+    oval(ctx, worldWidth - 100, 155, 32, 32, level.theme === 2 ? '#fff9d9' : '#ffe7a6'); oval(ctx, worldWidth - 110, 153, 2, 3, INK); oval(ctx, worldWidth - 90, 153, 2, 3, INK); smile(ctx, worldWidth - 100, 160);
+    if (level.theme === 2) for (let i = 0; i < 12; i++) { ctx.lineWidth = 1; star(ctx, i * 131 + 20, 125 + i % 3 * 39, 3, '#fff6ca'); }
     for (let i = -1; i < 9; i++) {
       const x = i * 220 - (this.camera * .12 % 220), y = 165 + (i % 3) * 38;
       oval(ctx, x, y, 43, 12, '#ffffffc9'); oval(ctx, x - 15, y - 10, 19, 17, '#ffffffc9'); oval(ctx, x + 12, y - 14, 23, 20, '#ffffffc9');
@@ -96,6 +96,7 @@ export class AdventureRenderer {
         oval(ctx, x, r.y - 19, 3, 3, '#eec888');
       }
     }
+    this.devices(s, theme.accent, now);
     level.coins.forEach((item, i) => { if (!me?.coins.includes(i)) drawTreat(ctx, item.x, item.y + Math.sin(now / 380 + i) * 3, theme.treat, .8); });
     level.stars.forEach((item, i) => {
       if (s.stars.includes(i)) return;
@@ -122,15 +123,17 @@ export class AdventureRenderer {
     round(ctx, gx + 24, 424, 43, 76, 20, s.stars.length === 3 ? '#a8cdb0' : '#dfc9b4', INK);
     oval(ctx, gx + 56, 466, 3, 3, '#fff6d6'); round(ctx, gx - 4, 410, 19, 23, 5, '#d7eeeb', '#bda28c'); round(ctx, gx + 78, 410, 19, 23, 5, '#d7eeeb', '#bda28c');
     ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.font = 'bold 14px sans-serif'; ctx.fillText(s.stars.length === 3 ? '来野餐吧！' : `还差 ${3 - s.stars.length} 颗星星`, gx + 45, 350);
+    if (s.mode === 'rope') this.rope(s);
     for (const p of s.players) {
-      if (!p.online || (p.invulnerable > 0 && Math.floor(now / 90) % 2)) continue;
+      // 被吃掉的队友藏在肚子里，不单独画
+      if (!p.online || p.eatenBy >= 0 || (p.invulnerable > 0 && Math.floor(now / 90) % 2)) continue;
       oval(ctx, p.x + 17, p.y + 45, 19, 4, '#70594f1c');
       const action: BuddyAction = s.phase !== 'playing' || p.reached ? 'idle' : !p.grounded ? p.vy < -20 ? 'jump' : 'fall' : Math.abs(p.vx) > 30 ? 'run' : 'idle';
       let animation = this.animations.get(p.id);
       if (!animation || animation.action !== action || animation.skin !== p.skin) {
         animation = { action, since: now, skin: p.skin }; this.animations.set(p.id, animation);
       }
-      drawBuddyImage(ctx, p.x + 17, p.y + 44, p.skin, action, (now - animation.since) / 1000, p.facing);
+      drawBuddyImage(ctx, p.x + 17, p.y + 44, p.skin, action, (now - animation.since) / 1000, p.facing, p.eating >= 0);
       ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
       const name = `${p.name}${p.id === s.me ? ' · 你' : ''}`;
       const width = ctx.measureText(name).width + 16;
@@ -140,9 +143,55 @@ export class AdventureRenderer {
     }
     if (this.camera < 350) {
       round(ctx, 54, 318, 207, 57, 12, '#fffdf3e6', '#dbc6b3'); ctx.textAlign = 'left'; ctx.fillStyle = INK; ctx.font = 'bold 12px sans-serif';
-      ctx.fillText('← → 散步   ·   按住跳得更高', 69, 340); ctx.font = '11px sans-serif'; ctx.fillText('跳到台阶上，找齐三颗小星星', 69, 359);
+      const tip = TIPS[s.mode];
+      ctx.fillText(tip[0], 69, 340); ctx.font = '11px sans-serif'; ctx.fillText(tip[1], 69, 359);
     }
     ctx.restore();
   }
+  /** 机关：踩板（激活后压下去）、激活后出现的木板吊桥 / 台阶、未打开时挡路的糖果闸门。 */
+  private devices(s: AdventureView, accent: string, now: number) {
+    const ctx = this.ctx;
+    (LEVELS[s.level].devices ?? []).forEach((d, i) => {
+      const on = s.active.includes(i), p = d.plate;
+      round(ctx, p.x - 4, p.y + p.h - 4, p.w + 8, 6, 3, '#d8c1a6', '#baa388');
+      round(ctx, p.x + 6, on ? p.y + 3 : p.y - 4, p.w - 12, on ? 6 : 12, 6, on ? '#a8cdb0' : accent, INK);
+      if (d.need > 1 && !on) { ctx.fillStyle = INK; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`${d.need} 人一起踩`, p.x + p.w / 2, p.y - 12); }
+      if (on) for (const r of d.solid ?? []) plank(ctx, r);
+      else for (const r of d.gate ?? []) gate(ctx, r, now);
+      if (!on) for (const r of d.solid ?? []) { ctx.setLineDash([6, 8]); ctx.strokeStyle = '#baa38899'; ctx.strokeRect(r.x, r.y, r.w, r.h); ctx.setLineDash([]); }
+    });
+  }
+  /** 串一串：相邻两人之间一根软软下垂的红白毛线，越松垂得越多。 */
+  private rope(s: AdventureView) {
+    const ctx = this.ctx;
+    const chain = s.players.filter((p) => p.online && p.eatenBy < 0).sort((a, b) => a.id - b.id);
+    for (let i = 0; i + 1 < chain.length; i++) {
+      const a = chain[i], b = chain[i + 1];
+      const ax = a.x + 17, ay = a.y + 26, bx = b.x + 17, by = b.y + 26;
+      const sag = Math.max(0, ROPE - Math.hypot(bx - ax, by - ay)) * .55 + 4;
+      const path = () => { ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + sag, bx, by); };
+      ctx.lineWidth = 5; ctx.strokeStyle = '#e4686c'; path(); ctx.stroke();
+      ctx.lineWidth = 2.5; ctx.setLineDash([5, 6]); ctx.strokeStyle = '#fff6ea'; path(); ctx.stroke(); ctx.setLineDash([]);
+      ctx.lineWidth = 2;
+    }
+  }
+}
+const TIPS = {
+  classic: ['← → 散步   ·   按住跳得更高', '跳到台阶上，找齐三颗小星星'],
+  rope: ['大家用一根绳子连着', '一起起跳；掉下去的人会被站稳的队友吊住'],
+  eat: ['靠近队友按 A 吃掉，再按 A 吐出去', '把队友吐到对岸，踩下按钮放吊桥'],
+  stack: ['可以站在队友的头上', '叠起来爬上高墙，踩按钮放下台阶'],
+} as const;
+function plank(ctx: CanvasRenderingContext2D, r: Rect) {
+  round(ctx, r.x, r.y, r.w, r.h, 6, '#e8c48f', '#b08a5e');
+  ctx.strokeStyle = '#c99f6a'; for (let x = r.x + 30; x < r.x + r.w; x += 30) { ctx.beginPath(); ctx.moveTo(x, r.y + 3); ctx.lineTo(x, r.y + r.h - 3); ctx.stroke(); }
+  ctx.strokeStyle = INK;
+}
+function gate(ctx: CanvasRenderingContext2D, r: Rect, now: number) {
+  round(ctx, r.x, r.y, r.w, r.h, 8, '#fff2f2', INK);
+  ctx.save(); ctx.beginPath(); ctx.roundRect(r.x, r.y, r.w, r.h, 8); ctx.clip();
+  ctx.fillStyle = '#f08c94';
+  for (let y = r.y - 40 + (now / 40) % 30; y < r.y + r.h; y += 30) { ctx.beginPath(); ctx.moveTo(r.x, y); ctx.lineTo(r.x + r.w, y - 14); ctx.lineTo(r.x + r.w, y - 2); ctx.lineTo(r.x, y + 12); ctx.fill(); }
+  ctx.restore();
 }
 

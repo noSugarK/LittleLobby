@@ -13,6 +13,8 @@ const mocks = {
     constructor() { this.input = { jx: 0, jy: 0, btn: 0 }; this.onButtons = () => {}; this.onPress = () => {}; globalThis.__pad = this; window.addEventListener('blur', () => this.reset()); }
     reset() { this.input.jx = this.input.jy = this.input.btn = 0; this.onButtons(); }
     update() {}
+    show() {}
+    apply() {}
   }`,
   '../ui/sound': 'export const sfxAdventure = () => {}, unlockAudio = () => {};',
   '../ui/lan-room': 'export const bindLanAddress = () => {}, lanInfoHtml = () => "";',
@@ -61,14 +63,14 @@ test('手柄输入驱动主机：键盘斜向也能边走边跳，换装不打�
     const move = (jx, jy, btn = 0) => { Object.assign(pad.input, { jx, jy, btn }); pad.onButtons(); };
     // 键盘 → + ↑：手柄归一化为 (0.71, -0.71)
     move(Math.SQRT1_2, -Math.SQRT1_2);
-    assert.deepEqual(host.localInput, { axis: 1, jump: true });
+    assert.deepEqual(host.localInput, { axis: 1, jump: true, act: false });
     skins[1].onclick();
     assert.equal(host.game.players.get(host.localId).skin, 3);
-    assert.deepEqual(host.localInput, { axis: 1, jump: true });
+    assert.deepEqual(host.localInput, { axis: 1, jump: true, act: false });
     move(-1, 0, 0b10); // 反向 + B 键
-    assert.deepEqual(host.localInput, { axis: -1, jump: true });
+    assert.deepEqual(host.localInput, { axis: -1, jump: true, act: false });
     window.dispatchEvent(new Event('blur'));
-    assert.deepEqual(host.localInput, { axis: 0, jump: false });
+    assert.deepEqual(host.localInput, { axis: 0, jump: false, act: false });
     window.dispatchEvent(new Event('pagehide'));
     for (const id of intervals) assert.equal(id._destroyed, true);
   } finally {

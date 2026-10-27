@@ -7,7 +7,7 @@ export class AdventureHost {
   readonly game = new AdventureGame();
   readonly net: HostTransport | null;
   localId: number | undefined;
-  localInput: AdventureInput = { axis: 0, jump: false };
+  localInput: AdventureInput = { axis: 0, jump: false, act: false };
   onView: (view: AdventureView) => void = () => {};
   onStatus: (ok: boolean) => void = () => {};
   private tokens = new Map<string, number>();
@@ -61,8 +61,8 @@ export class AdventureHost {
         if (m.t === 'ping') this.net?.sendJson(cid, { t: 'pong', ts: m.ts });
         if (m.t === 'adventure-skin') this.game.skin(id, m.skin);
         if (m.t !== 'adventure-input' || m.epoch !== this.game.epoch || ![-1, 0, 1].includes(m.axis) ||
-            typeof m.jump !== 'boolean' || !Number.isSafeInteger(m.seq) || m.seq < 0 || m.seq <= (this.seq.get(cid) ?? -1)) return;
-        this.seq.set(cid, m.seq); this.game.input(id, { axis: m.axis, jump: m.jump });
+            typeof m.jump !== 'boolean' || (m.act !== undefined && typeof m.act !== 'boolean') || !Number.isSafeInteger(m.seq) || m.seq < 0 || m.seq <= (this.seq.get(cid) ?? -1)) return;
+        this.seq.set(cid, m.seq); this.game.input(id, { axis: m.axis, jump: m.jump, act: m.act === true });
       },
       onBinary: () => {}, onLink: () => {},
       onLeave: (cid) => {
@@ -82,9 +82,12 @@ export class AdventureHost {
   removeLocal() {
     if (this.game.phase !== 'lobby') return;
     if (this.localId !== undefined) this.game.remove(this.localId);
-    this.localId = undefined; this.localInput = { axis: 0, jump: false }; this.publish();
+    this.localId = undefined; this.localInput = { axis: 0, jump: false, act: false }; this.publish();
   }
-  advance() { this.localInput = { axis: 0, jump: false }; const result = this.game.start(); this.publish(); return result; }
+  advance() { this.localInput = { axis: 0, jump: false, act: false }; const result = this.game.start(); this.publish(); return result; }
+  /** 房主在大厅里选玩法（经典 / 串一串 / 吃吐吐 / 叠罗汉）。 */
+  setMode(mode: unknown) { const ok = this.game.setMode(mode); if (ok) this.publish(); return ok; }
+  toLobby() { this.localInput = { axis: 0, jump: false, act: false }; const ok = this.game.toLobby(); if (ok) this.publish(); return ok; }
   async start() {
     await this.net?.start();
     if (this.closed) { this.net?.close(); return; }

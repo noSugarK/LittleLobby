@@ -17,7 +17,7 @@ registerHooks({
     return { format: 'module', shortCircuit: true, source: ts.transpile(readFileSync(new URL(url), 'utf8'), { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }) };
   },
 });
-const { AdventureGame, LEVELS, CHARACTERS, enemyX, padInput } = await import('../src/game/adventure.ts');
+const { AdventureGame, LEVELS, CHARACTERS, enemyX, modeLevels, padInput, solids } = await import('../src/game/adventure.ts');
 const { AdventureHost } = await import('../src/net/adventure-host.ts');
 const { joinHashFromQr } = await import('../src/ui/scan.ts');
 const tick = (g, frames, input = { axis: 0, jump: false }) => { for (let i = 0; i < frames; i++) { g.input(1, input); g.step(1 / 60); } };
@@ -137,13 +137,13 @@ test('扫码只透传闯关玩法和有效密码', () => {
 });
 
 test('足球同款手柄：摇杆过死区才移动，B 或上推到底跳跃，非游戏中不出输入', () => {
-  assert.deepEqual(padInput(0.2, 0, false, true), { axis: 0, jump: false });
-  assert.deepEqual(padInput(-0.6, 0.1, true, true), { axis: -1, jump: true });
-  assert.deepEqual(padInput(0.5, -0.9, false, true), { axis: 1, jump: true });
+  assert.deepEqual(padInput(0.2, 0, false, true), { axis: 0, jump: false, act: false });
+  assert.deepEqual(padInput(-0.6, 0.1, true, true, true), { axis: -1, jump: true, act: true });
+  assert.deepEqual(padInput(0.5, -0.9, false, true), { axis: 1, jump: true, act: false });
   // 键盘 → + ↑ 被手柄归一化为 (0.71, -0.71)，边走边跳必须成立
-  assert.deepEqual(padInput(Math.SQRT1_2, -Math.SQRT1_2, false, true), { axis: 1, jump: true });
-  assert.deepEqual(padInput(0.9, -0.4, false, true), { axis: 1, jump: false });
-  assert.deepEqual(padInput(1, -1, true, false), { axis: 0, jump: false });
+  assert.deepEqual(padInput(Math.SQRT1_2, -Math.SQRT1_2, false, true), { axis: 1, jump: true, act: false });
+  assert.deepEqual(padInput(0.9, -0.4, false, true), { axis: 1, jump: false, act: false });
+  assert.deepEqual(padInput(1, -1, true, false, true), { axis: 0, jump: false, act: false });
 });
 
 test('手机点按：按下松开落在同一帧也能跳到约 100 像素，按住仍然更高', () => {
@@ -152,4 +152,108 @@ test('手机点按：按下松开落在同一帧也能跳到约 100 像素，按
   let top = ground;
   for (let i = 0; i < 60; i++) { g.step(1 / 60); top = Math.min(top, p.y); }
   assert.ok(ground - top > 90, `点按只跳了 ${ground - top}px`);
+});
+
+// ---------- 合作玩法 ----------
+function coop(mode) {
+  const g = new AdventureGame(); g.add(1, '一二'); g.add(2, '布布');
+  assert.equal(g.setMode(mode), true); assert.equal(g.start(), true);
+  return g;
+}
+const settle = (g, frames = 20) => { for (let i = 0; i < frames; i++) { for (const id of g.players.keys()) g.input(id, { axis: 0, jump: false }); g.step(1 / 60); } };
+const place = (p, x, y) => Object.assign(p, { x, y, vx: 0, vy: 0, grounded: false });
+
+test('合作玩法至少两人才能开始，只打本玩法的关卡，打完即通关', () => {
+  const solo = new AdventureGame(); solo.add(1, '一二');
+  assert.equal(solo.setMode('rope'), true); assert.equal(solo.start(), false);
+  assert.equal(solo.setMode('nope'), false);
+  const g = coop('rope');
+  assert.equal(g.level, modeLevels('rope')[0]); assert.equal(LEVELS[g.level].mode, 'rope');
+  g.stars = new Set([0, 1, 2]);
+  for (const p of g.players.values()) place(p, LEVELS[g.level].goal, 456);
+  g.step(1 / 60); assert.equal(g.phase, 'complete');
+  assert.equal(g.setMode('classic'), true); assert.equal(g.start(), true); assert.equal(g.level, 0);
+});
+
+test('串一串：站稳的队友用绳子吊住掉坑的人；全员都掉下去才一起回到共享检查点', () => {
+  const g = coop('rope'), a = g.players.get(1), b = g.players.get(2);
+  place(a, 300, 456); settle(g, 5);
+  place(b, 560, 520);
+  settle(g, 120);
+  assert.equal(b.deaths, 0); assert.ok(b.y < 520, `吊在坑边没掉下去：${b.y}`);
+  assert.equal(a.deaths, 0); assert.equal(a.grounded, true); assert.equal(a.x, 300, '站稳的人不会被拖走');
+  // 吊着时可以起跳，往回爬上地面
+  let back = false;
+  for (let i = 0; i < 90 && !back; i++) { g.input(2, { axis: -1, jump: i < 20 }); g.input(1, { axis: 0, jump: false }); g.step(1 / 60); back = b.grounded && b.x + 34 <= 520 && b.y === 456; }
+  assert.ok(back, `从坑边跳回地面：${JSON.stringify(b)}`);
+
+  a.checkpoint = 0;
+  place(a, 560, 520); place(b, 600, 520);
+  settle(g, 90);
+  assert.equal(a.deaths + b.deaths, 1, '只有先掉出画面的人扣血');
+  assert.deepEqual([a.checkpoint, b.checkpoint], [0, 0], '检查点全队共享');
+  assert.ok(Math.abs(a.x - LEVELS[g.level].checkpoints[0].x) < 60 && Math.abs(b.x - LEVELS[g.level].checkpoints[0].x) < 60);
+});
+
+test('吃吐吐：吃掉队友后把他吐过自己跳不过的缺口，落到对岸按钮放下吊桥；被吃的人能挣脱', () => {
+  const g = coop('eat'), eater = g.players.get(1), mate = g.players.get(2), level = LEVELS[g.level];
+  place(eater, 630, 456); place(mate, 650, 456); settle(g);
+  const press = (id) => { g.input(id, { axis: 0, jump: false, act: true }); g.step(1 / 60); g.input(id, { axis: 0, jump: false, act: false }); g.step(1 / 60); };
+  eater.facing = 1; press(1);
+  assert.equal(eater.eating, 2); assert.equal(mate.eatenBy, 1);
+  press(1);
+  assert.equal(eater.eating, -1); assert.equal(mate.eatenBy, -1);
+  for (let i = 0; i < 120 && !mate.grounded; i++) settle(g, 1);
+  assert.equal(mate.deaths, 0, '吐出去的人安全落在对岸');
+  assert.ok(mate.x > 1060, `吐过了 360 宽的缺口：${mate.x}`);
+  assert.ok(g.active.has(0), '踩下对岸按钮');
+  assert.ok(solids(level, g.active).some((r) => r.x === 700 && r.w === 360), '吊桥出现');
+
+  // 被吃的人等一下再按 A 就能自己出来
+  place(mate, eater.x + 10, eater.y); settle(g, 2);
+  press(1); assert.equal(mate.eatenBy, 1);
+  settle(g, 30); press(2);
+  assert.equal(mate.eatenBy, -1); assert.equal(eater.eating, -1);
+});
+
+test('叠罗汉：能站在队友头上并被带着走，从头顶起跳才能爬上一个人跳不上的墙', () => {
+  const g = coop('stack'), base = g.players.get(1), top = g.players.get(2), level = LEVELS[g.level];
+  // 一个人在墙脚怎么跳都上不去
+  place(base, 640, 456); settle(g);
+  for (let i = 0; i < 90; i++) { g.input(1, { axis: 1, jump: i < 40 }); g.input(2, { axis: 0, jump: false }); g.step(1 / 60); }
+  assert.ok(base.y + 44 > 331, '单人跳不上 170 高的墙');
+  place(base, 600, 456); place(top, 600, 380); settle(g);
+  assert.equal(top.grounded, true); assert.equal(top.y, base.y - 44);
+  const x0 = top.x;
+  for (let i = 0; i < 6; i++) { g.input(1, { axis: 1, jump: false }); g.input(2, { axis: 0, jump: false }); g.step(1 / 60); }
+  assert.ok(top.x > x0 + 3, '被下面的人带着走');
+  let climbed = false;
+  for (let i = 0; i < 120 && !climbed; i++) {
+    g.input(2, { axis: 1, jump: i < 30 }); g.input(1, { axis: 0, jump: false }); g.step(1 / 60);
+    climbed = top.grounded && Math.abs(top.y + 44 - 330) < 1 && top.x > 700;
+  }
+  assert.ok(climbed, `踩头爬上墙顶：${JSON.stringify(top)}`);
+  for (let i = 0; i < 90 && !g.active.has(0); i++) { g.input(2, { axis: 1, jump: false }); g.step(1 / 60); }
+  assert.ok(g.active.has(0), '墙顶按钮放下台阶');
+  assert.ok(solids(level, g.active).some((r) => r.x === 600 && r.y === 420));
+});
+
+test('两人一起踩的按钮：一个人不够，两人踩下后锁住，闸门从挡路平台里消失', () => {
+  const g = coop('stack'), level = LEVELS[g.level], d = level.devices[2], [a, b] = g.players.values();
+  const gateIn = () => solids(level, g.active).some((r) => r === d.gate[0]);
+  place(a, d.plate.x + 10, 448); place(b, 200, 456); settle(g);
+  assert.equal(g.active.has(2), false); assert.equal(gateIn(), true);
+  place(b, d.plate.x + 60, 448); settle(g);
+  assert.equal(g.active.has(2), true);
+  place(a, 200, 456); place(b, 300, 456); settle(g);
+  assert.equal(g.active.has(2), true, '锁住后离开也保持打开'); assert.equal(gateIn(), false);
+});
+
+test('房主中途回大厅：放出被吃的人，可以换玩法重新出发', () => {
+  const g = coop('eat'), [a, b] = g.players.values();
+  a.eating = b.id; b.eatenBy = a.id;
+  assert.equal(g.setMode('stack'), false, '游戏中不能直接换玩法');
+  assert.equal(g.toLobby(), true); assert.equal(g.phase, 'lobby');
+  assert.deepEqual([a.eating, b.eatenBy], [-1, -1]);
+  assert.equal(g.setMode('stack'), true); assert.equal(g.start(), true); assert.equal(LEVELS[g.level].mode, 'stack');
 });

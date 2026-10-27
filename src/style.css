@@ -2086,3 +2086,125 @@ li.open .row-actions {
 .lan-join input { width: 100%; min-width: 0; }
 .lan-rooms .choice { width: 100%; }
 .lan-rooms small { overflow-wrap: anywhere; }
+
+/* ---------- 按键自定义：缩放 / 十字方向键 / 圆弧布局 / 设置面板 ---------- */
+.pad-btn[hidden] {
+  display: none;
+}
+.btn-pad {
+  transform: scale(var(--pad-scale, 1));
+  transform-origin: 100% 100%;
+}
+.joy-base {
+  scale: var(--pad-scale, 1);
+}
+/* 圆弧：主键在右下角放大，其余按键由 gamepad.ts 沿弧线摆放 */
+.btn-pad.arc {
+  width: 250px;
+  height: 250px;
+}
+.btn-pad.arc .pad-btn {
+  --size: 66px;
+  right: auto;
+  bottom: auto;
+}
+.btn-pad.arc .pad-btn.b {
+  --size: 96px;
+}
+.btn-pad.arc .pad-btn.b b {
+  font-size: 28px;
+}
+.dpad-zone {
+  position: absolute;
+  left: 0;
+  top: 48px;
+  bottom: 0;
+  width: 48%;
+  pointer-events: auto;
+  touch-action: none;
+}
+.dpad {
+  position: absolute;
+  left: calc(max(20px, var(--safe-left, env(safe-area-inset-left))) + 6px);
+  bottom: max(18px, var(--safe-bottom, env(safe-area-inset-bottom)));
+  width: 156px;
+  height: 156px;
+  scale: var(--pad-scale, 1);
+  transform-origin: 0 100%;
+  pointer-events: none;
+}
+.dpad i {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28);
+  transition: background 0.06s, transform 0.06s;
+}
+.dpad i::after {
+  content: '';
+  position: absolute;
+  inset: 15px;
+  background: rgba(255, 255, 255, 0.85);
+  clip-path: polygon(50% 12%, 92% 82%, 8% 82%);
+}
+.dpad i.on {
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(0.94);
+}
+.dpad-up { left: 52px; top: 0; }
+.dpad-down { left: 52px; bottom: 0; }
+.dpad-left { left: 0; top: 52px; }
+.dpad-right { right: 0; top: 52px; }
+.dpad-right::after { transform: rotate(90deg); }
+.dpad-down::after { transform: rotate(180deg); }
+.dpad-left::after { transform: rotate(270deg); }
+@media (max-height: 380px) {
+  .dpad { width: 138px; height: 138px; }
+  .dpad i { width: 46px; height: 46px; }
+  .dpad-up, .dpad-down { left: 46px; }
+  .dpad-left, .dpad-right { top: 46px; }
+  .btn-pad.arc { width: 224px; height: 224px; }
+}
+
+/* 菜单里的「按键」分页 */
+.ctl-pane {
+  display: grid;
+  gap: 12px;
+  padding: 4px 2px;
+}
+.ctl-row {
+  display: grid;
+  grid-template-columns: 5.5em minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+.ctl-seg {
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.ctl-seg button {
+  padding: 9px 6px;
+  border-radius: 10px;
+}
+.ctl-seg button[aria-checked='true'] {
+  background: var(--green);
+  border-color: transparent;
+  color: #04210f;
+  font-weight: 700;
+}
+.ctl-size {
+  width: 100%;
+  accent-color: var(--green);
+}
+.ctl-size-val {
+  font-size: 12px;
+  min-width: 3em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

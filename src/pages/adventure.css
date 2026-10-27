@@ -78,10 +78,10 @@
 .adv-play .topbar-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .adv-hud { font-size: 12px; padding: 5px 10px; border-radius: 20px; background: rgba(0, 0, 0, 0.45); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .adv-hud:empty { display: none; }
-/* 跳跃只需要一个键：隐藏 A/X/Y 与射门蓄力环，B 放在右下角 */
-.adv-play .pad-btn:not(.b), .adv-play .pad-btn.b::after { display: none; }
-.adv-play .btn-pad { width: auto; height: auto; }
-.adv-play .pad-btn.b { --size: 92px; position: relative; inset: auto; }
+/* 冒险只有跳跃（B）和吃 / 吐（A），不需要射门蓄力环 */
+.adv-play .pad-btn.b::after { display: none; }
+.adv-play .pad-btn.b { --c: #f08c94; }
+.adv-play .pad-btn.a { --c: #f0c46f; }
 .adv-panel { gap: 10px; }
 .adv-panel .adv-progress { margin: 0; font-size: 13px; text-align: center; }
 .adv-roster { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 12px; font-size: 12px; }
@@ -106,7 +106,6 @@
 .adv-results { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .adv-results > span { display: grid; gap: 4px; font-size: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
 @media (max-height: 380px) {
-  .adv-play .pad-btn.b { --size: 78px; }
   .adv-hud { font-size: 11px; padding: 4px 8px; }
 }
 /* 浅色地图上半透明白色摇杆几乎看不见，改用暖棕描边 */
@@ -132,3 +131,16 @@
 .adv-play .adv-picker > summary, .adv-play .adv-options { background: var(--card, #1d2a22); border-color: var(--line, #ffffff26); color: var(--fg); }
 .adv-play .adv-options { position: static; margin-top: 6px; max-height: 168px; box-shadow: none; }
 .adv-play .adv-picker > summary small, .adv-play .adv-options .adv-character small { color: var(--muted); }
+.adv-play .dpad i { background: rgba(110, 89, 77, 0.1); border-color: rgba(110, 89, 77, 0.4); box-shadow: none; }
+.adv-play .dpad i::after { background: rgba(110, 89, 77, 0.55); }
+.adv-play .dpad i.on { background: rgba(110, 89, 77, 0.3); }
+/* 房主选玩法：四个单选块，合作玩法在少于 2 人时灰掉 */
+.adv-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.adv-play .adv-mode { display: grid; gap: 2px; padding: 8px 10px; border-radius: 12px; text-align: left; }
+.adv-mode b { font-size: 14px; }
+.adv-mode small { font-size: 11px; color: var(--muted); line-height: 1.4; }
+.adv-play .adv-mode[aria-checked='true'] { border-color: var(--green); box-shadow: 0 0 0 2px var(--green); }
+.adv-play .adv-mode:disabled { opacity: .45; }
+.adv-mode-line { margin: 0; font-size: 13px; text-align: center; }
+.adv-tab { display: flex; flex-direction: column; gap: 10px; }
+.adv-tab[hidden] { display: none; }

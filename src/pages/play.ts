@@ -27,6 +27,7 @@ import { CONFIG } from '../config';
 import { switchHostGame } from '../room/catalog';
 import { t, type Key } from '../i18n';
 import { Gamepad } from '../ui/gamepad';
+import { bindControlsPane, controlsPaneHtml } from '../ui/controls-pane';
 import { saveQrCard } from '../ui/qrcard';
 import { bindLobby, pinLineHtml, settingsHtml, settingsSummary, teamCardHtml } from '../ui/settings-ui';
 import { icon } from '../ui/site';
@@ -119,6 +120,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   const renderer = new Renderer($('.stage'));
   renderer.padTop = 0;
   const pad = new Gamepad($('.pad'));
+  const applyControls = (settings: Parameters<Gamepad['apply']>[0]) => pad.apply(settings);
   const buf = new SnapBuffer();
 
   let team: Team | 'auto' = 'auto';
@@ -139,7 +141,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   let rtt = 0;
   let goalText = '';
   let panelOpen = false;
-  let panelTab: 'teams' | 'settings' | 'stats' = 'teams';
+  let panelTab: 'teams' | 'settings' | 'stats' | 'controls' = 'teams';
   /** 本房间最近的比赛（新的在前） */
   let history: EndInfo[] = [];
   /** 结算条被手动关掉；下一场结束时重新显示 */
@@ -370,8 +372,9 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     if (panel.hidden) return;
     if (!roster) {
       // 还没连上主机时菜单也要能退出房间（顶栏不再单独放退出按钮）
-      panel.innerHTML = `<div class="panel-head"><span>${t('play.room', { room: `<b>${esc(room)}</b>` })}</span><button class="ghost close" aria-label="close">×</button></div><div class="pmeta"><button class="ghost leave-room">${t('play.leave')}</button></div>`;
+      panel.innerHTML = `<div class="panel-head"><span>${t('play.room', { room: `<b>${esc(room)}</b>` })}</span><button class="ghost close" aria-label="close">×</button></div>${controlsPaneHtml()}<div class="pmeta"><button class="ghost leave-room">${t('play.leave')}</button></div>`;
       panel.querySelector<HTMLElement>('.leave-room')!.onclick = leave;
+      bindControlsPane(panel, applyControls);
       panel.querySelector<HTMLElement>('.close')!.onclick = () => {
         panelOpen = false;
         renderPanel();
@@ -400,14 +403,13 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       html += `<div class="result-strip">${resultLineHtml(r.end)}<button class="ghost result-x" aria-label="${t('screen.closePanel')}">×</button></div>`;
     }
 
-    // 大厅 / 结算有「队伍 / 设置 / 战绩」三个标签；比赛中只看队伍
-    const tab = inMatch ? 'teams' : panelTab;
-    if (!inMatch) {
-      const label = { teams: t('play.tabTeams'), settings: t('play.tabSettings'), stats: t('stats.tab') };
-      html += `<div class="ptabs">${(['teams', 'settings', 'stats'] as const)
-        .map((k) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${label[k]}</button>`)
-        .join('')}</div>`;
-    }
+    // 大厅 / 结算有「队伍 / 设置 / 战绩 / 按键」四个标签；比赛中只有「队伍 / 按键」
+    const tabs = inMatch ? (['teams', 'controls'] as const) : (['teams', 'settings', 'stats', 'controls'] as const);
+    const tab = (tabs as readonly string[]).includes(panelTab) ? panelTab : 'teams';
+    const label = { teams: t('play.tabTeams'), settings: t('play.tabSettings'), stats: t('stats.tab'), controls: t('ctl.title') };
+    html += `<div class="ptabs">${tabs
+      .map((k) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${label[k]}</button>`)
+      .join('')}</div>`;
     html += '<div class="pbody">';
     // 观战者：哪队还有真人空位就能直接加入那队
     const hasRoom = (team: Team) => players.filter((p) => !p.bot && p.team === team).length < CONFIG.maxPerTeam;
@@ -426,6 +428,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       if (isOwner && players.some((p) => p.id !== meId && p.link !== 'local')) html += `<p class="muted small swipe-hint">${t('play.swipeHint')}</p>`;
     } else if (tab === 'stats') {
       html += statsTabHtml(history, meId, me?.name ?? '');
+    } else if (tab === 'controls') {
+      html += controlsPaneHtml();
     } else {
       html += isOwner ? settingsHtml(st) : `<p class="cfg-summary">${settingsSummary(st)}</p>`;
     }
@@ -484,6 +488,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     on('.end', () => confirm(t('play.confirmEnd')) && game?.endMatch());
     on('.back', () => game?.toLobby());
     on('.leave-room', leave);
+    bindControlsPane(panel, applyControls);
     on('.switch-game', () => switchHostGame('adventure'));
     on('.close', () => {
       panelOpen = false;
