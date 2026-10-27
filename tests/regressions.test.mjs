@@ -626,7 +626,7 @@ test('原生 App 在线模式的二维码指向部署的网站', async () => {
     globalThis.location = new URL(origin);
     assert.equal(joinUrl({ room: 'ABCDE' }), `${CONFIG.siteUrl}#/join/ABCDE`);
   }
-  globalThis.location = new URL('https://example.com/scankick/');
-  assert.equal(joinUrl({ room: 'ABCDE' }), 'https://example.com/scankick/#/join/ABCDE');
+  globalThis.location = new URL('https://example.com/LittleLobby/');
+  assert.equal(joinUrl({ room: 'ABCDE' }), 'https://example.com/LittleLobby/#/join/ABCDE');
   delete globalThis.location;
 });

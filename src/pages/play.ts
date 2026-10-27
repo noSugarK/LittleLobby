@@ -24,7 +24,7 @@ import { bindLanAddress, lanInfoHtml } from '../ui/lan-room';
 import { SnapBuffer, separateViewBall, separateViewPlayers } from '../net/interp';
 import { decodeSnapshot, encodeInput } from '../net/protocol';
 import { CONFIG } from '../config';
-import { switchHostGame } from '../room/catalog';
+import { gameName, switchHostGame } from '../room/catalog';
 import { t, type Key } from '../i18n';
 import { Gamepad } from '../ui/gamepad';
 import { bindControlsPane, controlsPaneHtml } from '../ui/controls-pane';
@@ -59,11 +59,11 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   let room: string;
   if (mode.kind === 'client') room = mode.room;
   else {
-    room = store.get('sfb.hostroom', false) || randomCode();
-    store.set('sfb.hostroom', room, false);
+    room = store.get('hostroom', false) || randomCode();
+    store.set('hostroom', room, false);
   }
-  const joinedKey = isHost ? 'sfb.hosting' : `sfb.joined.${room}`;
-  const savedName = store.get('sfb.name') || `${t('player.default')}${Math.floor(Math.random() * 90 + 10)}`;
+  const joinedKey = isHost ? 'hosting' : `joined.${room}`;
+  const savedName = store.get('name') || `${t('player.default')}${Math.floor(Math.random() * 90 + 10)}`;
   // '1' 已作为球员加入，'w' 正在观战：刷新后按原身份自动重连
   const joined = store.get(joinedKey, false);
   const autoJoin = joined === '1' || joined === 'w';
@@ -71,7 +71,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   const local = opts?.mode === 'lan' ? lanSession() : null;
   // 客户端密码：二维码自带 > 本标签页上次输入的
   const urlPin = mode.kind === 'client' ? mode.pin : '';
-  const pinKey = `sfb.pin.${room}`;
+  const pinKey = `pin.${room}`;
   const askPin = mode.kind === 'client' && !urlPin && (mode.lock || !!store.get(pinKey, false));
   let qrUrl = '';
   if (opts) QRCode.toDataURL(joinUrl({ room, pin: opts.pin }), { width: 220, margin: 1 }).then((u) => {
@@ -209,13 +209,13 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
 
   async function join(watch = false) {
     const name = ($<HTMLInputElement>('.name').value.trim() || savedName).slice(0, 12);
-    store.set('sfb.name', name);
+    store.set('name', name);
     store.set(joinedKey, watch ? 'w' : '1', false);
     if (isHost) return startHost(name);
-    let token = store.get(`sfb.token.${room}`);
+    let token = store.get(`token.${room}`);
     if (!token) {
       token = randomCode(12);
-      store.set(`sfb.token.${room}`, token);
+      store.set(`token.${room}`, token);
     }
     joinEl.hidden = true;
     $('.play').classList.add('joined');
@@ -310,11 +310,11 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       case 'welcome':
         // 手输房间码或从局域网大厅进入时，由主机告知实际玩法。
         if (m.game === 'adventure') {
-          const token = store.get(`sfb.token.${room}`);
+          const token = store.get(`token.${room}`);
           if (token) store.set(`adventure.token.${room}`, token);
           // 房主换成冒险：带着昵称自动进入，不用重新填写
           store.set(`adventure.joined.${room}`, '1', false);
-          if (!store.get('adventure.name')) store.set('adventure.name', store.get('sfb.name') || t('player.default'));
+          if (!store.get('adventure.name')) store.set('adventure.name', store.get('name') || t('player.default'));
           const [path, query] = location.hash.split('?');
           const params = new URLSearchParams(query);
           params.set('game', 'adventure');
@@ -466,7 +466,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     }
     // 教程在新标签页打开，不打断当前连接
     const tip = watching ? t('play.watchTip') : lobby ? t(isHost ? 'play.hostTip' : 'play.warmup') : '';
-    html += `<div class="pmeta">${tip ? `<span>${tip}</span>` : ''}<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a>${isHost ? '<button class="ghost switch-game">换成软乎乎冒险</button>' : ''}<button class="ghost leave-room">${t('play.leave')}</button></div></div></div>`;
+    html += `<div class="pmeta">${tip ? `<span>${tip}</span>` : ''}<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a>${isHost ? `<button class="ghost switch-game">${t('game.switchTo', { game: gameName('adventure') })}</button>` : ''}<button class="ghost leave-room">${t('play.leave')}</button></div></div></div>`;
     panel.innerHTML = html;
     if (local) bindLanAddress(panel, () => {
       QRCode.toDataURL(joinUrl({ room, pin: opts?.pin }), { width: 220, margin: 1 }).then((url) => {
@@ -550,8 +550,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   const go = (watch: boolean) => {
     enterFullscreen(true).then((ok) => ok && (autoFs = false));
     join(watch);
-    if (iosTip && !store.get('sfb.iosTip')) {
-      store.set('sfb.iosTip', '1');
+    if (iosTip && !store.get('iosTip')) {
+      store.set('iosTip', '1');
       toast(t('play.iosTip'), 7000);
     }
   };

@@ -28,6 +28,7 @@ use tokio::{
 include!(concat!(env!("OUT_DIR"), "/lan-assets.rs"));
 
 const DISCOVERY_PORT: u16 = 42819;
+// Wire protocol names keep the old project name so app versions before and after the rename still find each other.
 const DISCOVERY_QUERY: &[u8] = b"SCANKICK_DISCOVER_V1";
 
 #[derive(Serialize)]
@@ -466,7 +467,7 @@ async fn asset(State(hub): State<Arc<Hub>>, uri: Uri) -> Response {
             .replace(
                 "<head>",
                 &format!(
-                    "<head><script>window.__SCANKICK_LAN__={};</script>",
+                    "<head><script>window.__LITTLE_LOBBY_LAN__={};</script>",
                     json!({"room":hub.room})
                 ),
             )
@@ -542,7 +543,7 @@ mod tests {
         let info = start_server("ABCDE".into(), &state).await.unwrap();
         let page = http(info.port, "/").await;
         assert!(page.starts_with("HTTP/1.1 200"));
-        assert!(page.contains("window.__SCANKICK_LAN__={\"room\":\"ABCDE\"}"));
+        assert!(page.contains("window.__LITTLE_LOBBY_LAN__={\"room\":\"ABCDE\"}"));
         assert!(
             !page.contains(&info.key),
             "Host key must never be served to players"

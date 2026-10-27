@@ -40,6 +40,14 @@ const zhCN = {
   'home.hostDesc': '选好游戏，朋友扫码就能进来',
   'home.game': '玩什么',
   'home.games': '房间里的游戏',
+  'game.football.name': '开踢',
+  'game.football.caption': '传球、射门，和朋友来一场',
+  'game.football.players': '1–8 人 · 组队对战',
+  'game.adventure.name': '软乎乎冒险',
+  'game.adventure.caption': '挑个小伙伴，一起跳跳闯关',
+  'game.adventure.players': '1–8 人 · 合作闯关',
+  'game.switchTo': '换成{game}',
+  'game.switchConfirm': '换成「{game}」会结束当前这一局，房间和伙伴都保留。确定吗？',
   'home.useGame': '用它开房',
   'home.solo': '一个人先试试',
   'home.options': '房间设置',
@@ -73,7 +81,7 @@ const zhCN = {
   'scan.close': '关闭',
   'scan.denied': '没有摄像头权限，请在浏览器设置中允许后重试',
   'scan.unsupported': '当前浏览器无法使用摄像头（需要 HTTPS）',
-  'scan.notOurs': '这不是开踢的二维码',
+  'scan.notOurs': '这不是小聚场的二维码',
   'scan.loading': '正在打开摄像头…',
   'scan.upload': '从相册选择图片',
   'scan.noCode': '图片里没有找到二维码',
@@ -322,6 +330,14 @@ const zhTW: Dict = {
   'home.hostDesc': '選好遊戲，朋友掃碼就能進來',
   'home.game': '玩什麼',
   'home.games': '房間裡的遊戲',
+  'game.football.name': '開踢',
+  'game.football.caption': '傳球、射門，和朋友來一場',
+  'game.football.players': '1–8 人 · 組隊對戰',
+  'game.adventure.name': '軟乎乎冒險',
+  'game.adventure.caption': '挑個小夥伴，一起跳跳闖關',
+  'game.adventure.players': '1–8 人 · 合作闖關',
+  'game.switchTo': '換成{game}',
+  'game.switchConfirm': '換成「{game}」會結束目前這一局，房間和夥伴都保留。確定嗎？',
   'home.useGame': '用它開房',
   'home.solo': '一個人先試試',
   'home.options': '房間設定',
@@ -355,7 +371,7 @@ const zhTW: Dict = {
   'scan.close': '關閉',
   'scan.denied': '沒有相機權限，請在瀏覽器設定中允許後重試',
   'scan.unsupported': '目前瀏覽器無法使用相機（需要 HTTPS）',
-  'scan.notOurs': '這不是開踢的 QR 碼',
+  'scan.notOurs': '這不是小聚場的 QR 碼',
   'scan.loading': '正在開啟相機…',
   'scan.upload': '從相簿選擇圖片',
   'scan.noCode': '圖片裡沒有找到 QR 碼',
@@ -602,6 +618,14 @@ const en: Dict = {
   'home.hostDesc': 'Pick a game; friends scan to join',
   'home.game': 'Game',
   'home.games': 'Games in every room',
+  'game.football.name': 'Kickabout',
+  'game.football.caption': 'Pass, shoot and play a match with friends',
+  'game.football.players': '1–8 players · Team match',
+  'game.adventure.name': 'Squishy Adventure',
+  'game.adventure.caption': 'Pick a buddy and hop through levels together',
+  'game.adventure.players': '1–8 players · Co-op',
+  'game.switchTo': 'Switch to {game}',
+  'game.switchConfirm': 'Switching to {game} ends the current round. The room and players stay. Continue?',
   'home.useGame': 'Host this game',
   'home.solo': 'Try it solo',
   'home.options': 'Room settings',
@@ -853,7 +877,7 @@ export const LANGS: [Lang, string][] = [
 const DICTS: Record<Lang, Dict> = { 'zh-CN': zhCN, 'zh-TW': zhTW, en };
 
 function detect(): Lang {
-  const saved = store.get('sfb.lang');
+  const saved = store.get('lang');
   if (saved && saved in DICTS) return saved as Lang;
   const nav = (navigator.language || '').toLowerCase();
   if (nav.startsWith('zh')) return /tw|hk|mo|hant/.test(nav) ? 'zh-TW' : 'zh-CN';
@@ -869,6 +893,6 @@ export function t(key: Key, vars?: Record<string, string | number>): string {
 }
 
 export function setLang(l: Lang) {
-  store.set('sfb.lang', l);
+  store.set('lang', l);
   location.reload();
 }

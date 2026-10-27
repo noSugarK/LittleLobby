@@ -160,3 +160,22 @@ test('下载失败可重新打开重试，加载中和成功后不会重复请�
     Object.assign(globalThis, original);
   }
 });
+
+test('old storage keys move to the littlelobby prefix without overwriting newer values', async () => {
+  const { migrateStorage } = await import('../src/ui/util.ts');
+  const area = (entries) => {
+    const m = new Map(entries);
+    return Object.assign(Object.create({
+      getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k),
+    }), { get map() { return m; } });
+  };
+  const local = area([['sfb.name', 'Ann'], ['sfb.theme', 'dark'], ['adventure.skin', '2'], ['littlelobby.lang', 'en'], ['sfb.lang', 'zh-CN'], ['other', 'x']]);
+  // Object.keys(Storage) lists stored keys; mirror that on the stub.
+  const keys = (s) => new Proxy(s, { ownKeys: () => [...s.map.keys()], getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }) });
+  const session = area([['sfb.hist.ABCDE', '[]']]);
+  migrateStorage([keys(local), keys(session)]);
+  assert.deepEqual(Object.fromEntries(local.map), {
+    'littlelobby.name': 'Ann', 'littlelobby.theme': 'dark', 'littlelobby.adventure.skin': '2', 'littlelobby.lang': 'en', other: 'x',
+  });
+  assert.deepEqual(Object.fromEntries(session.map), { 'littlelobby.hist.ABCDE': '[]' });
+});

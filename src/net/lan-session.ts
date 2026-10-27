@@ -3,7 +3,7 @@ import { store } from '../ui/util';
 declare global {
   interface Window {
     __TAURI__?: { core: { invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> } };
-    __SCANKICK_LAN__?: { room: string };
+    __LITTLE_LOBBY_LAN__?: { room: string };
   }
 }
 
@@ -16,11 +16,11 @@ export interface LanSession {
 }
 
 export const isNativeApp = () => !!window.__TAURI__?.core;
-export const isLanPage = () => !!window.__SCANKICK_LAN__;
+export const isLanPage = () => !!window.__LITTLE_LOBBY_LAN__;
 
 export function lanSession(): LanSession | null {
   if (!isNativeApp()) return null;
-  try { return JSON.parse(store.get('sfb.lan', false) || 'null'); }
+  try { return JSON.parse(store.get('lan', false) || 'null'); }
   catch { return null; }
 }
 
@@ -28,20 +28,20 @@ export async function startLan(room: string) {
   if (!window.__TAURI__) throw new Error('LAN hosting requires the Little Lobby app');
   const info = await window.__TAURI__.core.invoke<Omit<LanSession, 'room' | 'baseUrl'>>('start_lan', { room });
   const session: LanSession = { ...info, room, baseUrl: info.addresses[0]?.url || `http://127.0.0.1:${info.port}` };
-  store.set('sfb.lan', JSON.stringify(session), false);
+  store.set('lan', JSON.stringify(session), false);
   return session;
 }
 
 export async function stopLan() {
   const session = lanSession();
-  store.set('sfb.lan', '', false);
+  store.set('lan', '', false);
   if (session) await window.__TAURI__!.core.invoke('stop_lan', { key: session.key });
 }
 
 export function setLanAddress(baseUrl: string) {
   const session = lanSession();
   if (session?.addresses.some((a) => a.url === baseUrl)) {
-    store.set('sfb.lan', JSON.stringify({ ...session, baseUrl }), false);
+    store.set('lan', JSON.stringify({ ...session, baseUrl }), false);
   }
 }
 

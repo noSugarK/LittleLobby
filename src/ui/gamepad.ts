@@ -13,7 +13,7 @@ const BUTTONS: PadButton[] = [
 /** 按键设置（存在本机，足球和冒险共用）：左侧摇杆 / 方向键，右侧菱形 / 圆弧布局，整体缩放。 */
 export interface ControlSettings { move: 'stick' | 'dpad'; layout: 'diamond' | 'arc'; size: number }
 export const DEFAULT_CONTROLS: ControlSettings = { move: 'stick', layout: 'diamond', size: 1 };
-const CONTROLS_KEY = 'sfb.controls';
+const CONTROLS_KEY = 'controls';
 export const SIZE_RANGE = [0.7, 1.4] as const;
 export function loadControls(): ControlSettings {
   try {

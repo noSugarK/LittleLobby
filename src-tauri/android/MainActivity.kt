@@ -58,7 +58,7 @@ class MainActivity : TauriActivity() {
                     isAppearanceLightNavigationBars = bottom
                 }
             }
-        }, "ScanKickAndroid")
+        }, "LittleLobbyAndroid")
     }
 
     // Tauri's activity handles orientation changes itself instead of being recreated.

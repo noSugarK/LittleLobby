@@ -35,7 +35,7 @@ export const REPO_URL = 'https://github.com/noSugarK/LittleLobby';
 type Theme = 'light' | 'dark';
 const theme = (): Theme =>
   (document.documentElement.dataset.theme as Theme) ||
-  (store.get('sfb.theme') as Theme) ||
+  (store.get('theme') as Theme) ||
   (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 
 /** 启动时调用一次：没手动选过就跟随系统 */
@@ -63,7 +63,7 @@ export function bindSiteTools(root: HTMLElement) {
   const btn = root.querySelector<HTMLButtonElement>('.theme-btn')!;
   btn.onclick = () => {
     const next: Theme = theme() === 'dark' ? 'light' : 'dark';
-    store.set('sfb.theme', next);
+    store.set('theme', next);
     document.documentElement.dataset.theme = next;
     btn.innerHTML = next === 'dark' ? icon.sun : icon.moon;
     const label = t(next === 'dark' ? 'theme.toLight' : 'theme.toDark');

@@ -5,7 +5,7 @@ import { MAIN_DOWNLOADS, REPO_URL, bindSiteTools, icon, latestRelease, siteFoote
 import { HISTORY_KEY, brand, esc, isPin, normalizeCode, store } from '../ui/util';
 import { isLanPage, isNativeApp, stopLan } from '../net/lan-session';
 import { bindLanLobby, lanLobbyHtml } from '../ui/lan-lobby';
-import { GAMES, validGame, type GameId } from '../room/catalog';
+import { GAMES, gameInfo, gameName, validGame, type GameId } from '../room/catalog';
 import { CHARACTERS, MODES, type ModeId } from '../game/adventure';
 import './home.css';
 import { drawBuddyAvatar, drawBuddyImage, loadCharacterSprites, type BuddyAction } from '../game/adventure-sprites';
@@ -109,10 +109,10 @@ function bindCast(app: HTMLElement) {
 }
 
 export function mountHome(app: HTMLElement) {
-  const savedGame = store.get('littlelobby.game');
+  const savedGame = store.get('game');
   let selectedGame: GameId = validGame(savedGame) ? savedGame : 'football';
   const native = isNativeApp();
-  const lan = isLanPage() || (native && store.get('sfb.network') !== 'online');
+  const lan = isLanPage() || (native && store.get('network') !== 'online');
   if (native) void stopLan().catch(() => {});
   // 回到首页即离开了房间（主机随页面关闭），房间战绩一并删除
   store.clear(HISTORY_KEY, false);
@@ -157,7 +157,7 @@ export function mountHome(app: HTMLElement) {
           <h2 id="lh-host-title">${t('home.hostTitle')}</h2>
           <p class="lh-panel-desc">${t('home.hostDesc')}</p>
           <div class="lh-picker" role="radiogroup" aria-label="${t('home.game')}">
-            ${GAMES.map((game) => `<button type="button" class="lh-pick" role="radio" data-game="${game.id}" aria-checked="${selectedGame === game.id}">
+            ${GAMES.map(({ id }) => gameInfo(id)).map((game) => `<button type="button" class="lh-pick" role="radio" data-game="${game.id}" aria-checked="${selectedGame === game.id}">
               <span class="lh-pick-art lh-art-${game.id}">${gameArt(game.id)}</span>
               <span class="lh-pick-text"><b>${game.name}</b><small>${game.players}</small></span>
             </button>`).join('')}
@@ -188,7 +188,7 @@ export function mountHome(app: HTMLElement) {
 
       <section class="lh-section lh-games" aria-labelledby="lh-games-title">
         <div class="lh-section-head"><h2 id="lh-games-title">${t('home.games')}</h2><p>${t('home.gamesLead')}</p></div>
-        <div class="lh-game-grid">${GAMES.map((game) => `<article class="lh-game lh-game-${game.id}">
+        <div class="lh-game-grid">${GAMES.map(({ id }) => gameInfo(id)).map((game) => `<article class="lh-game lh-game-${game.id}">
           <div class="lh-game-text">
             <h3>${game.name}</h3>
             <p>${game.caption}</p>
@@ -231,7 +231,7 @@ export function mountHome(app: HTMLElement) {
 
   const pickGame = (game: GameId) => {
     selectedGame = game;
-    store.set('littlelobby.game', game);
+    store.set('game', game);
     app.querySelectorAll<HTMLElement>('[data-game]').forEach((el) => el.setAttribute('aria-checked', String(el.dataset.game === game)));
   };
   app.querySelectorAll<HTMLButtonElement>('[data-game]').forEach((button) => {
@@ -275,7 +275,7 @@ export function mountHome(app: HTMLElement) {
   };
   app.querySelectorAll<HTMLButtonElement>('[data-network]').forEach((button) => {
     button.onclick = () => {
-      store.set('sfb.network', button.dataset.network!);
+      store.set('network', button.dataset.network!);
       location.reload();
     };
   });
@@ -296,11 +296,11 @@ export function mountHome(app: HTMLElement) {
         pinEl.focus();
         return;
       }
-      store.set('sfb.roomopts', JSON.stringify({ listed: !lan && $<HTMLInputElement>('.opt-listed')!.checked, mode: lan ? 'lan' : undefined, pin: pin || undefined }), false);
-      store.set('littlelobby.game', selectedGame);
+      store.set('roomopts', JSON.stringify({ listed: !lan && $<HTMLInputElement>('.opt-listed')!.checked, mode: lan ? 'lan' : undefined, pin: pin || undefined }), false);
+      store.set('game', selectedGame);
       // 每次从首页创建都换新房间码，避免旧房间的玩家绕过新设置的密码重连
-      store.set('sfb.room', '', false);
-      store.set('sfb.hostroom', '', false);
+      store.set('room', '', false);
+      store.set('hostroom', '', false);
       location.hash = hash;
     };
     $('.create')!.onclick = () => create('#/screen');
@@ -310,7 +310,7 @@ export function mountHome(app: HTMLElement) {
   // ---------- 加入：房间码格子 ----------
   const codeEl = $<HTMLInputElement>('.code');
   if (codeEl) {
-    if (isLanPage()) codeEl.value = window.__SCANKICK_LAN__!.room;
+    if (isLanPage()) codeEl.value = window.__LITTLE_LOBBY_LAN__!.room;
     const boxes = [...app.querySelectorAll<HTMLElement>('.code-boxes span')];
     const paint = () => {
       const v = codeEl.value;
@@ -374,7 +374,7 @@ export function mountHome(app: HTMLElement) {
         const st = full ? ['full', t('lobby.full')] : r.playing ? ['live', t('lobby.live')] : ['open', t('lobby.open')];
         return `<button class="lrow ${full ? 'is-full' : ''}" role="row" data-code="${code}" data-lock="${r.lock ? 1 : ''}">
           <span class="mono code">${code}</span>
-          <span class="who">${r.host ? esc(r.host) : t('lobby.screen')} · ${r.game === 'adventure' ? '软乎乎冒险' : '开踢'}${r.lock ? `<i title="${t('lobby.locked')}">${icon.lock}</i>` : ''}</span>
+          <span class="who">${r.host ? esc(r.host) : t('lobby.screen')} · ${gameName(r.game === 'adventure' ? 'adventure' : 'football')}${r.lock ? `<i title="${t('lobby.locked')}">${icon.lock}</i>` : ''}</span>
           <span class="mono">${r.n}/${r.max}</span>
           <span class="st ${st[0]}">${st[1]}</span>
         </button>`;

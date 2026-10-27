@@ -14,17 +14,20 @@ export function normalizeCode(s: string) {
   return s.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
 }
 
+/** 所有本地存储键都以它开头；调用方只写后半段，如 store.get('name') */
+const STORE_PREFIX = 'littlelobby.';
+
 export const store = {
   get(k: string, local = true): string | null {
     try {
-      return (local ? localStorage : sessionStorage).getItem(k);
+      return (local ? localStorage : sessionStorage).getItem(STORE_PREFIX + k);
     } catch {
       return null;
     }
   },
   set(k: string, v: string, local = true) {
     try {
-      (local ? localStorage : sessionStorage).setItem(k, v);
+      (local ? localStorage : sessionStorage).setItem(STORE_PREFIX + k, v);
     } catch {
       /* 隐私模式等情况下忽略 */
     }
@@ -33,15 +36,34 @@ export const store = {
   clear(prefix: string, local = true) {
     try {
       const s = local ? localStorage : sessionStorage;
-      for (const k of Object.keys(s)) if (k.startsWith(prefix)) s.removeItem(k);
+      for (const k of Object.keys(s)) if (k.startsWith(STORE_PREFIX + prefix)) s.removeItem(k);
     } catch {
       /* 忽略 */
     }
   },
 };
 
+/** 旧版键名一次性搬到新前缀下（sfb.x → littlelobby.x，adventure.x → littlelobby.adventure.x），
+ *  老用户的昵称、主题、按键和战绩都不丢；新键已有值时不覆盖。 */
+export function migrateStorage(areas?: Storage[]) {
+  try {
+    for (const s of areas ?? [localStorage, sessionStorage]) {
+      for (const k of Object.keys(s)) {
+        const to = k.startsWith('sfb.') ? STORE_PREFIX + k.slice(4) : k.startsWith('adventure.') ? STORE_PREFIX + k : null;
+        if (!to) continue;
+        if (s.getItem(to) === null) s.setItem(to, s.getItem(k)!);
+        s.removeItem(k);
+      }
+    }
+  } catch {
+    /* 存储不可用时没有可迁移的内容 */
+  }
+}
+// 在本模块加载时就搬：i18n 等模块一加载就会读取已存的设置
+migrateStorage();
+
 /** 房间战绩存在本标签页（sessionStorage）：刷新还在，关掉标签页或回到首页即删除 */
-export const HISTORY_KEY = 'sfb.hist.';
+export const HISTORY_KEY = 'hist.';
 
 let wakeLock: { release(): Promise<void> } | null = null;
 export async function keepAwake() {
@@ -132,7 +154,7 @@ export const isPin = (s: unknown): s is string => typeof s === 'string' && /^\d{
 
 export function roomOpts(): RoomOpts {
   try {
-    const o = JSON.parse(store.get('sfb.roomopts', false) || '{}');
+    const o = JSON.parse(store.get('roomopts', false) || '{}');
     return { listed: o.mode === 'lan' ? false : !!o.listed, mode: o.mode === 'lan' ? 'lan' : undefined, pin: isPin(o.pin) ? o.pin : undefined };
   } catch {
     return { listed: false };

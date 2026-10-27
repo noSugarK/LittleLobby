@@ -1,4 +1,4 @@
-import { switchHostGame } from '../room/catalog';
+import { gameName, switchHostGame } from '../room/catalog';
 import QRCode from 'qrcode';
 import { HostGame, endReasonText, resultTitle } from '../game/host-game';
 import { Renderer, TEAM_COLOR } from '../game/render';
@@ -15,10 +15,10 @@ import { bindLanAddress, lanInfoHtml } from '../ui/lan-room';
 import { brand, enterFullscreen, esc, joinUrl, keepAwake, randomCode, roomOpts, store } from '../ui/util';
 
 export function mountScreen(app: HTMLElement) {
-  let room = store.get('sfb.room', false);
+  let room = store.get('room', false);
   if (!room) {
     room = randomCode();
-    store.set('sfb.room', room, false);
+    store.set('room', room, false);
   }
   const opts = roomOpts();
   const local = opts.mode === 'lan' ? lanSession() : null;
@@ -35,7 +35,7 @@ export function mountScreen(app: HTMLElement) {
     <div class="screen-actions">
       <button class="ghost end-btn" hidden>${t('screen.end')}</button>
       <button class="ghost open-lobby" hidden>${t('screen.openPanel')}</button>
-      <button class="ghost switch-game">换成软乎乎冒险</button>
+      <button class="ghost switch-game">${t('game.switchTo', { game: gameName('adventure') })}</button>
       <button class="ghost leave-room">${t('play.leave')}</button>
     </div>
     <div class="lobby card">
@@ -157,7 +157,7 @@ export function mountScreen(app: HTMLElement) {
   $('.leave-room').onclick = () => {
     if (!confirm(t('play.confirmCloseRoom'))) return;
     game.close();
-    store.set('sfb.room', '', false);
+    store.set('room', '', false);
     location.hash = '#/';
   };
   endBtn.onclick = () => {

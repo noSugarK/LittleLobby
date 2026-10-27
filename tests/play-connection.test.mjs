@@ -31,7 +31,7 @@ const mocks = {
   }`,
   '../net/protocol': 'export const decodeSnapshot = (data) => data, encodeInput = () => new Uint8Array();',
   '../config': 'export const CONFIG = { maxPerTeam: 4 };',
-  '../room/catalog': 'export const switchHostGame = () => {};',
+  '../room/catalog': 'export const switchHostGame = () => {}; export const gameName = (id) => id;',
   '../ui/drawer': 'export const bindDrawer = () => {};',
   '../ui/controls-pane': 'export const controlsPaneHtml = () => "", bindControlsPane = () => {};',
   '../i18n': 'export const t = (key) => key;',
@@ -106,7 +106,7 @@ test('加入失败和密码拒绝恢复可操作表单，重试时旧连接回�
     assert.equal(first.closed, true);
     assert.equal(form.hidden, false, '信令失败后可再次点击加入');
     assert.equal(play.classList.contains('joined'), false, '竖屏旋转提示不会盖住表单');
-    assert.equal(harness.values.get('sfb.joined.ABCDE'), '');
+    assert.equal(harness.values.get('joined.ABCDE'), '');
 
     go();
     const second = harness.connections[1];
@@ -120,7 +120,7 @@ test('加入失败和密码拒绝恢复可操作表单，重试时旧连接回�
     assert.equal(pin.hidden, false);
     assert.equal(pin.focused, true);
     assert.equal(pin.value, '');
-    assert.equal(harness.values.get('sfb.joined.ABCDE'), '');
+    assert.equal(harness.values.get('joined.ABCDE'), '');
 
     pin.value = '1234';
     go();
@@ -138,7 +138,7 @@ test('加入失败和密码拒绝恢复可操作表单，重试时旧连接回�
     assert.equal(play.classList.contains('watching'), false);
     assert.equal(element('.status').className, status);
     assert.equal(pin.value, '1234');
-    assert.equal(harness.values.get('sfb.joined.ABCDE'), '1');
+    assert.equal(harness.values.get('joined.ABCDE'), '1');
     assert.equal(harness.buffer.frames.length, 0, '旧快照不能进入新比赛缓冲');
     assert.equal(current.closed, undefined, '迟到的失败不能关闭新连接');
     current.onBinary({ tick: 1 });

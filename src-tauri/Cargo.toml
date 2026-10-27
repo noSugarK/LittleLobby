@@ -1,5 +1,5 @@
 [package]
-name = "scankick"
+name = "little-lobby"
 version = "0.2.0-beta.1"
 description = "Little Lobby local party games for desktop and mobile"
 repository = "https://github.com/noSugarK/LittleLobby"
@@ -9,7 +9,7 @@ rust-version = "1.77.2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "scankick_lib"
+name = "little_lobby_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

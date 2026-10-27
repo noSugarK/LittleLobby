@@ -30,24 +30,24 @@ async function route() {
     const { mountAdventure, mountAdventureMenu } = await import('./pages/adventure');
     const q = new URLSearchParams(query);
     if (page === 'adventure-host' && !q.has('solo')) {
-      if (isLanPage()) location.hash = `#/join/${window.__SCANKICK_LAN__!.room}?lan=1`;
+      if (isLanPage()) location.hash = `#/join/${window.__LITTLE_LOBBY_LAN__!.room}?lan=1`;
       else {
-        store.set('littlelobby.game', 'adventure');
-        if (q.has('lan')) store.set('sfb.roomopts', JSON.stringify({ listed: false, mode: 'lan' }), false);
+        store.set('game', 'adventure');
+        if (q.has('lan')) store.set('roomopts', JSON.stringify({ listed: false, mode: 'lan' }), false);
         location.hash = '#/host';
       }
       return;
     }
     if (page === 'adventure') await mountAdventureMenu(app);
-    else if (isLanPage() && !q.has('solo')) location.hash = `#/join/${window.__SCANKICK_LAN__!.room}?lan=1&game=adventure`;
+    else if (isLanPage() && !q.has('solo')) location.hash = `#/join/${window.__LITTLE_LOBBY_LAN__!.room}?lan=1&game=adventure`;
     else await mountAdventure(app, { host: true, solo: q.has('solo'), lan: !q.has('solo') && q.has('lan') });
     return;
   }
   if ((page === 'screen' || page === 'host') && isLanPage()) {
-    location.hash = `#/join/${window.__SCANKICK_LAN__!.room}?lan=1`;
+    location.hash = `#/join/${window.__LITTLE_LOBBY_LAN__!.room}?lan=1`;
     return;
   }
-  if ((page === 'screen' || page === 'host') && store.get('littlelobby.game') === 'adventure') {
+  if ((page === 'screen' || page === 'host') && store.get('game') === 'adventure') {
     const { mountAdventure } = await import('./pages/adventure');
     await mountAdventure(app, { host: true, screen: page === 'screen', lan: roomOpts().mode === 'lan' });
     return;
@@ -56,7 +56,7 @@ async function route() {
     app.innerHTML = `<div class="site"><main class="site-main"><p>${t('lan.starting')}</p></main></div>`;
     try {
       if (!isNativeApp()) throw new Error(t('lan.appRequired'));
-      const key = page === 'screen' ? 'sfb.room' : 'sfb.hostroom';
+      const key = page === 'screen' ? 'room' : 'hostroom';
       const room = store.get(key, false) || randomCode();
       store.set(key, room, false);
       await startLan(room);
@@ -84,7 +84,7 @@ async function route() {
 }
 
 // 安卓 App 由原生层提供状态栏/刘海的安全区（WebView 的 env(safe-area-inset-*) 不可靠）
-const android = (window as { ScanKickAndroid?: { safeArea(): string; setLightBars(top: boolean, bottom: boolean): void } }).ScanKickAndroid;
+const android = (window as { LittleLobbyAndroid?: { safeArea(): string; setLightBars(top: boolean, bottom: boolean): void } }).LittleLobbyAndroid;
 if (android) {
   const apply = () => {
     const [top, right, bottom, left] = JSON.parse(android.safeArea()) as number[];
