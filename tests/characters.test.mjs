@@ -27,7 +27,9 @@ const appManifest = { ...fullManifest, characters: fullManifest.builtin };
 const fetched = [];
 globalThis.fetch = async (url) => {
   url = String(url); fetched.push(url);
-  const local = url.startsWith('/LittleLobby/characters/'), online = url.startsWith('https://nosugark.github.io/LittleLobby/characters/');
+  // 自定义域名连不上时要退到 jsDelivr：这里让第一个地址失败，测的就是退路
+  if (url.startsWith('https://nosugark.cc.cd/')) throw new TypeError('Failed to fetch');
+  const local = url.startsWith('/LittleLobby/characters/'), online = url.startsWith('https://cdn.jsdelivr.net/gh/noSugarK/LittleLobby@main/public/characters/');
   const path = url.replace(/^.*\/characters\//, '');
   if (path === 'index.json' && (local || online)) return Response.json(local ? appManifest : fullManifest);
   const [id] = path.split('/');
@@ -83,7 +85,7 @@ test('应用联网模式直接用线上的完整角色，不需要下载', async
   globalThis.localStorage.setItem('littlelobby.network', 'online');
   await reloadCharacters();
   assert.deepEqual(CHARACTERS.map((c) => c.id), fullManifest.characters);
-  assert.equal(characterUrl('lulu', 'atlas.png'), 'https://nosugark.github.io/LittleLobby/characters/lulu/atlas.png');
+  assert.equal(characterUrl('lulu', 'atlas.png'), 'https://cdn.jsdelivr.net/gh/noSugarK/LittleLobby@main/public/characters/lulu/atlas.png', '第一个地址连不上就用下一个');
   assert.equal(characterUrl('yier', 'atlas.png'), '/LittleLobby/characters/yier/atlas.png', '内置角色仍然读本地');
   assert.ok(isRemote('lulu') && !isRemote('yier'), '图鉴据此把没下载的角色显示成「联网可直接用」');
   assert.ok(!disk.size);

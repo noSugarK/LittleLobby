@@ -16,9 +16,26 @@ export const CHARACTER_FILES = ['character.json', 'atlas.png', 'full-atlas.png']
 export type CharacterFile = typeof CHARACTER_FILES[number];
 
 export const DEFAULT_SKIN = 'yier';
-/** 网页版发布的完整角色目录；原生应用从这里下载新角色。 */
-// 开发应用时（npm run dev:app）从本地开发服务器的 /catalog/ 下载，见 vite.config.ts
-export const CATALOG_URL = import.meta.env?.DEV && import.meta.env.MODE === 'app' ? `${import.meta.env.BASE_URL}catalog/` : 'https://nosugark.github.io/LittleLobby/characters/';
+/** 原生应用从这里下载新角色：按顺序试，用第一个能读到清单的。
+ *  不能用 nosugark.github.io：它会 301 跳到自定义域名，跳转响应没有 CORS 头，应用里的 fetch 会直接失败。
+ *  开发应用时（npm run dev:app）从本地开发服务器的 /catalog/ 下载，见 vite.config.ts。 */
+export const CATALOG_URLS = import.meta.env?.DEV && import.meta.env.MODE === 'app' ? [`${import.meta.env.BASE_URL}catalog/`] : [
+  'https://nosugark.cc.cd/LittleLobby/characters/',
+  'https://cdn.jsdelivr.net/gh/noSugarK/LittleLobby@main/public/characters/',
+];
+let catalogUrl = CATALOG_URLS[0];
+let catalogPick: Promise<Manifest> | undefined;
+/** 找到能用的线上目录并读出清单；成功后记住，失败下次再试。 */
+function catalogManifest(): Promise<Manifest> {
+  catalogPick ??= (async () => {
+    for (const url of CATALOG_URLS) {
+      try { const manifest = await json<Manifest>(`${url}index.json`); catalogUrl = url; return manifest; }
+      catch { /* 换下一个地址 */ }
+    }
+    throw new Error('角色目录连不上');
+  })().catch((error) => { catalogPick = undefined; throw error; });
+  return catalogPick;
+}
 /** 本机可用的角色（清单顺序）；loadCharacters() 之后才有内容。 */
 export const CHARACTERS: Character[] = [];
 // 旧版本按序号存角色，换成 id 时按原来的顺序对应回来
@@ -40,7 +57,7 @@ const remote = new Set<SkinId>();
 let localManifest: Manifest = { builtin: [], characters: [] };
 /** 角色文件的地址：内置或网页里的走相对路径，原生应用下载的角色读出来转成 blob 地址，联网模式下没下载的直接读线上。 */
 export const characterUrl = (id: SkinId, file: CharacterFile) => urls.get(id)?.[file]
-  || (remote.has(id) ? `${CATALOG_URL}${id}/${file}` : `${import.meta.env.BASE_URL}characters/${id}/${file}`);
+  || (remote.has(id) ? `${catalogUrl}${id}/${file}` : `${import.meta.env.BASE_URL}characters/${id}/${file}`);
 /** 原生应用的联网模式：和网页版一样用完整角色；局域网 / 离线模式只用内置和已下载的。 */
 const onlineApp = () => !!native() && store.get('network') === 'online';
 /** 联网模式下没下载、直接从线上读的角色。 */
@@ -89,7 +106,7 @@ export function loadCharacters(): Promise<Character[]> {
     }
     if (onlineApp()) {
       try {
-        for (const id of (await json<Manifest>(`${CATALOG_URL}index.json`)).characters) {
+        for (const id of (await catalogManifest()).characters) {
           if (!validSkin(id) || ids.includes(id)) continue;
           ids.push(id); remote.add(id);
         }
@@ -111,9 +128,10 @@ export function reloadCharacters() { loading = undefined; return loadCharacters(
 
 /** 角色图鉴用的完整目录：网页版就是本站清单；原生应用读网页版的线上清单，离线时退回本机角色。 */
 export async function loadCatalog(): Promise<{ list: Character[]; builtin: SkinId[]; base: string; online: boolean }> {
-  const base = native() ? CATALOG_URL : `${import.meta.env.BASE_URL}characters/`;
   try {
-    const manifest = await json<Manifest>(`${base}index.json`);
+    const local = `${import.meta.env.BASE_URL}characters/`;
+    const manifest = native() ? await catalogManifest() : await json<Manifest>(`${local}index.json`);
+    const base = native() ? catalogUrl : local;
     const list = await Promise.all(manifest.characters.filter(validSkin).map(async (id) => parseCharacter(await json(`${base}${id}/character.json`), id)));
     return { list, builtin: manifest.builtin, base, online: true };
   } catch {
@@ -126,9 +144,10 @@ export async function loadCatalog(): Promise<{ list: Character[]; builtin: SkinI
 export async function downloadCharacter(id: SkinId, onProgress?: (done: number) => void) {
   const invoke = native()?.invoke;
   if (!invoke || !validSkin(id)) throw new Error('只有应用里需要下载角色');
+  await catalogManifest();
   let done = 0;
   const get = async (file: CharacterFile) => {
-    const response = await fetch(`${CATALOG_URL}${id}/${file}`);
+    const response = await fetch(`${catalogUrl}${id}/${file}`);
     if (!response.ok) throw new Error(`下载 ${file} 失败`);
     const bytes = new Uint8Array(await response.arrayBuffer());
     onProgress?.(++done / CHARACTER_FILES.length);
