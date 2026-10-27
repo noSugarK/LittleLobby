@@ -45,9 +45,11 @@ export function drawBuddyImage(ctx: CanvasRenderingContext2D, x: number, feet: n
   ctx.drawImage(sheet, frame.x, frame.y, frame.width, frame.height, x - 32 * k, feet - SPRITE_CELL.baseline * .5 * k, 64 * k, 80 * k);
 }
 
-export function drawBuddyAvatar(canvas: HTMLCanvasElement, skin: number) {
+/** 头像画布：默认画待机第一帧；首页的互动角色会传入动作和时间来播放待机 / 跑步 / 跳跃帧。 */
+export function drawBuddyAvatar(canvas: HTMLCanvasElement, skin: number, action: BuddyAction = 'idle', seconds = 0, facing = 1) {
   const sheet = sheets.get(String(skin));
   if (!sheet) return;
   canvas.width = 112; canvas.height = 112;
-  canvas.getContext('2d')!.drawImage(sheet, 0, 0, SPRITE_CELL.width, SPRITE_CELL.height, 11, 0, 90, 112);
+  const frame = buddyFrame(action, seconds, facing);
+  canvas.getContext('2d')!.drawImage(sheet, frame.x, frame.y, frame.width, frame.height, 11, 0, 90, 112);
 }

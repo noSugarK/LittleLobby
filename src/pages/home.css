@@ -1,25 +1,30 @@
 /* 小聚场首页：派对游戏官网的标准结构（对标 Jackbox / AirConsole / Kahoot!）——
    首屏就是「输入房间码加入」与「开房」两块同等分量的面板，其后是公开大厅与游戏介绍。
+   配色跟随 logo：墨绿品牌色、珊瑚橙行动色、奶油白底。按钮用加深的珊瑚橙，白字对比度约 5:1。
    中文用系统黑体：中文网页字体动辄数 MB，Google Fonts 在国内也不可用。 */
 .site.home {
-  --h-bg: #f4f5fa; --h-panel: #fff; --h-ink: #141824; --h-mu: #545b6e; --h-line: #dde0ea;
-  --h-ac: #4b4be8; --h-acfg: #fff; --h-ac-soft: #ececff; --h-sun: #ffcf3f; --h-sun-ink: #241c00; --h-sun-mu: #5c4a0c;
+  --h-bg: #f7f2e8; --h-panel: #fff; --h-ink: #10302f; --h-mu: #5b6e6b; --h-line: #e6dfd2;
+  --h-brand: #0f5c5a; --h-link: #0f5c5a;
+  --h-ac: #d9502f; --h-acfg: #fff; --h-ring: #ff7a59; --h-ac-soft: #ffe9e1; --h-focus: #d9502f;
+  --h-join: #0f5c5a; --h-join-ink: #fbf7ef; --h-join-mu: #cfe3df;
   --h-turf: #3aa865; --h-art-ball: #dcf1e3; --h-art-buddy: #ffe4d4;
   --s-bg: var(--h-bg); --s-card: var(--h-panel); --s-fg: var(--h-ink); --s-mu: var(--h-mu); --s-line: var(--h-line);
-  --s-ac: var(--h-ac); --s-acfg: var(--h-acfg); --s-tab: #eceef5; --s-tabon: var(--h-panel); --s-soft: var(--h-ac-soft); --s-softfg: var(--h-ac);
+  --s-ac: var(--h-brand); --s-acfg: #fff; --s-tab: #f0eadf; --s-tabon: var(--h-panel); --s-soft: var(--h-ac-soft); --s-softfg: var(--h-ac);
   font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
   background: var(--h-bg); color: var(--h-ink); color-scheme: light;
-  caret-color: var(--h-ac); accent-color: var(--h-ac);
+  caret-color: var(--h-ac); accent-color: var(--h-brand);
   scrollbar-color: color-mix(in srgb, var(--h-ink) 25%, transparent) transparent;
 }
 [data-theme='dark'] .site.home {
-  --h-bg: #0f121a; --h-panel: #181c28; --h-ink: #eef0f7; --h-mu: #a7adc0; --h-line: #2b3144;
-  --h-ac: #9393ff; --h-acfg: #0f1030; --h-ac-soft: #25274c;
-  --h-art-ball: #15301f; --h-art-buddy: #3a2620; --s-tab: #141824;
+  --h-bg: #0b1e1d; --h-panel: #132e2c; --h-ink: #fbf7ef; --h-mu: #a9bdb8; --h-line: #24423f;
+  --h-brand: #8ed8cf; --h-link: #8ed8cf; --h-ring: #ff8a6b; --h-ac-soft: #3a2a24; --h-focus: #ff8a6b;
+  --h-join: #0f6e69;
+  --h-art-ball: #15301f; --h-art-buddy: #3a2620; --s-tab: #10282a; --s-acfg: #0b1e1d;
   color-scheme: dark;
 }
-.site.home ::selection { background: var(--h-ac); color: var(--h-acfg); }
-.home :where(button, a, summary, input):focus-visible { outline: 3px solid var(--h-ac); outline-offset: 3px; }
+.site.home ::selection { background: var(--h-ring); color: var(--h-ink); }
+.home :where(button, a, summary, input):focus-visible { outline: 3px solid var(--h-focus); outline-offset: 3px; }
+.home .lh-join :where(button, input):focus-visible { outline-color: var(--h-join-ink); }
 
 /* ---------- 顶栏 ---------- */
 .lh-top, .lh-main { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: 32px; }
@@ -35,14 +40,22 @@
 
 /* ---------- 首屏：标题 + 角色 ---------- */
 .lh-main { flex: 1 0 auto; padding-bottom: 56px; }
-.lh-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 24px; padding: 28px 0 0; }
-.lh-title { margin: 0; font-size: clamp(36px, 4.8vw, 60px); line-height: 1.12; font-weight: 850; letter-spacing: -.02em; text-wrap: balance; }
-.lh-lede { margin: 16px 0 28px; max-width: 34em; font-size: 17px; line-height: 1.7; color: var(--h-mu); }
-/* 四个角色站在面板上沿：唯一的入场动效是依次轻跳一下 */
+.lh-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 24px; padding: 36px 0 0; }
+.lh-title { margin: 0; font-size: clamp(30px, 3.7vw, 46px); line-height: 1.2; font-weight: 850; letter-spacing: -.01em; text-wrap: balance; }
+.lh-lede { margin: 10px 0 30px; max-width: 34em; font-size: 17px; line-height: 1.7; color: var(--h-mu); }
+/* 四个角色站在右侧面板上沿，可以和鼠标互动：身子朝鼠标微微倾斜（--lean），悬停时朝你小跑，点击蹦起来冒小爱心 */
 .lh-cast { display: flex; align-items: flex-end; margin-bottom: -18px; position: relative; z-index: 1; }
-.lh-cast canvas { width: 104px; height: 104px; margin-left: -18px; animation: lh-hop .9s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--i) * 110ms + 150ms); }
-.lh-cast canvas:nth-child(odd) { transform: rotate(-4deg); } .lh-cast canvas:nth-child(even) { transform: rotate(4deg); }
+.lh-buddy { position: relative; margin-left: -16px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.lh-buddy:first-child { margin-left: 0; }
+.lh-buddy canvas { display: block; width: 104px; height: 104px; transform-origin: 50% 92%; rotate: calc(var(--lean, 0) * 9deg); transition: rotate .35s cubic-bezier(.16, 1, .3, 1), translate .25s cubic-bezier(.16, 1, .3, 1); animation: lh-hop .9s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--i) * 110ms + 150ms); }
+.lh-buddy:hover canvas { translate: 0 -8px; }
+.lh-buddy.is-ready canvas { animation: none; }
+.lh-buddy.is-jump canvas { animation: lh-jump .7s cubic-bezier(.2, .8, .3, 1); }
 @keyframes lh-hop { 0% { translate: 0 0; } 35% { translate: 0 -16px; } 70% { translate: 0 2px; } 100% { translate: 0 0; } }
+@keyframes lh-jump { 0% { translate: 0 0; scale: 1.06 .92; } 30% { translate: 0 -44px; scale: .96 1.05; } 60% { translate: 0 -30px; } 85% { translate: 0 2px; scale: 1.05 .95; } 100% { translate: 0 0; scale: 1; } }
+.lh-pop { position: absolute; left: 50%; top: -6px; translate: -50% 0; white-space: nowrap; pointer-events: none; padding: 4px 10px; border-radius: 999px; background: var(--h-panel); color: var(--h-ink); border: 1px solid var(--h-line); box-shadow: 0 6px 16px -8px #10302f55; font-size: 13px; font-weight: 750; animation: lh-pop 1.1s cubic-bezier(.16, 1, .3, 1) forwards; }
+.lh-pop::before { content: '♥ '; color: var(--h-ring); }
+@keyframes lh-pop { 0% { opacity: 0; translate: -50% 10px; scale: .8; } 20% { opacity: 1; translate: -50% -22px; scale: 1; } 75% { opacity: 1; translate: -50% -30px; } 100% { opacity: 0; translate: -50% -40px; } }
 
 .lh-network { margin: 0 0 14px; max-width: 360px; }
 .lh-note { margin: 0 0 16px; font-size: 14px; line-height: 1.7; color: var(--h-mu); }
@@ -53,30 +66,30 @@
 .lh-panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 30px; border-radius: 28px; }
 .lh-panel h2 { margin: 0; font-size: 28px; font-weight: 850; letter-spacing: -.01em; }
 .lh-panel-desc { margin: -6px 0 6px; font-size: 15px; line-height: 1.6; }
-.lh-join { background: var(--h-sun); color: var(--h-sun-ink); box-shadow: 0 18px 40px -22px #8a6a00; }
-.lh-join .lh-panel-desc { color: var(--h-sun-mu); }
-.lh-host { background: var(--h-panel); border: 1px solid var(--h-line); box-shadow: 0 18px 40px -26px #1a1f3a40; }
+.lh-join { background: var(--h-join); color: var(--h-join-ink); box-shadow: 0 20px 44px -24px #0f5c5acc; }
+.lh-join .lh-panel-desc { color: var(--h-join-mu); }
+.lh-host { background: var(--h-panel); border: 1px solid var(--h-line); box-shadow: 0 18px 40px -26px #10302f40; }
 .lh-host .lh-panel-desc { color: var(--h-mu); }
 
 /* 房间码：五个大格子，真正的输入框透明覆盖在上面 */
 .home .lh-code-form { gap: 12px; }
 .home .lh-code-boxes { gap: 10px; }
-.home .lh-code-boxes span { height: 72px; border-radius: 16px; background: #fffdf3; border: 2px solid #2a210033; color: var(--h-sun-ink); font: 750 34px/1 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; transition: border-color .15s, transform .15s; }
-.home .lh-code-boxes span.filled { border-color: var(--h-sun-ink); }
-.home .lh-code-boxes span.cur { border-color: var(--h-ac); box-shadow: 0 0 0 4px color-mix(in srgb, var(--h-ac) 30%, transparent); transform: translateY(-2px); }
+.home .lh-code-boxes span { height: 72px; border-radius: 16px; background: #fbf7ef; border: 2px solid #ffffff40; color: #10302f; font: 750 34px/1 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; transition: border-color .15s, transform .15s; }
+.home .lh-code-boxes span.filled { border-color: #fbf7ef; }
+.home .lh-code-boxes span.cur { border-color: var(--h-ring); box-shadow: 0 0 0 4px color-mix(in srgb, var(--h-ring) 45%, transparent); transform: translateY(-2px); }
 
 /* 按钮 */
 .home .lh-btn { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px; min-height: 56px; padding: 12px 18px; border-radius: 16px; font-size: 17px; font-weight: 750; cursor: pointer; transition: transform .15s, background-color .15s, box-shadow .15s; }
 .home .lh-btn:active { transform: translateY(1px); }
 .home .lh-btn .ico { width: 22px; height: 22px; }
-.home .lh-btn-ink { background: var(--h-sun-ink); color: #fff8dc; border: 0; }
-.home .lh-btn-ink:hover { background: #3a2f05; }
-.home .lh-join .lh-btn-line { background: transparent; color: var(--h-sun-ink); border: 2px solid #2a210059; }
-.home .lh-join .lh-btn-line:hover { background: #fff6cf; }
-.home .lh-btn-accent { background: var(--h-ac); color: var(--h-acfg); border: 0; box-shadow: 0 10px 22px -12px var(--h-ac); }
-.home .lh-btn-accent:hover { background: color-mix(in srgb, var(--h-ac) 88%, #000); }
+.home .lh-btn-ink { background: var(--h-ac); color: var(--h-acfg); border: 0; box-shadow: 0 10px 22px -12px #d9502f; }
+.home .lh-btn-ink:hover { background: #c4432a; }
+.home .lh-join .lh-btn-line { background: transparent; color: var(--h-join-ink); border: 2px solid #fbf7ef66; }
+.home .lh-join .lh-btn-line:hover { background: #ffffff14; border-color: #fbf7efaa; }
+.home .lh-btn-accent { background: var(--h-ac); color: var(--h-acfg); border: 0; box-shadow: 0 10px 22px -12px #d9502f; }
+.home .lh-btn-accent:hover { background: #c4432a; }
 .home .lh-host .lh-btn-line { background: var(--h-panel); color: var(--h-ink); border: 1.5px solid var(--h-line); }
-.home .lh-host .lh-btn-line:hover { border-color: var(--h-ac); }
+.home .lh-host .lh-btn-line:hover { border-color: var(--h-brand); }
 .home .lh-host-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: auto; }
 .home .lh-host-btns .lh-btn { justify-content: flex-start; text-align: left; min-height: 72px; }
 .home .lh-host-btns span { display: grid; gap: 3px; min-width: 0; }
@@ -85,9 +98,9 @@
 /* 游戏选择：两个单选块 */
 .lh-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .home .lh-pick { position: relative; display: grid; gap: 0; padding: 0; border: 2px solid var(--h-line); border-radius: 18px; background: var(--h-panel); text-align: left; overflow: hidden; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
-.home .lh-pick:hover { border-color: color-mix(in srgb, var(--h-ac) 55%, var(--h-line)); }
-.home .lh-pick[aria-checked='true'] { border-color: var(--h-ac); box-shadow: 0 0 0 4px var(--h-ac-soft); }
-.home .lh-pick[aria-checked='true']::after { content: ''; position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--h-ac) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 15px no-repeat; }
+.home .lh-pick:hover { border-color: color-mix(in srgb, var(--h-ring) 55%, var(--h-line)); }
+.home .lh-pick[aria-checked='true'] { border-color: var(--h-ring); box-shadow: 0 0 0 4px var(--h-ac-soft); }
+.home .lh-pick[aria-checked='true']::after { content: ''; position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--h-ring) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 15px no-repeat; }
 .lh-pick-art { display: grid; place-items: center; height: 86px; }
 .lh-pick-text { display: grid; gap: 2px; padding: 10px 14px 12px; }
 .lh-pick-text b { font-size: 17px; }
@@ -135,21 +148,22 @@
 .lh-game-art .lh-buddies canvas { width: 150px; height: 150px; }
 .lh-game-art .lh-buddies canvas + canvas { margin-left: -28px; }
 .lh-game-text h3 { margin: 0; font-size: 30px; font-weight: 850; }
-.lh-game-meta { margin: 6px 0 12px; font-size: 14px; font-weight: 650; color: var(--h-ac); }
+.lh-game-meta { margin: 6px 0 12px; font-size: 14px; font-weight: 650; color: var(--h-link); }
 .lh-game-text p:not(.lh-game-meta) { margin: 0; font-size: 17px; line-height: 1.7; color: var(--h-mu); max-width: 30em; }
 .lh-game-links { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 18px; }
-.home .lh-link { display: inline-flex; align-items: center; gap: 4px; padding: 6px 0; border: 0; background: none; color: var(--h-ac); font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.home .lh-link { display: inline-flex; align-items: center; gap: 4px; padding: 6px 0; border: 0; background: none; color: var(--h-link); font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer; }
 .home .lh-link .ico { width: 18px; height: 18px; transition: transform .15s; }
 .home .lh-link:hover .ico { transform: translateX(3px); }
 .home .lh-guide { display: flex; align-items: center; gap: 12px; margin-top: 28px; padding: 18px 22px; border-radius: 18px; background: var(--h-ac-soft); color: var(--h-ink); font-size: 16px; font-weight: 650; text-decoration: none; }
 .home .lh-guide span { flex: 1; }
 .home .lh-guide .ico { color: var(--h-ac); }
+[data-theme='dark'] .home .lh-guide .ico { color: var(--h-ring); }
 .home .site-footer { border-top: 1px solid var(--h-line); padding: 22px; font-size: 13px; color: var(--h-mu); }
 
 /* ---------- 平板 / 手机 ---------- */
 @media (max-width: 900px) {
   .lh-actions { grid-template-columns: minmax(0, 1fr); }
-  .lh-cast canvas { width: 84px; height: 84px; }
+  .lh-buddy canvas { width: 84px; height: 84px; }
 }
 @media (max-width: 640px) {
   .lh-top, .lh-main { padding-inline: 18px; }
@@ -157,10 +171,11 @@
   .lh-wordmark { font-size: 19px; gap: 10px; } .lh-wordmark small { font-size: 10px; }
   .home .site-tools { gap: 6px; } .home .lang-select { font-size: 13px; padding: 6px; }
   .lh-intro { grid-template-columns: minmax(0, 1fr); padding-top: 12px; gap: 0; }
-  .lh-title { font-size: 36px; }
+  .lh-title { font-size: 30px; }
   .lh-lede { font-size: 15px; margin: 12px 0 8px; }
   .lh-cast { justify-content: center; margin-bottom: -14px; }
-  .lh-cast canvas { width: 76px; height: 76px; margin-left: -12px; }
+  .lh-buddy { margin-left: -12px; }
+  .lh-buddy canvas { width: 76px; height: 76px; }
   .lh-panel { padding: 22px 18px; border-radius: 24px; }
   .lh-panel h2 { font-size: 24px; }
   .home .lh-code-boxes { gap: 7px; } .home .lh-code-boxes span { height: 60px; font-size: 28px; border-radius: 14px; }
@@ -178,6 +193,6 @@
   .lh-game-text p:not(.lh-game-meta) { font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .lh-cast canvas { animation: none; }
+  .lh-buddy canvas, .lh-buddy.is-jump canvas, .lh-pop { animation: none; transition: none; rotate: 0deg; }
   .home .lh-btn, .home .lh-pick, .home .lh-code-boxes span, .home .lh-link .ico { transition: none; }
 }

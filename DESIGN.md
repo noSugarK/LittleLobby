@@ -8,18 +8,20 @@ The category standard for party-game sites (bar: Jackbox, AirConsole, Kahoot!), 
 
 ## Tokens (`.site.home`)
 
+Palette follows the logo (`public/brand/mark.svg`): brand teal, coral for actions, warm cream.
+
 | Role | Light | Dark |
 |---|---|---|
-| Ground `--h-bg` | `#f4f5fa` | `#0f121a` |
-| Panel `--h-panel` | `#ffffff` | `#181c28` |
-| Ink `--h-ink` | `#141824` | `#eef0f7` |
-| Muted `--h-mu` | `#545b6e` | `#a7adc0` |
-| Line `--h-line` | `#dde0ea` | `#2b3144` |
-| Accent `--h-ac` (host, selection, links) | `#4b4be8` | `#9393ff` |
-| Join field `--h-sun` | `#ffcf3f` (both themes), ink `#241c00` | |
+| Ground `--h-bg` | `#f7f2e8` | `#0b1e1d` |
+| Panel `--h-panel` | `#ffffff` | `#132e2c` |
+| Ink `--h-ink` | `#10302f` | `#fbf7ef` |
+| Muted `--h-mu` | `#5b6e6b` | `#a9bdb8` |
+| Line `--h-line` | `#e6dfd2` | `#24423f` |
+| Brand / links `--h-brand`, `--h-link` | `#0f5c5a` | `#8ed8cf` |
+| Action buttons `--h-ac` (white text ≈ 5:1) | `#d9502f` | `#d9502f` |
+| Rings, badges, selection `--h-ring` | `#ff7a59` | `#ff8a6b` |
+| Join field `--h-join` / text `--h-join-ink` | `#0f5c5a` / `#fbf7ef` | `#0f6e69` / `#fbf7ef` |
 | Game art grounds | turf `#dcf1e3`, buddy `#ffe4d4` | `#15301f`, `#3a2620` |
-
-The home maps these onto the shared `--s-*` variables so shared components (switch, lobby table, LAN lobby, network toggle) follow the palette. Selection, caret, checkbox accent, scrollbar and focus rings use the accent.
 
 ## Type
 
@@ -27,11 +29,12 @@ System CJK sans (PingFang SC → Hiragino Sans GB → Microsoft YaHei → Noto S
 
 ## Components
 
-- **Join panel**: sun-yellow field, five 72px code boxes (60px on phones) with a transparent input over them, ink "加入" button, outline scan button.
+- **Join panel**: brand-teal field, five 72px cream code boxes (60px on phones) with a transparent input over them, coral "加入" button, cream outline scan button.
 - **Host panel**: white/raised panel; game picker as two radio tiles (art + name + players, checked = accent ring and check badge); collapsible 房间设置 (public lobby switch, PIN) that opens itself when the PIN is invalid; two host buttons (big screen = accent, phone = outline).
 - **Lobby**: full-width table on a panel, hover tint in accent-soft.
 - **Games**: alternating art/text rows (art 5/12, text 7/12), football art is an authored SVG pitch, adventure art uses the character sprites.
-- **Cast**: the four character sprites stand on the top edge of the panels; the page's one motion is a staggered single hop on load (off under reduced motion).
+- **Hero**: one-line headline with the subline under it; the four characters stand in the same row on the host panel's top edge.
+- **Cast (interactive)**: idle frames play (blink/breathe); characters lean toward the mouse, run in place facing the cursor on hover, and jump with a name + heart bubble on click or tap. All motion is off under reduced motion.
 
 ## Rules
 

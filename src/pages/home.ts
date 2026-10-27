@@ -8,7 +8,7 @@ import { bindLanLobby, lanLobbyHtml } from '../ui/lan-lobby';
 import { GAMES, validGame, type GameId } from '../room/catalog';
 import { CHARACTERS } from '../game/adventure';
 import './home.css';
-import { drawBuddyAvatar, loadCharacterSprites } from '../game/adventure-sprites';
+import { drawBuddyAvatar, loadCharacterSprites, type BuddyAction } from '../game/adventure-sprites';
 
 const CODE_LEN = 5;
 
@@ -18,6 +18,64 @@ const pitchArt = `<svg class="lh-pitch" viewBox="0 0 160 100" aria-hidden="true"
   <g class="lh-pitch-line"><rect x="12" y="12" width="136" height="76" rx="3"/><path d="M80 12v76"/><circle cx="80" cy="50" r="13"/><rect x="12" y="34" width="14" height="32"/><rect x="134" y="34" width="14" height="32"/></g>
   <g transform="translate(104 58)"><circle r="12" class="lh-ball"/><path class="lh-ball-patch" d="M0-5l4.8 3.5-1.8 5.6h-6l-1.8-5.6z"/></g>
 </svg>`;
+
+/** 首页右侧的四个角色可以和鼠标互动：身子朝鼠标微微倾斜，悬停时朝你原地小跑，点击蹦起来并冒出名字和小爱心。
+ *  平时播放待机帧（眨眼呼吸）；系统要求减少动态效果时只画静止的第一帧。纯装饰，不影响开房 / 加入。 */
+function bindCast(app: HTMLElement) {
+  const cast = app.querySelector<HTMLElement>('.lh-cast');
+  if (!cast || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const buddies = [...cast.querySelectorAll<HTMLElement>('.lh-buddy')];
+  const now = () => performance.now();
+  const state = buddies.map(() => ({ action: 'idle' as BuddyAction, since: now(), facing: 1, until: 0 }));
+  const set = (i: number, action: BuddyAction, facing = state[i].facing, until = 0) => {
+    if (state[i].action !== action) state[i].since = now();
+    Object.assign(state[i], { action, facing, until });
+  };
+  let last = 0;
+  const draw = (time: number) => {
+    if (!app.contains(cast)) return;
+    // 约 12 帧每秒就够看，省电
+    if (time - last > 80) {
+      last = time;
+      buddies.forEach((buddy, i) => {
+        const s = state[i];
+        if (s.until && time > s.until) set(i, buddy.matches(':hover') ? 'run' : 'idle', s.facing);
+        drawBuddyAvatar(buddy.querySelector('canvas')!, i, s.action, (time - s.since) / 1000 + (s.action === 'idle' ? i * 0.37 : 0), s.facing);
+      });
+    }
+    requestAnimationFrame(draw);
+  };
+  requestAnimationFrame(draw);
+  const facingTo = (buddy: HTMLElement, x: number) => {
+    const r = buddy.getBoundingClientRect();
+    return x < r.left + r.width / 2 ? -1 : 1;
+  };
+  window.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    for (const buddy of buddies) {
+      const r = buddy.getBoundingClientRect();
+      const lean = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / 320));
+      buddy.style.setProperty('--lean', lean.toFixed(3));
+    }
+  });
+  document.addEventListener('pointerleave', () => buddies.forEach((b) => b.style.setProperty('--lean', '0')));
+  buddies.forEach((buddy, i) => {
+    buddy.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !state[i].until) set(i, 'run', facingTo(buddy, e.clientX)); });
+    buddy.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' && state[i].action === 'run') state[i].facing = facingTo(buddy, e.clientX); });
+    buddy.addEventListener('pointerleave', () => { if (!state[i].until) set(i, 'idle'); });
+    buddy.addEventListener('click', () => {
+      set(i, 'jump', state[i].facing, now() + 700);
+      buddy.classList.remove('is-jump'); void buddy.offsetWidth; buddy.classList.add('is-jump');
+      buddy.querySelector('.lh-pop')?.remove();
+      const pop = document.createElement('span');
+      pop.className = 'lh-pop'; pop.textContent = CHARACTERS[i].name;
+      buddy.append(pop);
+      setTimeout(() => pop.remove(), 1100);
+    });
+    // 入场轻跳播完后标记就绪，之后跳跃动画结束不会再重播入场动画
+    buddy.addEventListener('animationend', (e) => { if (e.animationName === 'lh-hop') buddy.classList.add('is-ready'); else if (e.animationName === 'lh-jump') buddy.classList.remove('is-jump'); });
+  });
+}
 
 export function mountHome(app: HTMLElement) {
   const savedGame = store.get('littlelobby.game');
@@ -42,9 +100,9 @@ export function mountHome(app: HTMLElement) {
     </header>
     <main class="lh-main">
       <section class="lh-intro">
-        <div><h1 class="lh-title">${t('app.tagline').replace('，', '，<br>').replace(', ', ',<br>')}</h1>
+        <div><h1 class="lh-title">${t('app.tagline')}</h1>
         <p class="lh-lede">${t('app.desc')}</p></div>
-        <div class="lh-cast" aria-hidden="true">${CHARACTERS.map((_, i) => `<canvas data-buddy="${i}" width="112" height="112" style="--i:${i}"></canvas>`).join('')}</div>
+        <div class="lh-cast" aria-hidden="true">${CHARACTERS.map((_, i) => `<span class="lh-buddy" data-cast="${i}" style="--i:${i}"><canvas data-buddy="${i}" width="112" height="112"></canvas></span>`).join('')}</div>
       </section>
       ${native ? `<div class="network-mode seg lh-network" role="group" aria-label="${t('lan.mode')}"><button data-network="online" class="${lan ? '' : 'on'}">${t('lan.online')}</button><button data-network="lan" class="${lan ? 'on' : ''}">${t('lan.local')}</button></div>` : ''}
       ${lan ? `<p class="lh-note">${t('lan.hint')}</p>` : ''}
@@ -121,6 +179,7 @@ export function mountHome(app: HTMLElement) {
   void loadCharacterSprites().then(() => {
     if (!app.querySelector('.home')) return;
     app.querySelectorAll<HTMLCanvasElement>('[data-buddy]').forEach((canvas) => drawBuddyAvatar(canvas, Number(canvas.dataset.buddy)));
+    bindCast(app);
   }).catch(() => { /* Decorative characters do not block joining a room. */ });
 
   const pickGame = (game: GameId) => {
