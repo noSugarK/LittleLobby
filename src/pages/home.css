@@ -45,8 +45,8 @@
 .lh-lede { margin: 10px 0 30px; max-width: 34em; font-size: 17px; line-height: 1.7; color: var(--h-mu); }
 /* 角色排成一队铺满整个屏幕宽，脚踩在下方两张卡片的上沿，从左跑到右循环；位置由 home.ts 逐帧设置 */
 .home { overflow-x: hidden; }
-/* 上方多留 96px 给跳起和名字气泡，用负边距抵掉，不把卡片往下推 */
-.lh-cast { --b: 104px; position: relative; z-index: 1; height: calc(var(--b) + 96px); margin: -88px calc(50% - 50vw) -18px; overflow: hidden; pointer-events: none; }
+/* 不占版面：整条（含上方 96px 跳跃 / 气泡余量）用负边距叠在标题上层，脚踩卡片上沿 18px。一直在走，挡住的字很快就露出来 */
+.lh-cast { --b: 104px; position: relative; z-index: 2; height: calc(var(--b) + 96px); margin: calc(-78px - var(--b)) calc(50% - 50vw) -18px; overflow: hidden; pointer-events: none; }
 .lh-buddy { position: absolute; left: 0; bottom: 0; cursor: pointer; pointer-events: auto; touch-action: manipulation; -webkit-tap-highlight-color: transparent; will-change: transform; }
 .lh-buddy canvas { display: block; width: var(--b); height: var(--b); transform-origin: 50% 92%; }
 .lh-buddy.is-jump canvas { animation: lh-jump .9s cubic-bezier(.2, .8, .3, 1); }
@@ -212,7 +212,7 @@
   .lh-title { font-size: 30px; }
   .lh-lede { font-size: 15px; margin: 12px 0 8px; }
   .lh-title { white-space: normal; }
-  .lh-cast { --b: 76px; margin-bottom: -14px; }
+  .lh-cast { --b: 76px; margin-top: calc(-82px - var(--b)); margin-bottom: -14px; }
   .lh-panel { padding: 22px 18px; border-radius: 24px; }
   .lh-panel h2 { font-size: 24px; }
   .home .lh-code-boxes { gap: 7px; } .home .lh-code-boxes span { height: 60px; font-size: 28px; border-radius: 14px; }
