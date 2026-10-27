@@ -95,6 +95,12 @@
 .home .lh-host-btns span { display: grid; gap: 3px; min-width: 0; }
 .home .lh-host-btns small { font-size: 12px; font-weight: 500; opacity: .92; line-height: 1.4; }
 
+/* 加入面板底部：没有房间码时扫大屏上的二维码 */
+.lh-scan-tip { display: flex; align-items: center; gap: 14px; margin-top: auto; padding-top: 14px; border-top: 1px solid #fbf7ef2e; color: var(--h-join-mu); }
+.lh-scan-art { flex: none; width: 92px; height: auto; color: var(--h-join-ink); --h-join: #ff7a59; }
+.lh-scan-tip p { display: grid; gap: 2px; margin: 0; font-size: 14px; line-height: 1.5; }
+.lh-scan-tip b { color: var(--h-join-ink); font-size: 15px; }
+
 /* 游戏选择：两个单选块 */
 .lh-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .home .lh-pick { position: relative; display: grid; gap: 0; padding: 0; border: 2px solid var(--h-line); border-radius: 18px; background: var(--h-panel); text-align: left; overflow: hidden; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
@@ -136,21 +142,51 @@
 .home .lh-lobby .lrow { padding: 14px 20px; font-size: 15px; grid-template-columns: 84px minmax(0, 1fr) 56px 72px; }
 .home .lh-lobby .lhead { font-size: 13px; background: var(--s-tab); }
 .home .lh-lobby .lbody .lrow:hover { background: var(--h-ac-soft); }
-.home .lh-lobby .lempty { padding: 28px 20px; text-align: center; color: var(--h-mu); font-size: 14px; }
+/* 没有公开房间时整块收成一行：标题 + 状态胶囊 + 开房链接 */
+.lh-lobby-empty { display: none; align-items: center; gap: 6px 18px; flex-wrap: wrap; }
+.lh-lobby.is-empty .lh-section-head { align-items: center; justify-content: flex-start; margin-bottom: 0; padding: 14px 14px 14px 22px; border: 1px solid var(--h-line); border-radius: 20px; background: var(--h-panel); }
+.lh-lobby.is-empty .lh-section-head h2 { font-size: 20px; }
+.lh-lobby.is-empty .lh-lobby-empty { display: flex; flex: 1; justify-content: space-between; }
+.lh-lobby.is-empty :is(.lh-lobby-hint, .lobby-table) { display: none; }
+.lh-lobby-pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: var(--s-tab); color: var(--h-mu); font-size: 14px; font-weight: 600; }
+.lh-lobby-pill .ico { width: 18px; height: 18px; }
+.home .lh-open-public { padding: 6px 8px; }
 .lh-lan { display: grid; gap: 12px; padding: 22px; border: 1px solid var(--h-line); border-radius: 20px; background: var(--h-panel); }
 
-.lh-game { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: center; gap: 36px; padding: 18px 0; }
-.lh-game + .lh-game { border-top: 1px solid var(--h-line); }
-.lh-game:nth-of-type(even) { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
-.lh-game:nth-of-type(even) .lh-game-art { order: 2; }
-.lh-game-art { display: grid; place-items: center; height: 220px; border-radius: 24px; overflow: hidden; }
-.lh-game-art .lh-pitch { width: 240px; }
-.lh-game-art .lh-buddies canvas { width: 150px; height: 150px; }
-.lh-game-art .lh-buddies canvas + canvas { margin-left: -28px; }
-.lh-game-text h3 { margin: 0; font-size: 30px; font-weight: 850; }
-.lh-game-meta { margin: 6px 0 12px; font-size: 14px; font-weight: 650; color: var(--h-link); }
-.lh-game-text p:not(.lh-game-meta) { margin: 0; font-size: 17px; line-height: 1.7; color: var(--h-mu); max-width: 30em; }
-.lh-game-links { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 18px; }
+.lh-game-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.lh-game { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--h-line); border-radius: 24px; background: var(--h-panel); }
+.lh-game-text { padding: 26px 28px 18px; }
+.lh-game-text h3 { margin: 0 0 8px; font-size: 26px; font-weight: 850; }
+.lh-game-text p:not(.lh-game-meta) { margin: 0; font-size: 16px; line-height: 1.7; color: var(--h-mu); }
+.lh-game-meta { display: inline-block; margin: 12px 0 0; padding: 3px 10px; border-radius: 999px; background: var(--h-ac-soft); color: var(--h-ac); font-size: 13px; font-weight: 700; }
+[data-theme='dark'] .lh-game-meta { color: var(--h-ring); }
+.lh-game-links { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 12px; }
+.lh-game-img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; margin-top: auto; }
+.lh-game-football .lh-game-img { background: var(--h-art-ball); }
+.lh-game-adventure .lh-game-img { background: var(--h-art-buddy); }
+
+/* 三种合作玩法：角色帧直接画在卡片上 */
+.lh-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+.lh-mode { display: flex; align-items: center; gap: 14px; padding: 12px 18px 12px 12px; border: 1px solid var(--h-line); border-radius: 20px; background: var(--h-panel); }
+.lh-mode canvas { flex: none; width: 112px; height: 70px; border-radius: 14px; background: var(--h-art-buddy); }
+.lh-mode p { display: grid; gap: 2px; margin: 0; font-size: 13px; line-height: 1.5; color: var(--h-mu); }
+.lh-mode b { color: var(--h-ink); font-size: 16px; }
+
+/* 离线版下载：深色品牌底，和加入面板呼应 */
+.lh-offline { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: center; gap: 28px; margin-top: 64px; padding: 34px 36px; border-radius: 28px; background: var(--h-join); color: var(--h-join-ink); }
+.lh-offline h2 { margin: 0; font-size: 28px; font-weight: 850; }
+.lh-offline-text > p { margin: 8px 0 22px; max-width: 32em; font-size: 16px; line-height: 1.7; color: var(--h-join-mu); }
+.lh-dl-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.home .lh-dl { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 10px 14px; border-radius: 14px; background: #fbf7ef; color: #10302f; font-size: 15px; font-weight: 750; text-decoration: none; transition: transform .15s, box-shadow .15s; }
+.home .lh-dl:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -12px #000a; }
+.home .lh-dl span { flex: 1; }
+.home .lh-dl .ico { width: 20px; height: 20px; flex: none; }
+.home .lh-dl > .ico:last-child { width: 16px; height: 16px; color: var(--h-ac); }
+.home .lh-dl:focus-visible { outline-color: var(--h-join-ink); }
+.lh-dl-note { margin: 14px 0 0; font-size: 13px; color: var(--h-join-mu); }
+.lh-dl-note a { color: var(--h-join-ink); font-weight: 650; }
+.lh-offline-art { display: block; width: 100%; height: auto; }
+.lh-guide-wrap { margin-top: 28px; }
 .home .lh-link { display: inline-flex; align-items: center; gap: 4px; padding: 6px 0; border: 0; background: none; color: var(--h-link); font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer; }
 .home .lh-link .ico { width: 18px; height: 18px; transition: transform .15s; }
 .home .lh-link:hover .ico { transform: translateX(3px); }
@@ -163,6 +199,10 @@
 /* ---------- 平板 / 手机 ---------- */
 @media (max-width: 900px) {
   .lh-actions { grid-template-columns: minmax(0, 1fr); }
+  .lh-modes { grid-template-columns: minmax(0, 1fr); }
+  .lh-offline { grid-template-columns: minmax(0, 1fr); }
+  .lh-offline-art { max-width: 360px; margin-inline: auto; order: -1; }
+  .lh-dl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lh-buddy canvas { width: 84px; height: 84px; }
 }
 @media (max-width: 640px) {
@@ -186,13 +226,18 @@
   .lh-section-head { flex-direction: column; gap: 6px; }
   .lh-section-head h2 { font-size: 22px; }
   .home .lh-lobby .lrow { padding: 12px 14px; font-size: 14px; grid-template-columns: 64px minmax(0, 1fr) 42px 58px; }
-  .lh-game, .lh-game:nth-of-type(even) { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 14px 0 22px; }
-  .lh-game:nth-of-type(even) .lh-game-art { order: 0; }
-  .lh-game-art { height: 170px; }
-  .lh-game-text h3 { font-size: 24px; }
+  .lh-game-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .lh-game-text { padding: 20px 20px 14px; }
+  .lh-game-text h3 { font-size: 22px; }
   .lh-game-text p:not(.lh-game-meta) { font-size: 15px; }
+  .lh-lobby.is-empty .lh-section-head { flex-direction: row; flex-wrap: wrap; padding: 12px 14px 12px 18px; }
+  .lh-lobby.is-empty .lh-lobby-empty { flex-basis: 100%; }
+  .lh-offline { margin-top: 44px; padding: 24px 18px; border-radius: 24px; gap: 14px; }
+  .lh-offline h2 { font-size: 24px; }
+  .lh-offline-text > p { font-size: 15px; }
+  .lh-scan-art { width: 76px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .lh-buddy canvas, .lh-buddy.is-jump canvas, .lh-pop { animation: none; transition: none; rotate: 0deg; }
-  .home .lh-btn, .home .lh-pick, .home .lh-code-boxes span, .home .lh-link .ico { transition: none; }
+  .home .lh-btn, .home .lh-pick, .home .lh-code-boxes span, .home .lh-link .ico, .home .lh-dl { transition: none; }
 }

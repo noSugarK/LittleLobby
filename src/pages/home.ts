@@ -1,14 +1,14 @@
 import { t } from '../i18n';
 import { LOBBY_STALE_MS, watchLobby, type LobbyInfo } from '../net/lobby';
 import { openScanner } from '../ui/scan';
-import { bindSiteTools, icon, siteFooter, siteTools } from '../ui/site';
+import { MAIN_DOWNLOADS, REPO_URL, bindSiteTools, icon, latestRelease, siteFooter, siteTools } from '../ui/site';
 import { HISTORY_KEY, brand, esc, isPin, normalizeCode, store } from '../ui/util';
 import { isLanPage, isNativeApp, stopLan } from '../net/lan-session';
 import { bindLanLobby, lanLobbyHtml } from '../ui/lan-lobby';
 import { GAMES, validGame, type GameId } from '../room/catalog';
-import { CHARACTERS } from '../game/adventure';
+import { CHARACTERS, MODES, type ModeId } from '../game/adventure';
 import './home.css';
-import { drawBuddyAvatar, loadCharacterSprites, type BuddyAction } from '../game/adventure-sprites';
+import { drawBuddyAvatar, drawBuddyImage, loadCharacterSprites, type BuddyAction } from '../game/adventure-sprites';
 
 const CODE_LEN = 5;
 
@@ -18,6 +18,37 @@ const pitchArt = `<svg class="lh-pitch" viewBox="0 0 160 100" aria-hidden="true"
   <g class="lh-pitch-line"><rect x="12" y="12" width="136" height="76" rx="3"/><path d="M80 12v76"/><circle cx="80" cy="50" r="13"/><rect x="12" y="34" width="14" height="32"/><rect x="134" y="34" width="14" height="32"/></g>
   <g transform="translate(104 58)"><circle r="12" class="lh-ball"/><path class="lh-ball-patch" d="M0-5l4.8 3.5-1.8 5.6h-6l-1.8-5.6z"/></g>
 </svg>`;
+
+/* 加入面板底部的小插图：手机对着大屏上的二维码 */
+const scanArt = `<svg class="lh-scan-art" viewBox="0 0 120 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="36" y="6" width="78" height="50" rx="6"/><path d="M66 56v8M56 66h30"/>
+  <g stroke-width="2"><rect x="62" y="16" width="10" height="10" rx="1.5"/><rect x="80" y="16" width="10" height="10" rx="1.5"/><rect x="62" y="34" width="10" height="10" rx="1.5"/><path d="M80 34h4v4M88 34v10h-8M80 42v2"/></g>
+  <rect x="6" y="22" width="26" height="44" rx="5" fill="var(--h-join, #0f5c5a)"/><path d="M14 34h10M14 40h10M14 46h6" stroke-width="2" opacity=".75"/>
+  <path d="M32 30l26-8M32 50l26 6" stroke-dasharray="3 4" opacity=".6"/>
+</svg>`;
+const assetUrl = (file: string) => `${import.meta.env.BASE_URL}home/${file}`;
+/** 三种合作玩法的小图：直接用游戏里的角色帧画，和实际玩到的样子一致 */
+function drawModeArt(canvas: HTMLCanvasElement, mode: ModeId) {
+  const ctx = canvas.getContext('2d')!;
+  canvas.width = 320; canvas.height = 200;
+  ctx.scale(2, 2);
+  if (mode === 'rope') {
+    drawBuddyImage(ctx, 50, 92, 0, 'run', 0.2, 1);
+    drawBuddyImage(ctx, 110, 92, 1, 'run', 0.5, 1);
+    ctx.lineCap = 'round';
+    const rope = () => { ctx.beginPath(); ctx.moveTo(58, 70); ctx.quadraticCurveTo(80, 92, 102, 70); };
+    ctx.lineWidth = 5; ctx.strokeStyle = '#e4686c'; rope(); ctx.stroke();
+    ctx.lineWidth = 2.5; ctx.setLineDash([5, 6]); ctx.strokeStyle = '#fff6ea'; rope(); ctx.stroke();
+  } else if (mode === 'eat') {
+    drawBuddyImage(ctx, 80, 94, 3, 'idle', 0, 1, true);
+  } else {
+    // 三层摞起来比卡片高，缩小一点整组放进去
+    ctx.translate(80, 98); ctx.scale(0.62, 0.62);
+    drawBuddyImage(ctx, 0, 0, 1, 'idle', 0, 1);
+    drawBuddyImage(ctx, 0, -40, 2, 'idle', 0.3, 1);
+    drawBuddyImage(ctx, 0, -80, 0, 'idle', 0.6, 1);
+  }
+}
 
 /** 首页右侧的四个角色可以和鼠标互动：身子朝鼠标微微倾斜，悬停时朝你原地小跑，点击蹦起来并冒出名字和小爱心。
  *  平时播放待机帧（眨眼呼吸）；系统要求减少动态效果时只画静止的第一帧。纯装饰，不影响开房 / 加入。 */
@@ -118,7 +149,8 @@ export function mountHome(app: HTMLElement) {
             </label>
             <button type="submit" class="lh-btn lh-btn-ink join-btn">${t('join.go')}${icon.right}</button>
           </form>
-          ${lan ? '' : `<button type="button" class="lh-btn lh-btn-line scan-btn">${icon.scan}<span>${t('join.scan')}</span></button>`}
+          ${lan ? '' : `<button type="button" class="lh-btn lh-btn-line scan-btn">${icon.scan}<span>${t('join.scan')}</span></button>
+          <div class="lh-scan-tip">${scanArt}<p><b>${t('home.scanTipTitle')}</b><span>${t('home.scanTip')}</span></p></div>`}
         </section>` : ''}
 
         ${showHost ? `<section class="lh-panel lh-host" aria-labelledby="lh-host-title">
@@ -146,7 +178,7 @@ export function mountHome(app: HTMLElement) {
       </div>
 
       ${showLobby ? `<section class="lh-section lh-lobby" aria-labelledby="lh-lobby-title">
-        <div class="lh-section-head"><h2 id="lh-lobby-title">${t('tab.lobby')} <span class="count"></span></h2>${lan ? '' : `<p>${t('lobby.hint')}</p>`}</div>
+        <div class="lh-section-head"><h2 id="lh-lobby-title">${t('tab.lobby')} <span class="count"></span></h2>${lan ? '' : `<p class="lh-lobby-hint">${t('lobby.hint')}</p><div class="lh-lobby-empty"><span class="lh-lobby-pill">${icon.users}<span class="lh-lobby-state">${t('home.lobbyLoading')}</span></span>${showHost ? `<button type="button" class="lh-link lh-open-public">${t('home.openPublic')}${icon.right}</button>` : ''}</div>`}</div>
         ${lan && native ? `<div class="lh-lan">${lanLobbyHtml()}</div>` : ''}
         <div class="lobby-table" role="table" ${lan ? 'hidden' : ''}>
           <div class="lrow lhead" role="row"><span>${t('lobby.room')}</span><span>${t('lobby.host')}</span><span>${t('lobby.players')}</span><span>${t('lobby.state')}</span></div>
@@ -155,19 +187,33 @@ export function mountHome(app: HTMLElement) {
       </section>` : ''}
 
       <section class="lh-section lh-games" aria-labelledby="lh-games-title">
-        <div class="lh-section-head"><h2 id="lh-games-title">${t('home.games')}</h2></div>
-        ${GAMES.map((game) => `<article class="lh-game lh-game-${game.id}">
-          <div class="lh-game-art lh-art-${game.id}">${gameArt(game.id)}</div>
+        <div class="lh-section-head"><h2 id="lh-games-title">${t('home.games')}</h2><p>${t('home.gamesLead')}</p></div>
+        <div class="lh-game-grid">${GAMES.map((game) => `<article class="lh-game lh-game-${game.id}">
           <div class="lh-game-text">
             <h3>${game.name}</h3>
-            <p class="lh-game-meta">${game.players}</p>
             <p>${game.caption}</p>
+            <p class="lh-game-meta">${game.players}</p>
             <div class="lh-game-links">
               ${showHost ? `<button type="button" class="lh-link" data-use-game="${game.id}">${t('home.useGame')}${icon.right}</button>` : ''}
               ${game.id === 'adventure' ? `<a class="lh-link" href="#/adventure-host?solo=1">${t('home.solo')}${icon.right}</a>` : ''}
             </div>
           </div>
-        </article>`).join('')}
+          <img class="lh-game-img" src="${assetUrl(`${game.id}.webp`)}" alt="" loading="lazy" width="960" height="640">
+        </article>`).join('')}</div>
+        <div class="lh-modes">${MODES.filter((m) => m.coop).map((m) => `<div class="lh-mode"><canvas data-mode-art="${m.id}" width="320" height="200" aria-hidden="true"></canvas><p><b>${m.name}</b><span>${m.desc}</span></p></div>`).join('')}</div>
+      </section>
+
+      ${native || isLanPage() ? '' : `<section class="lh-offline" aria-labelledby="lh-offline-title">
+        <div class="lh-offline-text">
+          <h2 id="lh-offline-title">${t('home.offlineTitle')}</h2>
+          <p>${t('home.offlineDesc')}</p>
+          <div class="lh-dl-grid">${MAIN_DOWNLOADS.map(([label, logo]) => `<a class="lh-dl" data-os="${label}" href="${REPO_URL}/releases" target="_blank" rel="noopener">${logo}<span>${label}</span>${icon.download}</a>`).join('')}</div>
+          <p class="lh-dl-note"><span class="lh-dl-ver">${t('dl.loading')}</span> · <a href="${REPO_URL}/releases" target="_blank" rel="noopener">${t('dl.all')}</a></p>
+        </div>
+        <img class="lh-offline-art" src="${assetUrl('offline.webp')}" alt="" loading="lazy" width="900" height="600">
+      </section>`}
+
+      <section class="lh-section lh-guide-wrap">
         <a class="lh-guide" href="#/guide">${icon.book}<span>${t('guide.cta')}</span>${icon.right}</a>
       </section>
     </main>
@@ -179,6 +225,7 @@ export function mountHome(app: HTMLElement) {
   void loadCharacterSprites().then(() => {
     if (!app.querySelector('.home')) return;
     app.querySelectorAll<HTMLCanvasElement>('[data-buddy]').forEach((canvas) => drawBuddyAvatar(canvas, Number(canvas.dataset.buddy)));
+    app.querySelectorAll<HTMLCanvasElement>('[data-mode-art]').forEach((canvas) => drawModeArt(canvas, canvas.dataset.modeArt as ModeId));
     bindCast(app);
   }).catch(() => { /* Decorative characters do not block joining a room. */ });
 
@@ -199,6 +246,33 @@ export function mountHome(app: HTMLElement) {
       host?.querySelector<HTMLElement>(`[data-game="${button.dataset.useGame}"]`)?.focus({ preventScroll: true });
     };
   });
+  const offline = $('.lh-offline');
+  if (offline) {
+    void latestRelease().then((release) => {
+      const ver = offline.querySelector('.lh-dl-ver')!;
+      if (!release) { ver.textContent = t('home.soon'); return; }
+      ver.textContent = t('home.latest', { v: release.tag_name });
+      offline.querySelectorAll<HTMLAnchorElement>('[data-os]').forEach((a) => {
+        const patterns = MAIN_DOWNLOADS.find(([label]) => label === a.dataset.os)?.[2] ?? [];
+        const asset = patterns.map((re) => release.assets.find((x) => re.test(x.name))).find(Boolean);
+        if (!asset) return;
+        a.href = asset.browser_download_url;
+        a.removeAttribute('target');
+        a.title = `${asset.name} · ${(asset.size / 1048576).toFixed(1)} MB`;
+      });
+    }).catch(() => { offline.querySelector('.lh-dl-ver')!.textContent = t('dl.failed'); });
+  }
+  // 大厅空着时「开个公开房间」：勾上公开大厅、展开房间设置，并把焦点交给开房按钮
+  const openPublic = $('.lh-open-public');
+  if (openPublic) openPublic.onclick = () => {
+    const listed = $<HTMLInputElement>('.opt-listed');
+    if (listed) listed.checked = true;
+    const options = $<HTMLDetailsElement>('.lh-options');
+    if (options) options.open = true;
+    const host = $('.lh-host');
+    host?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    $('.create')?.focus({ preventScroll: true });
+  };
   app.querySelectorAll<HTMLButtonElement>('[data-network]').forEach((button) => {
     button.onclick = () => {
       store.set('sfb.network', button.dataset.network!);
@@ -276,6 +350,8 @@ export function mountHome(app: HTMLElement) {
   let rooms = new Map<string, LobbyInfo>();
   const body = $('.lbody')!;
   const countEls = app.querySelectorAll<HTMLElement>('.count');
+  const lobby = $('.lh-lobby');
+  const lobbyState = $('.lh-lobby-state');
   let state: 'loading' | 'ready' | 'failed' = 'loading';
 
   function render() {
@@ -284,9 +360,12 @@ export function mountHome(app: HTMLElement) {
     // 可加入的在前，其次按人数
     list.sort(([, a], [, b]) => Number(a.n >= a.max) - Number(b.n >= b.max) || Number(a.playing) - Number(b.playing) || b.n - a.n);
     countEls.forEach((el) => (el.textContent = list.length ? String(list.length) : ''));
+    // 没有房间时整个大厅收成一行，不留一张空表格
+    lobby?.classList.toggle('is-empty', !list.length);
     if (!list.length) {
-      const key = state === 'failed' ? 'lobby.failed' : state === 'loading' ? 'lobby.loading' : 'lobby.empty';
-      body.innerHTML = `<div class="lempty">${t(key)}</div>`;
+      const key = state === 'failed' ? 'lobby.failed' : state === 'loading' ? 'home.lobbyLoading' : 'home.lobbyEmpty';
+      if (lobbyState) lobbyState.textContent = t(key);
+      body.innerHTML = '';
       return;
     }
     body.innerHTML = list

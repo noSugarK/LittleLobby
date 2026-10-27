@@ -31,8 +31,10 @@ System CJK sans (PingFang SC → Hiragino Sans GB → Microsoft YaHei → Noto S
 
 - **Join panel**: brand-teal field, five 72px cream code boxes (60px on phones) with a transparent input over them, coral "加入" button, cream outline scan button.
 - **Host panel**: white/raised panel; game picker as two radio tiles (art + name + players, checked = accent ring and check badge); collapsible 房间设置 (public lobby switch, PIN) that opens itself when the PIN is invalid; two host buttons (big screen = accent, phone = outline).
-- **Lobby**: full-width table on a panel, hover tint in accent-soft.
-- **Games**: alternating art/text rows (art 5/12, text 7/12), football art is an authored SVG pitch, adventure art uses the character sprites.
+- **Join scan tip**: under the scan button, a small line-art phone-and-TV SVG with "没有房间码？" (web only, not LAN).
+- **Lobby**: full-width table on a panel, hover tint in accent-soft. With no rooms (or while loading) the whole section collapses to one panel row: title, status pill, "开个公开房间 →" (ticks 公开大厅, opens 房间设置, focuses 大屏开房).
+- **Games**: two equal cards (text, players pill, links on top; illustration `public/home/<game>.webp` at 3:2 below), then a row of three co-op mode cards (rope / eat / stack) whose art is drawn from the game's own sprite frames.
+- **Offline download**: brand-teal band like the join panel; four cream buttons (Windows / macOS / Linux / Android) that point at the latest GitHub release's installers, falling back to the releases page; note line shows the version or "安装包即将发布". Hidden in the native app and LAN page. Art `public/home/offline.webp`.
 - **Hero**: one-line headline with the subline under it; the four characters stand in the same row on the host panel's top edge.
 - **Cast (interactive)**: idle frames play (blink/breathe); characters lean toward the mouse, run in place facing the cursor on hover, and jump with a name + heart bubble on click or tap. All motion is off under reduced motion.
 
