@@ -1,6 +1,6 @@
 [package]
 name = "scankick"
-version = "0.1.0-beta.5"
+version = "0.2.0-beta.1"
 description = "Little Lobby local party games for desktop and mobile"
 repository = "https://github.com/noSugarK/LittleLobby"
 edition = "2021"
