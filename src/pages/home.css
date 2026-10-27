@@ -40,20 +40,16 @@
 
 /* ---------- 首屏：标题 + 角色 ---------- */
 .lh-main { flex: 1 0 auto; padding-bottom: 56px; }
-.lh-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 24px; padding: 36px 0 0; }
-.lh-title { margin: 0; font-size: clamp(30px, 3.7vw, 46px); line-height: 1.2; font-weight: 850; letter-spacing: -.01em; text-wrap: balance; }
+.lh-intro { padding: 36px 0 0; }
+.lh-title { margin: 0; font-size: clamp(30px, 3.7vw, 46px); line-height: 1.2; font-weight: 850; letter-spacing: -.01em; white-space: nowrap; }
 .lh-lede { margin: 10px 0 30px; max-width: 34em; font-size: 17px; line-height: 1.7; color: var(--h-mu); }
-/* 四个角色站在右侧面板上沿，可以和鼠标互动：身子朝鼠标微微倾斜（--lean），悬停时朝你小跑，点击蹦起来冒小爱心 */
-.lh-cast { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: flex-end; max-width: 470px; margin-bottom: -18px; position: relative; z-index: 1; }
-.lh-buddy { position: relative; margin-left: -16px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-/* 十个角色排成两排，每排五个 */
-.lh-buddy:nth-child(5n+1) { margin-left: 0; }
-.lh-buddy:nth-child(n+6) { margin-top: -24px; }
-.lh-buddy canvas { display: block; width: 104px; height: 104px; transform-origin: 50% 92%; rotate: calc(var(--lean, 0) * 9deg); transition: rotate .35s cubic-bezier(.16, 1, .3, 1), translate .25s cubic-bezier(.16, 1, .3, 1); animation: lh-hop .9s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--i) * 110ms + 150ms); }
-.lh-buddy:hover canvas { translate: 0 -8px; }
-.lh-buddy.is-ready canvas { animation: none; }
-.lh-buddy.is-jump canvas { animation: lh-jump .7s cubic-bezier(.2, .8, .3, 1); }
-@keyframes lh-hop { 0% { translate: 0 0; } 35% { translate: 0 -16px; } 70% { translate: 0 2px; } 100% { translate: 0 0; } }
+/* 角色排成一队铺满整个屏幕宽，脚踩在下方两张卡片的上沿，从左跑到右循环；位置由 home.ts 逐帧设置 */
+.home { overflow-x: hidden; }
+/* 上方多留 96px 给跳起和名字气泡，用负边距抵掉，不把卡片往下推 */
+.lh-cast { --b: 104px; position: relative; z-index: 1; height: calc(var(--b) + 96px); margin: -88px calc(50% - 50vw) -18px; overflow: hidden; pointer-events: none; }
+.lh-buddy { position: absolute; left: 0; bottom: 0; cursor: pointer; pointer-events: auto; touch-action: manipulation; -webkit-tap-highlight-color: transparent; will-change: transform; }
+.lh-buddy canvas { display: block; width: var(--b); height: var(--b); transform-origin: 50% 92%; }
+.lh-buddy.is-jump canvas { animation: lh-jump .9s cubic-bezier(.2, .8, .3, 1); }
 @keyframes lh-jump { 0% { translate: 0 0; scale: 1.06 .92; } 30% { translate: 0 -44px; scale: .96 1.05; } 60% { translate: 0 -30px; } 85% { translate: 0 2px; scale: 1.05 .95; } 100% { translate: 0 0; scale: 1; } }
 .lh-pop { position: absolute; left: 50%; top: -6px; translate: -50% 0; white-space: nowrap; pointer-events: none; padding: 4px 10px; border-radius: 999px; background: var(--h-panel); color: var(--h-ink); border: 1px solid var(--h-line); box-shadow: 0 6px 16px -8px #10302f55; font-size: 13px; font-weight: 750; animation: lh-pop 1.1s cubic-bezier(.16, 1, .3, 1) forwards; }
 .lh-pop::before { content: '♥ '; color: var(--h-ring); }
@@ -205,8 +201,7 @@
   .lh-offline { grid-template-columns: minmax(0, 1fr); }
   .lh-offline-art { max-width: 360px; margin-inline: auto; order: -1; }
   .lh-dl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .lh-buddy canvas { width: 84px; height: 84px; }
-  .lh-cast { max-width: 380px; }
+  .lh-cast { --b: 84px; }
 }
 @media (max-width: 640px) {
   .lh-top, .lh-main { padding-inline: 18px; }
@@ -216,9 +211,8 @@
   .lh-intro { grid-template-columns: minmax(0, 1fr); padding-top: 12px; gap: 0; }
   .lh-title { font-size: 30px; }
   .lh-lede { font-size: 15px; margin: 12px 0 8px; }
-  .lh-cast { justify-content: center; max-width: 340px; margin: 0 auto -14px; }
-  .lh-buddy { margin-left: -12px; }
-  .lh-buddy canvas { width: 76px; height: 76px; }
+  .lh-title { white-space: normal; }
+  .lh-cast { --b: 76px; margin-bottom: -14px; }
   .lh-panel { padding: 22px 18px; border-radius: 24px; }
   .lh-panel h2 { font-size: 24px; }
   .home .lh-code-boxes { gap: 7px; } .home .lh-code-boxes span { height: 60px; font-size: 28px; border-radius: 14px; }

@@ -50,62 +50,63 @@ function drawModeArt(canvas: HTMLCanvasElement, mode: ModeId) {
   }
 }
 
-/** 首页右侧的四个角色可以和鼠标互动：身子朝鼠标微微倾斜，悬停时朝你原地小跑，点击蹦起来并冒出名字和小爱心。
- *  平时播放待机帧（眨眼呼吸）；系统要求减少动态效果时只画静止的第一帧。纯装饰，不影响开房 / 加入。 */
+/** 首页的角色排成一队，从屏幕左边跑出来、跑到右边消失，一直循环；每个角色跑到屏幕正中会转过来朝你跳一下、冒出名字，再接着往右跑。
+ *  点击角色也会原地跳一下。系统要求减少动态效果时整队静止站成一排。纯装饰，不影响开房 / 加入。 */
 function bindCast(app: HTMLElement) {
   const cast = app.querySelector<HTMLElement>('.lh-cast');
-  if (!cast || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!cast) return;
   const buddies = [...cast.querySelectorAll<HTMLElement>('.lh-buddy')];
+  const size = () => buddies[0].offsetWidth || 104;
+  const gap = () => size() * 1.9; // 队伍里前后两个角色的间距
+  const SPEED = 70, JUMP_MS = 900; // 像素每秒；正面跳一下的时长
   const now = () => performance.now();
-  const state = buddies.map(() => ({ action: 'idle' as BuddyAction, since: now(), facing: 1, until: 0 }));
-  const set = (i: number, action: BuddyAction, facing = state[i].facing, until = 0) => {
-    if (state[i].action !== action) state[i].since = now();
-    Object.assign(state[i], { action, facing, until });
+  const state = buddies.map((_, i) => ({ action: 'run' as BuddyAction, since: now(), path: -i * gap(), until: 0 }));
+  const place = (buddy: HTMLElement, x: number) => { buddy.style.transform = `translateX(${x.toFixed(1)}px)`; };
+  const hop = (i: number) => {
+    const buddy = buddies[i];
+    Object.assign(state[i], { action: 'idle', since: now(), until: now() + JUMP_MS });
+    buddy.classList.remove('is-jump'); void buddy.offsetWidth; buddy.classList.add('is-jump');
+    buddy.querySelector('.lh-pop')?.remove();
+    const pop = document.createElement('span');
+    pop.className = 'lh-pop'; pop.textContent = CHARACTERS[i].name;
+    buddy.append(pop);
+    setTimeout(() => pop.remove(), 1100);
   };
-  let last = 0;
+  buddies.forEach((buddy, i) => {
+    buddy.addEventListener('click', () => { if (!state[i].until) hop(i); });
+    buddy.addEventListener('animationend', (e) => { if (e.animationName === 'lh-jump') buddy.classList.remove('is-jump'); });
+  });
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const start = Math.max(0, (cast.clientWidth - gap() * (buddies.length - 1) - size()) / 2);
+    buddies.forEach((buddy, i) => { place(buddy, start + i * gap()); drawBuddyAvatar(buddy.querySelector('canvas')!, i); });
+    return;
+  }
+  let last = now(), lastDraw = 0;
   const draw = (time: number) => {
     if (!app.contains(cast)) return;
-    // 约 12 帧每秒就够看，省电
-    if (time - last > 80) {
-      last = time;
-      buddies.forEach((buddy, i) => {
-        const s = state[i];
-        if (s.until && time > s.until) set(i, buddy.matches(':hover') ? 'run' : 'idle', s.facing);
-        drawBuddyAvatar(buddy.querySelector('canvas')!, i, s.action, (time - s.since) / 1000 + (s.action === 'idle' ? i * 0.37 : 0), s.facing);
-      });
+    const dt = Math.min(.1, (time - last) / 1000); last = time;
+    const w = cast.clientWidth, b = size();
+    // 一圈的长度：至少要跑出屏幕，人多时整队首尾相接
+    const loop = Math.max(w + b, buddies.length * gap());
+    buddies.forEach((buddy, i) => {
+      const s = state[i];
+      if (s.until && time > s.until) Object.assign(s, { action: 'run', since: time, until: 0 });
+      const before = s.path < 0 ? -b : s.path % loop - b;
+      if (!s.until) s.path += SPEED * dt;
+      const x = s.path < 0 ? -b : s.path % loop - b;
+      // 跑过屏幕正中的那一刻转过来跳一下
+      const mid = (w - b) / 2;
+      if (!s.until && before < mid && x >= mid) hop(i);
+      place(buddy, x);
+    });
+    // 精灵帧约 12 帧每秒就够看，省电
+    if (time - lastDraw > 80) {
+      lastDraw = time;
+      buddies.forEach((buddy, i) => drawBuddyAvatar(buddy.querySelector('canvas')!, i, state[i].action, (time - state[i].since) / 1000, 1));
     }
     requestAnimationFrame(draw);
   };
   requestAnimationFrame(draw);
-  const facingTo = (buddy: HTMLElement, x: number) => {
-    const r = buddy.getBoundingClientRect();
-    return x < r.left + r.width / 2 ? -1 : 1;
-  };
-  window.addEventListener('pointermove', (e) => {
-    if (e.pointerType !== 'mouse') return;
-    for (const buddy of buddies) {
-      const r = buddy.getBoundingClientRect();
-      const lean = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / 320));
-      buddy.style.setProperty('--lean', lean.toFixed(3));
-    }
-  });
-  document.addEventListener('pointerleave', () => buddies.forEach((b) => b.style.setProperty('--lean', '0')));
-  buddies.forEach((buddy, i) => {
-    buddy.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !state[i].until) set(i, 'run', facingTo(buddy, e.clientX)); });
-    buddy.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' && state[i].action === 'run') state[i].facing = facingTo(buddy, e.clientX); });
-    buddy.addEventListener('pointerleave', () => { if (!state[i].until) set(i, 'idle'); });
-    buddy.addEventListener('click', () => {
-      set(i, 'jump', state[i].facing, now() + 700);
-      buddy.classList.remove('is-jump'); void buddy.offsetWidth; buddy.classList.add('is-jump');
-      buddy.querySelector('.lh-pop')?.remove();
-      const pop = document.createElement('span');
-      pop.className = 'lh-pop'; pop.textContent = CHARACTERS[i].name;
-      buddy.append(pop);
-      setTimeout(() => pop.remove(), 1100);
-    });
-    // 入场轻跳播完后标记就绪，之后跳跃动画结束不会再重播入场动画
-    buddy.addEventListener('animationend', (e) => { if (e.animationName === 'lh-hop') buddy.classList.add('is-ready'); else if (e.animationName === 'lh-jump') buddy.classList.remove('is-jump'); });
-  });
 }
 
 export function mountHome(app: HTMLElement) {
@@ -133,11 +134,11 @@ export function mountHome(app: HTMLElement) {
       <section class="lh-intro">
         <div><h1 class="lh-title">${t('app.tagline')}</h1>
         <p class="lh-lede">${t('app.desc')}</p></div>
-        <div class="lh-cast" aria-hidden="true">${CHARACTERS.map((_, i) => `<span class="lh-buddy" data-cast="${i}" style="--i:${i}"><canvas data-buddy="${i}" width="112" height="112"></canvas></span>`).join('')}</div>
       </section>
       ${native ? `<div class="network-mode seg lh-network" role="group" aria-label="${t('lan.mode')}"><button data-network="online" class="${lan ? '' : 'on'}">${t('lan.online')}</button><button data-network="lan" class="${lan ? 'on' : ''}">${t('lan.local')}</button></div>` : ''}
       ${lan ? `<p class="lh-note">${t('lan.hint')}</p>` : ''}
 
+      <div class="lh-cast" aria-hidden="true">${CHARACTERS.map((_, i) => `<span class="lh-buddy" data-cast="${i}"><canvas data-buddy="${i}" width="112" height="112"></canvas></span>`).join('')}</div>
       <div class="lh-actions${showJoin && showHost ? '' : ' is-single'}">
         ${showJoin ? `<section class="lh-panel lh-join" aria-labelledby="lh-join-title">
           <h2 id="lh-join-title">${t('home.joinTitle')}</h2>
