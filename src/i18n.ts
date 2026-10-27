@@ -13,6 +13,10 @@ const zhCN = {
   'dl.loading': '正在获取最新版本…',
   'dl.failed': '获取失败，请到发布页下载',
   'dl.all': '全部版本',
+  'dl.update': '发现新版本 {v}',
+  'dl.current': '当前版本 {v}',
+  'dl.rec': '推荐',
+  'dl.updateTitle': '有新版本可以下载',
 
   'tab.host': '开房',
   'status.lan': '局域网已连接',
@@ -325,6 +329,10 @@ const zhTW: Dict = {
   'dl.loading': '正在取得最新版本…',
   'dl.failed': '取得失敗，請到發佈頁下載',
   'dl.all': '全部版本',
+  'dl.update': '發現新版本 {v}',
+  'dl.current': '目前版本 {v}',
+  'dl.rec': '推薦',
+  'dl.updateTitle': '有新版本可以下載',
 
   'tab.host': '開房',
   'status.lan': '區域網路已連線',
@@ -635,6 +643,10 @@ const en: Dict = {
   'dl.loading': 'Finding the latest version…',
   'dl.failed': 'Could not load, open the releases page',
   'dl.all': 'All releases',
+  'dl.update': 'New version {v}',
+  'dl.current': 'You have {v}',
+  'dl.rec': 'recommended',
+  'dl.updateTitle': 'Update available',
 
   'tab.host': 'Host',
   'status.lan': 'LAN connected',

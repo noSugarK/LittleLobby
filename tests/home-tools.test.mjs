@@ -25,7 +25,7 @@ registerHooks({
 });
 
 const { bindLobby, teamCardHtml } = await import('../src/ui/settings-ui.ts');
-const { bindSiteTools } = await import('../src/ui/site.ts');
+const { bindSiteTools, isNewRelease, platformOf } = await import('../src/ui/site.ts');
 const { bindLanLobby } = await import('../src/ui/lan-lobby.ts');
 
 test('局域网大厅无需开服务器即可搜索、刷新、点击房间和手动加入，退出后停止刷新', async () => {
@@ -126,7 +126,7 @@ test('下载失败可重新打开重试，加载中和成功后不会重复请�
   const original = { fetch: globalThis.fetch, document: globalThis.document };
   const msg = { textContent: '', outerHTML: '' };
   const menu = {
-    open: true, listener: null,
+    open: true, listener: null, classList: { contains: () => false },
     querySelector: () => msg,
     addEventListener(name, listener) { if (name === 'toggle') this.listener = listener; },
   };
@@ -158,6 +158,35 @@ test('下载失败可重新打开重试，加载中和成功后不会重复请�
     assert.equal(requests, 2, '成功后保留下载链接');
   } finally {
     Object.assign(globalThis, original);
+  }
+});
+
+test('应用只在最新发布和当前版本不一致时露出下载按钮并亮小红点，下载列表把本机平台排第一', async () => {
+  assert.ok(isNewRelease('v0.2.0-beta.4', '0.2.0-beta.3'));
+  assert.ok(!isNewRelease('v0.2.0-beta.3', '0.2.0-beta.3'));
+  assert.ok(!isNewRelease('v0.2.0-beta.4', ''), '拿不到当前版本时不提示');
+  assert.equal(String(platformOf('Mozilla/5.0 (Linux; Android 14; Pixel 8)')), String(/android.*\.apk$/), '安卓的 UA 也含 Linux');
+  assert.equal(String(platformOf('Mozilla/5.0 (Windows NT 10.0; Win64; x64)')), String(/windows.*\.exe$/));
+  assert.equal(String(platformOf('Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)')), String(/macos.*\.dmg$/));
+  assert.equal(platformOf('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)'), null);
+
+  const original = { fetch: globalThis.fetch, document: globalThis.document, version: globalThis.__APP_VERSION__ };
+  const added = [];
+  const summary = { setAttribute() {}, title: '' };
+  const menu = { hidden: true, classList: { contains: (c) => c === 'dl-update', add: (c) => added.push(c) }, querySelector: () => summary, addEventListener() {} };
+  const root = { querySelector: (selector) => selector === '.dl-menu' ? menu : {} };
+  globalThis.document = { addEventListener() {} };
+  // 页面内只查一次最新发布：和上一个测试一样用 v1，测试顺序不影响结果
+  globalThis.fetch = async () => ({ ok: true, json: async () => [{ tag_name: 'v1', assets: [] }] });
+  try {
+    globalThis.__APP_VERSION__ = '1';
+    bindSiteTools(root); await new Promise((r) => setTimeout(r, 0));
+    assert.ok(menu.hidden && !added.length, '已是最新版：按钮保持隐藏');
+    globalThis.__APP_VERSION__ = '0.0.1';
+    bindSiteTools(root); await new Promise((r) => setTimeout(r, 0));
+    assert.ok(!menu.hidden && added.includes('has-update'), '有新版本：露出按钮并加小红点');
+  } finally {
+    globalThis.fetch = original.fetch; globalThis.document = original.document; globalThis.__APP_VERSION__ = original.version;
   }
 });
 

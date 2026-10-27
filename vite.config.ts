@@ -46,6 +46,8 @@ export default defineConfig(({ command, mode }) => ({
   plugins: mode === 'app' ? [appCharacters()] : command === 'serve' && !process.env.NO_HTTPS ? [basicSsl()] : [],
   define: {
     __DEV_LAN_IP__: JSON.stringify(command === 'serve' ? lanIp() : ''),
+    // 应用用它和最新发布比较，有新版本时在下载按钮上亮小红点
+    __APP_VERSION__: JSON.stringify((JSON.parse(readFileSync('package.json', 'utf8')) as { version: string }).version),
   },
   server: {
     port: Number(process.env.PORT) || 5173,

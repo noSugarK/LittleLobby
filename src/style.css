@@ -790,6 +790,41 @@ h1 {
 .dl-msg {
   margin: 4px 10px 6px;
 }
+.dl-pop a.is-rec {
+  background: var(--h-ac, #d9502f);
+  color: var(--h-acfg, #fff);
+}
+.dl-pop a.is-rec .ico,
+.dl-pop a.is-rec small {
+  color: inherit;
+}
+.dl-head {
+  display: grid;
+  gap: 2px;
+  margin: 6px 10px 8px;
+}
+.dl-head b {
+  font-size: 15px;
+}
+.dl-head small {
+  color: var(--s-mu);
+  font-size: 12px;
+}
+/* 应用里有新版本：下载按钮右上角的小红点，外圈用按钮底色描一圈 */
+.dl-menu.has-update summary {
+  position: relative;
+}
+.dl-menu.has-update summary::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff5a3c;
+  box-shadow: 0 0 0 2px var(--s-card);
+}
 .dl-pop .dl-all {
   margin-top: 4px;
   border-top: 1px solid var(--s-line);

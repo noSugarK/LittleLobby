@@ -45,10 +45,25 @@ export function applyTheme() {
   document.documentElement.dataset.theme = theme();
 }
 
-/** 右上角：主题切换 + 语言下拉 */
+/** 打包时写入的版本号（package.json），测试等非 Vite 环境里为空 */
+export const appVersion = () => (typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '');
+/** 最新发布和当前版本不一致就算有新版本 */
+export const isNewRelease = (tag: string, current: string) => !!current && tag.replace(/^v/, '') !== current;
+/** 当前设备对应的安装包：在下载列表里排第一并标成推荐 */
+export function platformOf(ua: string): RegExp | null {
+  if (/iphone|ipad/i.test(ua)) return null;
+  if (/android/i.test(ua)) return /android.*\.apk$/;
+  if (/windows/i.test(ua)) return /windows.*\.exe$/;
+  if (/mac os|macintosh/i.test(ua)) return /macos.*\.dmg$/;
+  if (/linux/i.test(ua)) return /linux.*\.deb$/;
+  return null;
+}
+
+/** 右上角：下载（网页版常驻；应用里只在有新版本时出现）+ 主题切换 + 语言下拉 */
 export function siteTools() {
   const dark = theme() === 'dark';
-  const download = isNativeApp() || isLanPage() ? '' : `<details class="dl-menu">
+  const native = isNativeApp();
+  const download = isLanPage() ? '' : `<details class="dl-menu${native ? ' dl-update' : ''}"${native ? ' hidden' : ''}>
       <summary class="icon-btn" aria-label="${t('dl.title')}" title="${t('dl.title')}">${icon.download}</summary>
       <div class="dl-pop"><p class="dl-msg">${t('dl.loading')}</p><a class="dl-all" href="${REPO_URL}/releases" target="_blank" rel="noopener">${t('dl.all')}</a></div>
     </details>`;
@@ -73,6 +88,16 @@ export function bindSiteTools(root: HTMLElement) {
     btn.title = label;
   };
   const menu = root.querySelector<HTMLDetailsElement>('.dl-menu');
+  if (menu?.classList.contains('dl-update')) {
+    // 应用：和最新发布比一下版本，不一致才露出下载按钮并亮小红点；没网就保持隐藏
+    void latestRelease().then((release) => {
+      if (!release || !isNewRelease(release.tag_name, appVersion())) return;
+      menu.hidden = false;
+      menu.classList.add('has-update');
+      const summary = menu.querySelector('summary')!;
+      summary.setAttribute('aria-label', t('dl.updateTitle')); summary.title = t('dl.updateTitle');
+    }).catch(() => {});
+  }
   if (menu) {
     let loading = false;
     let loaded = false;
@@ -133,12 +158,19 @@ async function loadDownloads(menu: HTMLElement) {
   try {
     const release = await latestRelease();
     if (!release) throw new Error('no release');
-    const links = PLATFORMS.flatMap(([re, label, logo]) => {
+    const mine = platformOf(navigator.userAgent);
+    // 本机对应的安装包排第一并标推荐，其余保持原顺序
+    const rows = PLATFORMS.flatMap(([re, label, logo]) => {
       const asset = release.assets.find((a) => re.test(a.name));
-      return asset ? [`<a href="${asset.browser_download_url}"><span>${logo}${label}</span><small>${(asset.size / 1048576).toFixed(1)} MB</small></a>`] : [];
-    });
-    if (!links.length) throw new Error('no assets');
-    msg.outerHTML = `<p class="dl-msg">${release.tag_name}</p>${links.join('')}`;
+      if (!asset) return [];
+      const rec = !!mine && String(re) === String(mine);
+      return [{ rec, html: `<a href="${asset.browser_download_url}"${rec ? ' class="is-rec"' : ''}><span>${logo}${label}${rec ? ` · ${t('dl.rec')}` : ''}</span><small>${(asset.size / 1048576).toFixed(1)} MB</small></a>` }];
+    }).sort((a, b) => Number(b.rec) - Number(a.rec));
+    if (!rows.length) throw new Error('no assets');
+    const head = menu.classList.contains('dl-update')
+      ? `<p class="dl-head"><b>${t('dl.update', { v: release.tag_name })}</b><small>${t('dl.current', { v: `v${appVersion()}` })}</small></p>`
+      : `<p class="dl-msg">${release.tag_name}</p>`;
+    msg.outerHTML = head + rows.map((r) => r.html).join('');
     return true;
   } catch {
     msg.textContent = t('dl.failed');
