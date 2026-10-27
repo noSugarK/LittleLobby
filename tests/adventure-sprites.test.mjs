@@ -20,10 +20,10 @@ registerHooks({
 const { buddyFrame, loadCharacterSprites, drawBuddyImage } = await import('../src/game/adventure-sprites.ts');
 const { CHARACTERS } = await import('../src/game/adventure.ts');
 
-test('一二、布布、小白、小金毛都有带透明通道的完整精灵表 PNG', () => {
-  assert.deepEqual(CHARACTERS.map((p) => [p.name, p.sprite]), [['一二', 'yier'], ['布布', 'bubu'], ['小白', 'xiaobai'], ['小金毛', 'jinmao']]);
-  for (const character of CHARACTERS) {
-    const png = readFileSync(new URL(`../public/adventure/characters/${character.sprite}-atlas.png`, import.meta.url));
+test('十个角色都有带透明通道的完整精灵表 PNG（含大肚肚版）', () => {
+  assert.deepEqual(CHARACTERS.map((p) => [p.name, p.sprite]), [['一二', 'yier'], ['布布', 'bubu'], ['小白', 'xiaobai'], ['小金毛', 'jinmao'], ['奶龙', 'nailong'], ['奶蛙', 'naiwa'], ['牛来', 'niulai'], ['噜噜', 'lulu'], ['包包', 'baobao'], ['豆豆', 'doudou']]);
+  for (const character of CHARACTERS) for (const variant of ['', '-full']) {
+    const png = readFileSync(new URL(`../public/adventure/characters/${character.sprite}${variant}-atlas.png`, import.meta.url));
     assert.equal(png.subarray(1, 4).toString(), 'PNG');
     assert.equal(png.readUInt32BE(16), 1024); assert.equal(png.readUInt32BE(20), 1280);
     assert.equal(png[25], 6, 'RGBA PNG');

@@ -44,9 +44,11 @@
 .lh-title { margin: 0; font-size: clamp(30px, 3.7vw, 46px); line-height: 1.2; font-weight: 850; letter-spacing: -.01em; text-wrap: balance; }
 .lh-lede { margin: 10px 0 30px; max-width: 34em; font-size: 17px; line-height: 1.7; color: var(--h-mu); }
 /* 四个角色站在右侧面板上沿，可以和鼠标互动：身子朝鼠标微微倾斜（--lean），悬停时朝你小跑，点击蹦起来冒小爱心 */
-.lh-cast { display: flex; align-items: flex-end; margin-bottom: -18px; position: relative; z-index: 1; }
+.lh-cast { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: flex-end; max-width: 470px; margin-bottom: -18px; position: relative; z-index: 1; }
 .lh-buddy { position: relative; margin-left: -16px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-.lh-buddy:first-child { margin-left: 0; }
+/* 十个角色排成两排，每排五个 */
+.lh-buddy:nth-child(5n+1) { margin-left: 0; }
+.lh-buddy:nth-child(n+6) { margin-top: -24px; }
 .lh-buddy canvas { display: block; width: 104px; height: 104px; transform-origin: 50% 92%; rotate: calc(var(--lean, 0) * 9deg); transition: rotate .35s cubic-bezier(.16, 1, .3, 1), translate .25s cubic-bezier(.16, 1, .3, 1); animation: lh-hop .9s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--i) * 110ms + 150ms); }
 .lh-buddy:hover canvas { translate: 0 -8px; }
 .lh-buddy.is-ready canvas { animation: none; }
@@ -204,6 +206,7 @@
   .lh-offline-art { max-width: 360px; margin-inline: auto; order: -1; }
   .lh-dl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lh-buddy canvas { width: 84px; height: 84px; }
+  .lh-cast { max-width: 380px; }
 }
 @media (max-width: 640px) {
   .lh-top, .lh-main { padding-inline: 18px; }
@@ -213,7 +216,7 @@
   .lh-intro { grid-template-columns: minmax(0, 1fr); padding-top: 12px; gap: 0; }
   .lh-title { font-size: 30px; }
   .lh-lede { font-size: 15px; margin: 12px 0 8px; }
-  .lh-cast { justify-content: center; margin-bottom: -14px; }
+  .lh-cast { justify-content: center; max-width: 340px; margin: 0 auto -14px; }
   .lh-buddy { margin-left: -12px; }
   .lh-buddy canvas { width: 76px; height: 76px; }
   .lh-panel { padding: 22px 18px; border-radius: 24px; }

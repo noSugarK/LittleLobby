@@ -3,6 +3,12 @@ export const CHARACTERS = [
   { name: '布布', sprite: 'bubu', accent: '#eeb76b', subtitle: '棕色小熊 · 圆圆小脚' },
   { name: '小白', sprite: 'xiaobai', accent: '#c9d6e8', subtitle: '白色线条小狗 · 圆圆小耳朵' },
   { name: '小金毛', sprite: 'jinmao', accent: '#f0c46f', subtitle: '金色线条小狗 · 红色小项圈' },
+  { name: '奶龙', sprite: 'nailong', accent: '#f7cf4f', subtitle: '黄色小恐龙 · 绿眼睛' },
+  { name: '奶蛙', sprite: 'naiwa', accent: '#e9c13f', subtitle: '黄色梨形奶蛙 · 灰色小手' },
+  { name: '牛来', sprite: 'niulai', accent: '#e0a33a', subtitle: '金色小牛 · 半睁眼' },
+  { name: '噜噜', sprite: 'lulu', accent: '#f39a52', subtitle: '水豚噜噜 · 南瓜小帽' },
+  { name: '包包', sprite: 'baobao', accent: '#eadcc4', subtitle: '白白小包子 · 褶褶头顶' },
+  { name: '豆豆', sprite: 'doudou', accent: '#a9cf6a', subtitle: '绿色小豆芽 · 两片叶子' },
 ] as const;
 /** Shared map art is independent of each player's chosen character. */
 export const MAP_THEMES = [
