@@ -42,7 +42,17 @@ The website deploys through **GitHub Actions**:
 - Select **GitHub Actions** under **Settings → Pages → Source**. There is no `docs/` publishing directory.
 - Website URL: `https://nosugark.github.io/LittleLobby/`. Relative assets support repository subpaths.
 
-`.github/workflows/release-app.yml` builds Windows, macOS, Linux, and Android installers. A `v*` tag matching the application version publishes a Release; manual runs produce workflow artifacts. Production Android releases require the signing Secrets specified by the workflow.
+`.github/workflows/release-app.yml` builds Windows, macOS, Linux, and Android installers. A `v*` tag matching the application version publishes a Release; manual runs produce workflow artifacts.
+
+Releases have one entry point, and the version lives only in `package.json`:
+
+```bash
+npm run release -- 0.2.0-beta.2
+```
+
+The script checks the branch and working tree, syncs `package-lock.json`, `Cargo.toml`, `Cargo.lock` and the MSI version (`tauri.conf.json` reads `package.json` directly), runs tests and the build, then prints the WSL commands to commit, tag and push. CI runs `node .github/scripts/release.mjs --check` with the same rules.
+
+Production Android releases need four Secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. The signing step checks the alias against the keystore first and lists the aliases it actually contains when it does not match. In a PKCS12 keystore the key password is the keystore password.
 
 ## Source layout
 
@@ -54,6 +64,6 @@ The website deploys through **GitHub Actions**:
 | `src-tauri/` | Native app and LAN server |
 | `tests/` | Gameplay, input, and network regressions |
 | `.github/workflows/` | Website deployment and installer builds |
-| `.github/scripts/` | Android preparation and signing used by Actions |
+| `.github/scripts/` | The `release.mjs` entry point, plus Android preparation and signing used by Actions |
 
 Generated source images, experimental variants, captures, and one-off image processing scripts are excluded from version control. Commit, merge, and push through WSL Git using `nosugark <nosugark@qq.com>`.

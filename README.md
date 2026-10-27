@@ -42,7 +42,17 @@ npm run build
 - 仓库 **Settings → Pages → Source** 应选择 **GitHub Actions**。不使用 `docs/` 作为发布目录。
 - 发布入口：`https://nosugark.github.io/LittleLobby/`。相对资源路径支持仓库子路径部署。
 
-`.github/workflows/release-app.yml` 负责 Windows、macOS、Linux 和 Android 安装包。推送与应用版本一致的 `v*` 标签时发布 Release，手动运行时生成 Actions 构建产物。Android 正式发布需要配置该工作流要求的签名 Secrets。
+`.github/workflows/release-app.yml` 负责 Windows、macOS、Linux 和 Android 安装包。推送与应用版本一致的 `v*` 标签时发布 Release，手动运行时生成 Actions 构建产物。
+
+发版只有一个入口，版本号只写在 `package.json`：
+
+```bash
+npm run release -- 0.2.0-beta.2
+```
+
+脚本检查分支和工作区，同步 `package-lock.json`、`Cargo.toml`、`Cargo.lock` 和 MSI 版本（`tauri.conf.json` 直接读取 `package.json`），运行测试和构建，最后打印在 WSL 里提交、打标签、推送的命令。CI 用 `node .github/scripts/release.mjs --check` 校验同一套规则。
+
+Android 正式发布需要四个 Secrets：`ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD`。签名步骤会先核对别名是否在密钥库里，不在时列出密钥库中实际的别名。PKCS12 密钥库的密钥密码与密钥库密码相同。
 
 ## 目录
 
@@ -54,6 +64,6 @@ npm run build
 | `src-tauri/` | 原生应用、局域网服务与平台配置 |
 | `tests/` | 游戏、输入和网络回归测试 |
 | `.github/workflows/` | 网页部署与安装包构建 |
-| `.github/scripts/` | Actions 调用的 Android 配置和签名辅助脚本 |
+| `.github/scripts/` | 发版入口 `release.mjs`，以及 Actions 调用的 Android 配置和签名脚本 |
 
 生成原图、试验版本、截图与一次性图片处理脚本不纳入版本控制。提交、合并和推送使用 WSL Git，身份为 `nosugark <nosugark@qq.com>`。
