@@ -117,7 +117,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       ${mode.host && !mode.solo ? `<div class="adv-modes" role="radiogroup" aria-label="玩法">${MODES.map((m) => `<button type="button" role="radio" class="adv-mode" data-mode="${m.id}"><b>${m.name}</b><small>${m.desc}</small></button>`).join('')}</div>` : '<p class="adv-mode-line"></p>'}
       ${choices()}
       <div class="pfoot-row"><button class="primary adv-start" hidden disabled>准备小背包…</button><button class="ghost adv-seat" hidden></button><button class="ghost adv-lobby" hidden>回到大厅选玩法</button></div>
-      ${mode.host && !mode.solo ? `<div class="host-qr adv-invite"><img class="adv-qr" alt="扫码加入闯关房间" hidden><div><div class="room-code sm">${esc(room)}</div><div class="muted small">${mode.lan ? '连同一 Wi-Fi / 热点，用相机扫码加入' : '手机扫码加入，一起闯关'}</div><button class="ghost adv-copy">复制邀请链接</button></div></div><div class="adv-address"></div>` : ''}
+      ${mode.host && !mode.solo ? `<div class="host-qr adv-invite"><img class="adv-qr" alt="扫码加入闯关房间" hidden><div><div class="room-code sm">${esc(room)}</div><div class="muted small">${mode.lan ? '连同一 Wi-Fi / 热点，用相机扫码加入' : '手机扫码加入，一起闯关'}</div><button class="ghost adv-copy">复制邀请链接</button></div></div>${mode.screen ? '' : '<div class="adv-address"></div>'}` : ''}
       <p class="muted small adv-instructions"><span class="adv-hint">${HINTS.classic}</span><br>键盘：← → / A D 移动，空格 / ↑ 跳跃，J / E 吃 / 吐</p>
       <div class="pmeta"><button class="ghost adv-audio" aria-pressed="true">音效 开</button>${mode.host && !mode.solo ? `<button class="ghost switch-game">${t('game.switchTo', { game: gameName('football') })}</button>` : ''}<button class="ghost leave-room">${t('play.leave')}</button></div>
       </div>
@@ -143,6 +143,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
         <div class="room-code">${esc(room)}</div>
         <div class="muted small">${mode.lan ? '连同一 Wi-Fi / 热点，用相机扫码加入' : '手机扫码，或打开链接加入'}<br><span class="url tv-url"></span></div>
         <button class="ghost tv-save">${icon.download}${t('qr.save')}</button>
+        <div class="adv-address"></div>
       </div>
       <div class="lobby-side">
         <div class="lobby-head"><h2>${gameName('adventure')}</h2><span class="tv-tag">TV 大屏</span></div>
@@ -229,7 +230,8 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     if (!mode.solo && (host || client) && !(await askConfirm(t(host ? 'play.confirmCloseRoom' : 'play.confirmLeave')))) return;
     autoFs = false;
     // 与足球一致：退出后清掉自动重连标记，下次开房 / 加入回到填写表单
-    store.set(mode.host ? 'hosting' : `adventure.joined.${room}`, '', false);
+    // 大屏退出时和足球大屏一样清掉房间码，下次开房换新码，旧手机不会自动连回来
+    store.set(mode.screen ? 'room' : mode.host ? 'hosting' : `adventure.joined.${room}`, '', false);
     location.hash = '#/';
   };
   app.querySelectorAll<HTMLButtonElement>('.leave-room, .return-home').forEach((button) => { button.onclick = leave; });

@@ -141,22 +141,25 @@ export class Gamepad {
     this.layoutButtons();
   }
 
-  /** 圆弧布局：主键（B）在右下角放大，其余可见按键沿四分之一圆弧排开；菱形布局交给 CSS。 */
+  /** 圆弧布局：主键（B）在右下角放大，其余可见按键沿四分之一圆弧排开；菱形布局交给 CSS。
+   *  以右下角为原点用 right / bottom 摆放：矮屏时 CSS 把圆弧区从 250px 缩到 224px，按键也不会伸出屏幕。 */
   private layoutButtons() {
     const els = [...this.root.querySelectorAll<HTMLElement>('.pad-btn')];
-    if (this.settings.layout !== 'arc') { els.forEach((el) => { el.style.left = el.style.top = ''; }); return; }
+    els.forEach((el) => { el.style.left = el.style.top = el.style.right = el.style.bottom = ''; });
+    if (this.settings.layout !== 'arc') return;
+    // 菱形布局的 CSS 写了 left / top，圆弧要清成 auto，right / bottom 才生效
+    els.forEach((el) => { el.style.left = el.style.top = 'auto'; });
     const visible = els.filter((el) => !el.hidden);
     const main = visible.find((el) => Number(el.dataset.bit) === BTN_B) ?? visible[0];
     const rest = visible.filter((el) => el !== main);
-    const box = 250, mainSize = 96, size = 66, radius = 128;
-    const cx = box - mainSize / 2, cy = box - mainSize / 2;
-    if (main) { main.style.left = `${box - mainSize}px`; main.style.top = `${box - mainSize}px`; }
+    const mainSize = 96, size = 66, radius = 128, c = mainSize / 2 - size / 2;
+    if (main) { main.style.right = main.style.bottom = '0px'; }
     rest.forEach((el, i) => {
       // 180°（正左）到 90°（正上）之间均匀排开；只有一个副键时放在左上 150°
       const deg = rest.length === 1 ? 150 : 180 - (90 * i) / (rest.length - 1);
       const a = (deg * Math.PI) / 180;
-      el.style.left = `${cx + Math.cos(a) * radius - size / 2}px`;
-      el.style.top = `${cy - Math.sin(a) * radius - size / 2}px`;
+      el.style.right = `${c - Math.cos(a) * radius}px`;
+      el.style.bottom = `${c + Math.sin(a) * radius}px`;
     });
   }
 
@@ -317,6 +320,7 @@ export class Gamepad {
   }
 
   private press(bit: number) {
+    if (this.slotBits.has(bit)) return; // 空位：按了没反应，也不震动
     if (bit === BTN_B) this.bDown = performance.now();
     this.onPress(bit);
   }

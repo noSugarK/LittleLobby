@@ -24,7 +24,7 @@ registerHooks({
 const { Gamepad } = await import('../src/ui/gamepad.ts');
 const { HostGame } = await import('../src/game/host-game.ts');
 const { Sim } = await import('../src/game/sim.ts');
-const { Phase, BTN_A, BTN_B, BTN_Y } = await import('../src/game/types.ts');
+const { Phase, BTN_A, BTN_B, BTN_X, BTN_Y } = await import('../src/game/types.ts');
 const { encodeInput } = await import('../src/net/protocol.ts');
 const { openScanner } = await import('../src/ui/scan.ts');
 
@@ -32,7 +32,7 @@ class Element extends EventTarget {
   captures = new Set();
   dataset = {};
   style = { setProperty() {} };
-  classList = { add() {}, remove() {} };
+  classList = { add() {}, remove() {}, toggle() {} };
   setPointerCapture(id) { this.captures.add(id); }
   getBoundingClientRect() { return { left: 0, top: 0, right: 400, bottom: 300 }; }
 }
@@ -336,4 +336,33 @@ test('关闭扫码后完成的图片加载不会跳转，且释放图片；重�
     assert.equal(location.hash, '');
     assert.equal(stopped(), 1, '重复打开未再申请摄像头');
   });
+});
+
+test('空位按了没反应也不震动；圆弧布局从右下角摆，矮屏缩小的区域里按键不出界', () => {
+  const original = { window: globalThis.window, document: globalThis.document };
+  globalThis.window = new EventTarget();
+  globalThis.document = new EventTarget();
+  try {
+    const els = new Map(['.joy-zone', '.joy-base', '.joy-knob'].map((key) => [key, new Element()]));
+    const [y, x, b, a] = [BTN_Y, BTN_X, BTN_B, BTN_A].map((bit) => Object.assign(new Element(), { dataset: { bit: String(bit) }, hidden: false }));
+    const pad = new Gamepad({ insertAdjacentHTML() {}, querySelector: (key) => els.get(key), querySelectorAll: () => [y, x, b, a] });
+    const pressed = [];
+    pad.onPress = (bit) => pressed.push(bit);
+    pad.slot(BTN_X, true);
+    fire(window, 'keydown', { code: 'KeyL' });
+    fire(x, 'pointerdown', { pointerId: 7 });
+    assert.equal(pad.input.btn & BTN_X, 0, '空位不产生输入');
+    assert.deepEqual(pressed, [], '空位不触发按下回调（震动）');
+    fire(window, 'keyup', { code: 'KeyL' });
+    fire(window, 'keydown', { code: 'KeyK' });
+    assert.ok(pad.input.btn & BTN_B, '其他键照常');
+
+    pad.apply({ move: 'stick', layout: 'arc', size: 1 });
+    assert.deepEqual([b.style.right, b.style.bottom], ['0px', '0px'], '主键贴在右下角');
+    for (const el of [y, x, a]) {
+      // 矮屏 CSS 把圆弧区缩到 224px：按 66px 的副键算，都要留在区域里
+      assert.ok(parseFloat(el.style.right) + 66 <= 224 && parseFloat(el.style.bottom) + 66 <= 224, `${el.dataset.bit} 不出界`);
+      assert.equal(el.style.left, 'auto');
+    }
+  } finally { Object.assign(globalThis, original); }
 });
