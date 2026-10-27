@@ -152,23 +152,34 @@
 .lh-lan { display: grid; gap: 12px; padding: 22px; border: 1px solid var(--h-line); border-radius: 20px; background: var(--h-panel); }
 
 .lh-game-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-.lh-game { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--h-line); border-radius: 24px; background: var(--h-panel); }
-.lh-game-text { padding: 26px 28px 18px; }
-.lh-game-text h3 { margin: 0 0 8px; font-size: 26px; font-weight: 850; }
-.lh-game-text p:not(.lh-game-meta) { margin: 0; font-size: 16px; line-height: 1.7; color: var(--h-mu); }
-.lh-game-meta { display: inline-block; margin: 12px 0 0; padding: 3px 10px; border-radius: 999px; background: var(--h-ac-soft); color: var(--h-ac); font-size: 13px; font-weight: 700; }
-[data-theme='dark'] .lh-game-meta { color: var(--h-ring); }
-.lh-game-links { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 12px; }
-.lh-game-img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; margin-top: auto; }
+.lh-game { position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-height: 340px; aspect-ratio: 3 / 2; overflow: hidden; border: 1px solid var(--h-line); border-radius: 24px; background: var(--h-panel); transition: box-shadow .25s, border-color .25s; }
+/* 插图铺满整张卡片，文字压在底部的深色渐变上；悬停 / 键盘聚焦时插图变淡，文字浮起来 */
+.lh-game-img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; transition: opacity .35s, filter .35s, scale .5s cubic-bezier(.16, 1, .3, 1); }
 .lh-game-football .lh-game-img { background: var(--h-art-ball); }
 .lh-game-adventure .lh-game-img { background: var(--h-art-buddy); }
+.lh-game::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, #0b1e1ded 0%, #0b1e1daa 32%, #0b1e1d00 62%); transition: opacity .35s; pointer-events: none; }
+.lh-game-text { position: relative; z-index: 1; padding: 26px 28px 22px; color: #fbf7ef; transition: translate .35s cubic-bezier(.16, 1, .3, 1); }
+.lh-game-text h3 { margin: 0 0 6px; font-size: 28px; font-weight: 850; text-shadow: 0 2px 12px #0006; transition: scale .35s cubic-bezier(.16, 1, .3, 1); transform-origin: 0 100%; }
+.lh-game-text p:not(.lh-game-meta) { margin: 0; font-size: 16px; line-height: 1.6; color: #e3ece9; text-shadow: 0 1px 8px #0006; }
+.lh-game-meta { display: inline-block; margin: 12px 0 0; padding: 3px 10px; border-radius: 999px; background: var(--h-ac); color: #fff; font-size: 13px; font-weight: 700; }
+.lh-game-links { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 10px; }
+.home .lh-game .lh-link { color: #8ed8cf; }
+.lh-game:hover, .lh-game:focus-within { border-color: var(--h-ring); box-shadow: 0 0 0 3px color-mix(in srgb, var(--h-ring) 55%, transparent), 0 18px 40px -18px #0009; }
+.lh-game:hover .lh-game-img, .lh-game:focus-within .lh-game-img { opacity: .5; filter: blur(2px) saturate(.85); scale: 1.04; }
+.lh-game:hover::after, .lh-game:focus-within::after { background: linear-gradient(to top, #0b1e1df5 0%, #0b1e1dcc 45%, #0b1e1d55 100%); }
+.lh-game:hover .lh-game-text, .lh-game:focus-within .lh-game-text { translate: 0 -6px; }
+.lh-game:hover .lh-game-text h3, .lh-game:focus-within .lh-game-text h3 { scale: 1.06; }
 
-/* 三种合作玩法：角色帧直接画在卡片上 */
+/* 三种合作玩法：角色帧铺满卡片，名字和说明压在底部 */
 .lh-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
-.lh-mode { display: flex; align-items: center; gap: 14px; padding: 12px 18px 12px 12px; border: 1px solid var(--h-line); border-radius: 20px; background: var(--h-panel); }
-.lh-mode canvas { flex: none; width: 112px; height: 70px; border-radius: 14px; background: var(--h-art-buddy); }
-.lh-mode p { display: grid; gap: 2px; margin: 0; font-size: 13px; line-height: 1.5; color: var(--h-mu); }
-.lh-mode b { color: var(--h-ink); font-size: 16px; }
+.lh-mode { position: relative; overflow: hidden; border: 1px solid var(--h-line); border-radius: 20px; background: var(--h-art-buddy); transition: box-shadow .25s, border-color .25s; }
+.lh-mode canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; transition: opacity .35s, filter .35s; }
+.lh-mode::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, #0b1e1de6 0%, #0b1e1d88 34%, #0b1e1d00 62%); pointer-events: none; }
+.lh-mode p { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; display: grid; gap: 2px; margin: 0; padding: 14px 16px; font-size: 13px; line-height: 1.5; color: #e3ece9; transition: translate .35s cubic-bezier(.16, 1, .3, 1); }
+.lh-mode b { color: #fbf7ef; font-size: 17px; }
+.lh-mode:hover { border-color: var(--h-ring); box-shadow: 0 0 0 3px color-mix(in srgb, var(--h-ring) 55%, transparent); }
+.lh-mode:hover canvas { opacity: .5; filter: blur(1.5px); }
+.lh-mode:hover p { translate: 0 -4px; }
 
 /* 离线版下载：深色品牌底，和加入面板呼应 */
 .lh-offline { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: center; gap: 28px; margin-top: 64px; padding: 34px 36px; border-radius: 28px; background: var(--h-join); color: var(--h-join-ink); }
@@ -198,6 +209,8 @@
 @media (max-width: 900px) {
   .lh-actions { grid-template-columns: minmax(0, 1fr); }
   .lh-modes { grid-template-columns: minmax(0, 1fr); }
+  /* 单列时卡片太高：画面裁成长条 */
+  .lh-mode canvas { aspect-ratio: 16 / 7; object-fit: cover; }
   .lh-offline { grid-template-columns: minmax(0, 1fr); }
   .lh-offline-art { max-width: 360px; margin-inline: auto; order: -1; }
   .lh-dl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -224,8 +237,9 @@
   .lh-section-head h2 { font-size: 22px; }
   .home .lh-lobby .lrow { padding: 12px 14px; font-size: 14px; grid-template-columns: 64px minmax(0, 1fr) 42px 58px; }
   .lh-game-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-  .lh-game-text { padding: 20px 20px 14px; }
-  .lh-game-text h3 { font-size: 22px; }
+  .lh-game { min-height: 280px; }
+  .lh-game-text { padding: 20px 20px 16px; }
+  .lh-game-text h3 { font-size: 24px; }
   .lh-game-text p:not(.lh-game-meta) { font-size: 15px; }
   .lh-lobby.is-empty .lh-section-head { flex-direction: row; flex-wrap: wrap; padding: 12px 14px 12px 18px; }
   .lh-lobby.is-empty .lh-lobby-empty { flex-basis: 100%; }
@@ -235,6 +249,7 @@
   .lh-scan-art { width: 76px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .lh-game-img, .lh-game-text, .lh-game-text h3, .lh-mode canvas, .lh-mode p { transition: none; }
   .lh-buddy canvas, .lh-buddy.is-jump canvas, .lh-pop { animation: none; transition: none; rotate: 0deg; }
   .home .lh-btn, .home .lh-pick, .home .lh-code-boxes span, .home .lh-link .ico, .home .lh-dl { transition: none; }
 }

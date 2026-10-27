@@ -5,6 +5,7 @@ import { Renderer, TEAM_COLOR } from '../game/render';
 import { Phase, type RosterMsg, type Team } from '../game/types';
 import { t } from '../i18n';
 import { saveQrCard } from '../ui/qrcard';
+import { askConfirm } from '../ui/confirm';
 import { mvpLineHtml, statsTableHtml } from '../ui/stats-ui';
 import { bindLobby, pinLineHtml, settingsHtml, teamCardHtml } from '../ui/settings-ui';
 import { icon } from '../ui/site';
@@ -50,7 +51,7 @@ export function mountScreen(app: HTMLElement) {
       </div>
       <div class="lobby-side">
         <div class="lobby-head">
-          <img class="lobby-logo" src="${brand('wordmark-white.png')}" alt="${t('app.name')}">
+          <h2 class="lobby-title">${gameName('football')}</h2><span class="tv-tag">TV 大屏</span>
           <span class="muted small"><span class="watchers"></span>${t('play.swipeHint')}</span>
         </div>
         <div class="tcards"></div>
@@ -153,15 +154,15 @@ export function mountScreen(app: HTMLElement) {
   $('.start').onclick = () => game.startMatch();
   $('.save-qr').onclick = () => saveQrCard({ room, pin: opts.pin });
   $('.fs').onclick = () => enterFullscreen();
-  $('.switch-game').onclick = () => switchHostGame('adventure');
-  $('.leave-room').onclick = () => {
-    if (!confirm(t('play.confirmCloseRoom'))) return;
+  $('.switch-game').onclick = () => { void switchHostGame('adventure'); };
+  $('.leave-room').onclick = async () => {
+    if (!(await askConfirm(t('play.confirmCloseRoom')))) return;
     game.close();
     store.set('room', '', false);
     location.hash = '#/';
   };
-  endBtn.onclick = () => {
-    if (confirm(t('screen.confirmEnd'))) game.endMatch();
+  endBtn.onclick = async () => {
+    if (await askConfirm(t('screen.confirmEnd'))) game.endMatch();
   };
   cornerEl.onclick = () => cornerEl.classList.toggle('mini');
   window.addEventListener('keydown', (e) => {
@@ -172,7 +173,7 @@ export function mountScreen(app: HTMLElement) {
     if (e.code === 'Escape') {
       if (phase === Phase.Lobby) setLobbyOpen(!lobbyOpen);
       else if (phase === Phase.Ended) game.toLobby();
-      else if (confirm(t('play.confirmEnd'))) game.endMatch();
+      else void askConfirm(t('play.confirmEnd')).then((ok) => ok && game.endMatch());
     }
   });
 

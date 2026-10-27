@@ -25,6 +25,7 @@ import { SnapBuffer, separateViewBall, separateViewPlayers } from '../net/interp
 import { decodeSnapshot, encodeInput } from '../net/protocol';
 import { CONFIG } from '../config';
 import { gameName, switchHostGame } from '../room/catalog';
+import { askConfirm } from '../ui/confirm';
 import { t, type Key } from '../i18n';
 import { Gamepad } from '../ui/gamepad';
 import { bindControlsPane, controlsPaneHtml } from '../ui/controls-pane';
@@ -83,10 +84,9 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   <div class="play">
     <canvas class="stage"></canvas>
     <div class="topbar">
-      <div class="topbar-left"><img class="game-logo" src="${brand('logo-white-sm.png')}" alt=""><div class="status"><i></i><span></span></div></div>
+      <div class="topbar-left"><div class="status"><i></i><span></span></div></div>
       <div class="top-actions">
         <button class="ghost fs-btn" hidden>${t('play.fullscreen')}</button>
-        <button class="ghost cam">${t('play.follow')}</button>
         <button class="ghost menu">${t('play.menu')}</button>
       </div>
     </div>
@@ -151,8 +151,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   let qrOpen: boolean | null = null;
   let lastPhase: Phase | -1 = -1;
 
-  const leave = () => {
-    if ((game || net) && !confirm(t(game ? 'play.confirmCloseRoom' : 'play.confirmLeave'))) return;
+  const leave = async () => {
+    if ((game || net) && !(await askConfirm(t(game ? 'play.confirmCloseRoom' : 'play.confirmLeave')))) return;
     autoFs = false;
     game?.close();
     net?.close();
@@ -198,7 +198,6 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   function setWatching(w: boolean) {
     watching = w;
     $('.play').classList.toggle('watching', w);
-    $('.cam').hidden = w;
     if (w) renderer.follow = false;
     if (net) {
       net.info.watch = w;
@@ -394,7 +393,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     const tabs = inMatch ? (['teams', 'controls'] as const) : (['teams', 'settings', 'stats', 'controls'] as const);
     const tab = (tabs as readonly string[]).includes(panelTab) ? panelTab : 'teams';
     const label = { teams: t('play.tabTeams'), settings: t('play.tabSettings'), stats: t('stats.tab'), controls: t('ctl.title') };
-    const tabIcon = { teams: icon.users, settings: icon.gear, stats: icon.chart, controls: icon.pad };
+    // 和冒险同一套分页：第一页都叫「房间」
+    const tabIcon = { teams: icon.home, settings: icon.gear, stats: icon.chart, controls: icon.pad };
     // 按键分页时抽屉缩成窄条，只放按键设置，两侧手柄露出来实时预览
     const narrow = tab === 'controls';
     panel.classList.toggle('is-narrow', narrow);
@@ -466,7 +466,9 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     }
     // 教程在新标签页打开，不打断当前连接
     const tip = watching ? t('play.watchTip') : lobby ? t(isHost ? 'play.hostTip' : 'play.warmup') : '';
-    html += `<div class="pmeta">${tip ? `<span>${tip}</span>` : ''}<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a>${isHost ? `<button class="ghost switch-game">${t('game.switchTo', { game: gameName('adventure') })}</button>` : ''}<button class="ghost leave-room">${t('play.leave')}</button></div></div></div>`;
+    // 跟随视角是足球独有的操作，放在菜单底栏，顶栏和冒险一样只留「全屏 / 菜单」
+    const cam = watching ? '' : `<button class="ghost cam">${t(renderer.follow ? 'play.overview' : 'play.follow')}</button>`;
+    html += `<div class="pmeta">${tip ? `<span>${tip}</span>` : ''}${cam}<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a>${isHost ? `<button class="ghost switch-game">${t('game.switchTo', { game: gameName('adventure') })}</button>` : ''}<button class="ghost leave-room">${t('play.leave')}</button></div></div></div>`;
     panel.innerHTML = html;
     if (local) bindLanAddress(panel, () => {
       QRCode.toDataURL(joinUrl({ room, pin: opts?.pin }), { width: 220, margin: 1 }).then((url) => {
@@ -485,6 +487,10 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
         renderPanel();
       };
     });
+    on('.cam', () => {
+      renderer.follow = !renderer.follow;
+      renderPanel();
+    });
     on('.qr-toggle', () => {
       qrOpen = !showQr;
       renderPanel();
@@ -498,10 +504,10 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     on('.to-watch', () => send({ t: 'watch' }));
     on('.save-qr', () => saveQrCard({ room, pin: opts?.pin }));
     on('.surrender', () => send({ t: 'surrender' }));
-    on('.end', () => confirm(t('play.confirmEnd')) && game?.endMatch());
+    on('.end', () => { void askConfirm(t('play.confirmEnd')).then((ok) => ok && game?.endMatch()); });
     on('.back', () => game?.toLobby());
     on('.leave-room', leave);
-    on('.switch-game', () => switchHostGame('adventure'));
+    on('.switch-game', () => { void switchHostGame('adventure'); });
     panel.querySelectorAll<HTMLElement>('.close, .pcollapse').forEach((b) => {
       b.onclick = () => {
         panelOpen = false;
@@ -525,11 +531,6 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     panelOpen = false;
     renderPanel();
   });
-  const camBtn = $('.cam');
-  camBtn.onclick = () => {
-    renderer.follow = !renderer.follow;
-    camBtn.textContent = t(renderer.follow ? 'play.overview' : 'play.follow');
-  };
   // ---------- 全屏 ----------
   const fsBtn = $('.fs-btn');
   const iosTip = !canFullscreen() && !isFullscreen();

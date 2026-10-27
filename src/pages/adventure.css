@@ -76,8 +76,13 @@
 @media (prefers-reduced-motion: reduce) { .adventure * { transition: none !important; } .adv-preview { transform: none; } }
 /* ---------- 游玩页：沿用足球手机页（.play / .topbar / .pad / .panel / .join）的布局 ---------- */
 .adv-play .topbar-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.adv-hud { font-size: 12px; padding: 5px 10px; border-radius: 20px; background: rgba(0, 0, 0, 0.45); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* 游戏信息在顶栏正中，和足球的比分同一个位置 */
+.adv-hud { position: absolute; left: 50%; top: max(8px, var(--safe-top, env(safe-area-inset-top))); translate: -50% 0; font-size: 12px; padding: 5px 12px; border-radius: 20px; background: rgba(0, 0, 0, 0.45); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .adv-hud:empty { display: none; }
+/* 窄屏时顶栏放不下三样：游戏信息挪到第二行 */
+@media (max-width: 560px) { .adv-hud { top: calc(max(8px, var(--safe-top, env(safe-area-inset-top))) + 36px); } }
+/* 浅色天空上白色虚线看不见，空位改用暖棕色 */
+.adv-play .pad-btn.is-slot { border-color: rgba(110, 89, 77, 0.32); color: #6e594d; }
 /* 冒险只有跳跃（B）和吃 / 吐（A），不需要射门蓄力环 */
 .adv-play .pad-btn.b::after { display: none; }
 .adv-play .pad-btn.b { --c: #f08c94; }
@@ -157,3 +162,29 @@
 .adv-tab { display: flex; flex-direction: column; gap: 10px; }
 .adv-tab[hidden] { display: none; }
 .adv-play.ctl-preview .pad[hidden] { display: block; }
+
+/* ---------- 大屏大厅：和足球大屏同一张卡片（左二维码 / 右玩法 + 名单 + 开始），换成冒险的奶油色 ---------- */
+.adv-play.in-lobby .stage { filter: blur(3px) saturate(.9); }
+.adv-play .tv-lobby { --line: #e6dccb; --muted: #9a8a7d; --fg: #6e594d; background: #fcf9f1f2; color: #6e594d; border-color: #eadfcd; border-radius: 28px; box-shadow: 0 24px 60px #5a463a33; }
+.tv-lobby .qr { box-shadow: 0 0 0 1px #eadfcd; }
+.tv-lobby .room-code { color: #5d4b40; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+.tv-lobby .url { color: #9a8a7d; }
+.adv-play .tv-lobby button { color: #6e594d; background: #fffdf8; border: 1px solid #e2d9c9; }
+.tv-lobby .tv-save { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; }
+.tv-lobby .tv-save .ico { width: 16px; height: 16px; }
+.tv-lobby .lobby-head h2 { margin: 0; font-size: 30px; font-weight: 850; }
+.tv-lobby .lobby-head .tv-tag { padding: 3px 10px; border-radius: 999px; background: #e7f0e4; color: #5f8466; font-size: 12px; font-weight: 700; }
+.adv-play .tv-lobby .adv-mode[aria-checked='true'] { border-color: #789b7e; box-shadow: 0 0 0 2px #789b7e; background: #f3f8f0; }
+.tv-roster-head { margin: 0; font-size: 14px; font-weight: 700; }
+.tv-roster { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
+.tv-chip { display: grid; justify-items: center; gap: 4px; min-width: 0; font-size: 12px; }
+.tv-chip canvas, .tv-chip i { width: 52px; height: 52px; border-radius: 50%; background: color-mix(in srgb, var(--chip, #ccc) 30%, #fff); }
+.tv-chip b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.tv-chip.is-empty i { display: block; background: none; border: 2px dashed #d8cbb7; }
+.tv-chip.is-offline { opacity: .45; }
+.adv-play .tv-lobby .primary.start { background: #789b7e; border-color: #789b7e; color: #fff; }
+.adv-play .tv-lobby .primary.start:disabled { opacity: .55; }
+/* 比赛中给晚到的朋友留一个小二维码 */
+.tv-corner { display: grid; justify-items: center; gap: 2px; font-size: 13px; color: #5d4b40; }
+.tv-corner img { display: block; width: 110px; height: 110px; }
+@media (max-width: 800px) { .tv-roster { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

@@ -14,6 +14,7 @@ const mocks = {
     reset() { this.input.jx = this.input.jy = this.input.btn = 0; this.onButtons(); }
     update() {}
     show() {}
+    slot() {}
     apply() {}
   }`,
   '../ui/sound': 'export const sfxAdventure = () => {}, unlockAudio = () => {};',

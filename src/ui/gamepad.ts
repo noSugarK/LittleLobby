@@ -60,6 +60,7 @@ export class Gamepad {
   settings: ControlSettings;
   private readonly buttons: PadButton[];
   private hiddenBits = new Set<number>();
+  private slotBits = new Set<number>();
   private joyId: number | null = null;
   private origin = { x: 0, y: 0 };
   private base: HTMLElement | null = null;
@@ -95,11 +96,18 @@ export class Gamepad {
     this.build();
   }
 
-  /** 由游戏决定显示哪些键（例如冒险只在吃吐吐里显示 A 键）。 */
+  /** 由游戏决定显示哪些键。 */
   show(bit: number, visible: boolean) {
     if (visible) this.hiddenBits.delete(bit); else this.hiddenBits.add(bit);
     this.root.querySelectorAll<HTMLElement>('.pad-btn').forEach((el) => { el.hidden = this.hiddenBits.has(Number(el.dataset.bit)); });
     this.layoutButtons();
+  }
+
+  /** 空位：当前用不到的键画成淡淡的空圈、按了也没反应，但位置不变——每个游戏的键位都一样（例如冒险只在吃吐吐里用 A）。 */
+  slot(bit: number, empty: boolean) {
+    if (empty) this.slotBits.add(bit); else this.slotBits.delete(bit);
+    this.root.querySelectorAll<HTMLElement>(`.pad-btn[data-bit="${bit}"]`).forEach((el) => el.classList.toggle('is-slot', empty));
+    if (empty && (this.touchBtn | this.keyBtn) & bit) { this.touchBtn &= ~bit; this.keyBtn &= ~bit; this.sync(); }
   }
 
   private build() {
@@ -110,7 +118,7 @@ export class Gamepad {
     this.root.insertAdjacentHTML(
       'beforeend',
       `${move}<div class="btn-pad ${s.layout}">${this.buttons.map(
-        (b) => `<div class="pad-btn ${b.cls}" data-bit="${b.bit}"${this.hiddenBits.has(b.bit) ? ' hidden' : ''}><b>${b.key}</b><span>${b.label}</span></div>`,
+        (b) => `<div class="pad-btn ${b.cls}${this.slotBits.has(b.bit) ? ' is-slot' : ''}" data-bit="${b.bit}"${this.hiddenBits.has(b.bit) ? ' hidden' : ''}><b>${b.key}</b><span>${b.label}</span></div>`,
       ).join('')}</div>`,
     );
     this.root.style?.setProperty('--pad-scale', String(s.size));
@@ -287,6 +295,7 @@ export class Gamepad {
     this.pointers.set(el, ids);
     el.addEventListener('pointerdown', (e) => {
       e.preventDefault();
+      if (this.slotBits.has(bit)) return;
       el.setPointerCapture(e.pointerId);
       ids.add(e.pointerId);
       if (!(this.touchBtn & bit)) {
@@ -352,7 +361,8 @@ export class Gamepad {
   }
 
   private sync() {
-    const btn = this.touchBtn | this.keyBtn;
+    let btn = this.touchBtn | this.keyBtn;
+    for (const bit of this.slotBits) btn &= ~bit;
     const moving = !!(this.input.jx || this.input.jy);
     if (btn === this.input.btn && moving === this.moving) return;
     this.input.btn = btn;

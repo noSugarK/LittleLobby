@@ -3,6 +3,7 @@ import { CONFIG } from '../config';
 import { LEVEL_NAME } from '../game/ai';
 import { TEAM_NAME } from '../game/render';
 import { t } from '../i18n';
+import { askConfirm } from './confirm';
 import { DURATIONS, MATCH_MODES, PARTY_RULES, type PlayerInfo, type Settings, type Team } from '../game/types';
 import { icon } from './site';
 import { esc } from './util';
@@ -126,14 +127,14 @@ export function bindLobby(root: HTMLElement, players: PlayerInfo[], act: LobbyAc
   root.querySelectorAll<HTMLButtonElement>('.act-host').forEach((b) => {
     b.onclick = () => {
       const p = find(b);
-      if (p && confirm(t('play.confirmOwner', { name: p.name }))) act.owner(p.id);
+      if (p) void askConfirm(t('play.confirmOwner', { name: p.name })).then((ok) => ok && act.owner(p.id));
     };
   });
   root.querySelectorAll<HTMLButtonElement>('.act-kick').forEach((b) => {
     b.onclick = () => {
       const p = find(b);
       // 删 AI 随时能加回来，不用确认；移出真人要确认
-      if (p && (p.bot || confirm(t('play.confirmKick', { name: p.name })))) act.kick(p.id);
+      if (p) void (p.bot ? Promise.resolve(true) : askConfirm(t('play.confirmKick', { name: p.name }))).then((ok) => ok && act.kick(p.id));
     };
   });
 }

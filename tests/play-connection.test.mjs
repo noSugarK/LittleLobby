@@ -37,6 +37,7 @@ const mocks = {
   '../i18n': 'export const t = (key) => key;',
   '../ui/gamepad': 'export class Gamepad { reset() {} apply() {} }',
   '../ui/qrcard': 'export const saveQrCard = () => {};',
+  '../ui/confirm': 'export const askConfirm = async () => true;',
   '../ui/settings-ui': 'export const bindLobby = () => {}, pinLineHtml = () => "", settingsHtml = () => "", settingsSummary = () => "", teamCardHtml = () => "";',
   '../ui/site': 'export const icon = {};',
   '../ui/sound': 'export const unlockAudio = () => {};',
