@@ -2208,3 +2208,109 @@ li.open .row-actions {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- 菜单：右侧可收缩抽屉（足球手机页与冒险共用） ----------
+   顶栏下方占满高度，左缘一列竖排图标分页，右侧内容独立滚动；
+   切到「按键」分页时缩成窄条停在两侧手柄之间，方便边调边看。 */
+.play .panel.drawer {
+  top: calc(max(8px, var(--safe-top, env(safe-area-inset-top))) + 44px);
+  right: 0;
+  bottom: 0;
+  left: auto;
+  transform: none;
+  width: min(460px, 46%);
+  max-height: none;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  overflow: hidden;
+  border-radius: 20px 0 0 20px;
+  border-right: 0;
+  box-shadow: -14px 0 34px rgba(0, 0, 0, 0.35);
+  z-index: 8;
+  animation: drawer-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes drawer-in {
+  from { translate: 40px 0; opacity: 0; }
+}
+.play .panel.drawer.is-narrow {
+  right: 268px;
+  width: min(310px, calc(100% - 268px - 200px));
+  min-width: 250px;
+  bottom: 10px;
+  border-radius: 18px;
+  border-right: 1px solid var(--line);
+}
+.drawer .prail {
+  flex: none;
+  width: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 6px max(8px, var(--safe-bottom, env(safe-area-inset-bottom)));
+  background: rgba(0, 0, 0, 0.22);
+  overflow-y: auto;
+}
+.drawer .prail button {
+  width: 56px;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 8px 2px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.2;
+}
+.drawer .prail button .ico {
+  width: 22px;
+  height: 22px;
+}
+.drawer .prail button.on {
+  background: color-mix(in srgb, var(--green) 22%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--green);
+  color: var(--fg);
+  font-weight: 700;
+}
+.drawer .prail .pcollapse {
+  width: 40px;
+  padding: 6px 0;
+  margin-bottom: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.drawer .pmain {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px max(10px, var(--safe-bottom, env(safe-area-inset-bottom)));
+  padding-right: max(12px, var(--safe-right, env(safe-area-inset-right)));
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+.drawer.is-narrow .pmain {
+  padding-right: 12px;
+}
+.drawer .pmain > .pbody {
+  flex: none;
+  overflow: visible;
+}
+.drawer .ptabs {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .play .panel.drawer { animation: none; }
+}
+/* 小屏横屏（如 667 宽）：窄条贴得更紧，避免压到左侧摇杆 / 方向键 */
+@media (max-width: 700px) {
+  .play .panel.drawer.is-narrow {
+    right: 232px;
+    width: calc(100% - 232px - 196px);
+    min-width: 220px;
+  }
+}

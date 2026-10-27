@@ -11,6 +11,8 @@ import { bindLanAddress, lanInfoHtml } from '../ui/lan-room';
 import { canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, store, vibrate } from '../ui/util';
 import { Gamepad } from '../ui/gamepad';
 import { bindControlsPane, controlsPaneHtml } from '../ui/controls-pane';
+import { bindDrawer } from '../ui/drawer';
+import { icon } from '../ui/site';
 import { BTN_A, BTN_B } from '../game/types';
 import { t, type Key } from '../i18n';
 import { switchHostGame } from '../room/catalog';
@@ -94,9 +96,10 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       </div>
     </div>
     <div class="pad" hidden></div>
-    <div class="panel card adv-panel" hidden>
+    <div class="panel card adv-panel drawer" hidden>
+      <nav class="prail"><button class="pcollapse" aria-label="收起菜单">${icon.right}</button><button data-tab="room" class="on" aria-pressed="true">${icon.home}<span>房间</span></button><button data-tab="controls" aria-pressed="false">${icon.pad}<span>${t('ctl.title')}</span></button></nav>
+      <div class="pmain">
       <div class="panel-head"><span><b class="adv-level-name">莓莓散步道</b> <span class="adv-level-number">01 / 03</span>${mode.solo ? '' : ` · 房间 <b>${esc(room)}</b>`}</span><button class="ghost close" aria-label="关闭">×</button></div>
-      <div class="ptabs"><button data-tab="room" class="on">房间</button><button data-tab="controls">${t('ctl.title')}</button></div>
       <div class="adv-tab" data-tabpane="room">
       <p class="adv-progress"></p>
       <div class="adv-roster"></div>
@@ -105,9 +108,10 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       <div class="pfoot-row"><button class="primary adv-start" hidden disabled>准备小背包…</button><button class="ghost adv-seat" hidden></button><button class="ghost adv-lobby" hidden>回到大厅选玩法</button></div>
       ${mode.host && !mode.solo ? `<div class="host-qr adv-invite"><img class="adv-qr" alt="扫码加入闯关房间" hidden><div><div class="room-code sm">${esc(room)}</div><div class="muted small">${mode.lan ? '连同一 Wi-Fi / 热点，用相机扫码加入' : '手机扫码加入，一起闯关'}</div><button class="ghost adv-copy">复制邀请链接</button></div></div><div class="adv-address"></div>` : ''}
       <p class="muted small adv-instructions"><span class="adv-hint">${HINTS.classic}</span><br>键盘：← → / A D 移动，空格 / ↑ 跳跃，J / E 吃 / 吐</p>
+      <div class="pmeta"><button class="ghost adv-audio" aria-pressed="true">音效 开</button>${mode.host && !mode.solo ? '<button class="ghost switch-game">换成开踢足球</button>' : ''}<button class="ghost leave-room">${t('play.leave')}</button></div>
       </div>
       <div class="adv-tab" data-tabpane="controls" hidden>${controlsPaneHtml()}</div>
-      <div class="pmeta"><button class="ghost adv-audio" aria-pressed="true">音效 开</button>${mode.host && !mode.solo ? '<button class="ghost switch-game">换成开踢足球</button>' : ''}<button class="ghost leave-room">${t('play.leave')}</button></div>
+      </div>
     </div>
     <div class="join card" ${mode.host ? 'hidden' : ''}>
       <h1>软乎乎冒险</h1>
@@ -139,11 +143,14 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   const pad = new Gamepad($('.pad'), { buttons: [{ bit: BTN_B, key: 'B', label: '跳跃', cls: 'b' }, { bit: BTN_A, key: 'A', label: '吃 / 吐', cls: 'a' }] });
   pad.show(BTN_A, false);
   bindControlsPane(panel, (settings) => { pad.apply(settings); pad.show(BTN_A, state?.mode === 'eat'); });
-  // 菜单里「房间 / 按键设置」两个分页，在同一个面板里切换
-  panel.querySelectorAll<HTMLButtonElement>('.ptabs [data-tab]').forEach((button) => {
+  // 菜单抽屉左缘竖排「房间 / 按键设置」两个分页；按键分页时抽屉缩成窄条，两侧手柄露出来
+  panel.querySelectorAll<HTMLButtonElement>('.prail [data-tab]').forEach((button) => {
     button.onclick = () => {
-      panel.querySelectorAll<HTMLElement>('.ptabs [data-tab]').forEach((b) => b.classList.toggle('on', b === button));
+      panel.querySelectorAll<HTMLElement>('.prail [data-tab]').forEach((b) => { b.classList.toggle('on', b === button); b.setAttribute('aria-pressed', String(b === button)); });
       panel.querySelectorAll<HTMLElement>('[data-tabpane]').forEach((pane) => { pane.hidden = pane.dataset.tabpane !== button.dataset.tab; });
+      panel.classList.toggle('is-narrow', button.dataset.tab === 'controls');
+      // 大厅里手柄平时是隐藏的；调按键时先露出来预览（不在游戏中，按了也不会动）
+      play.classList.toggle('ctl-preview', button.dataset.tab === 'controls');
     };
   });
   app.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach((button) => { button.onclick = () => { if (validMode(button.dataset.mode)) host?.setMode(button.dataset.mode); }; });
@@ -175,9 +182,11 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   pad.onButtons = updateInput;
   pad.onPress = (bit) => { if (bit === BTN_B) vibrate(8); };
 
-  const renderPanel = () => { panel.hidden = !panelOpen || !joinEl.hidden; };
+  const renderPanel = () => { panel.hidden = !panelOpen || !joinEl.hidden; if (panel.hidden) play.classList.remove('ctl-preview'); else play.classList.toggle('ctl-preview', panel.classList.contains('is-narrow')); };
   $('.menu').onclick = () => { panelOpen = !panelOpen; renderPanel(); };
-  $('.close').onclick = () => { panelOpen = false; renderPanel(); };
+  const closePanel = () => { panelOpen = false; renderPanel(); };
+  panel.querySelectorAll<HTMLElement>('.close, .pcollapse').forEach((b) => { b.onclick = closePanel; });
+  bindDrawer(play, panel, closePanel);
   $('.adv-audio').onclick = () => { sound = !sound; unlockAudio(); $('.adv-audio').textContent = `音效 ${sound ? '开' : '关'}`; $('.adv-audio').setAttribute('aria-pressed', String(sound)); };
   const leave = () => {
     if (!mode.solo && (host || client) && !confirm(t(host ? 'play.confirmCloseRoom' : 'play.confirmLeave'))) return;

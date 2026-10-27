@@ -32,6 +32,7 @@ const mocks = {
   '../net/protocol': 'export const decodeSnapshot = (data) => data, encodeInput = () => new Uint8Array();',
   '../config': 'export const CONFIG = { maxPerTeam: 4 };',
   '../room/catalog': 'export const switchHostGame = () => {};',
+  '../ui/drawer': 'export const bindDrawer = () => {};',
   '../ui/controls-pane': 'export const controlsPaneHtml = () => "", bindControlsPane = () => {};',
   '../i18n': 'export const t = (key) => key;',
   '../ui/gamepad': 'export class Gamepad { reset() {} apply() {} }',

@@ -144,3 +144,4 @@
 .adv-mode-line { margin: 0; font-size: 13px; text-align: center; }
 .adv-tab { display: flex; flex-direction: column; gap: 10px; }
 .adv-tab[hidden] { display: none; }
+.adv-play.ctl-preview .pad[hidden] { display: block; }

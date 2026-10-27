@@ -28,6 +28,7 @@ import { switchHostGame } from '../room/catalog';
 import { t, type Key } from '../i18n';
 import { Gamepad } from '../ui/gamepad';
 import { bindControlsPane, controlsPaneHtml } from '../ui/controls-pane';
+import { bindDrawer } from '../ui/drawer';
 import { saveQrCard } from '../ui/qrcard';
 import { bindLobby, pinLineHtml, settingsHtml, settingsSummary, teamCardHtml } from '../ui/settings-ui';
 import { icon } from '../ui/site';
@@ -90,7 +91,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       </div>
     </div>
     <div class="pad"></div>
-    <div class="panel card" hidden></div>
+    <div class="panel card drawer" hidden></div>
     <div class="join card">
       <img class="join-logo" src="${brand('logo-dark.png')}" alt="${t('app.name')}">
       ${isHost ? `<h1>${t('play.noScreen')}</h1>` : ''}
@@ -372,7 +373,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     if (panel.hidden) return;
     if (!roster) {
       // 还没连上主机时菜单也要能退出房间（顶栏不再单独放退出按钮）
-      panel.innerHTML = `<div class="panel-head"><span>${t('play.room', { room: `<b>${esc(room)}</b>` })}</span><button class="ghost close" aria-label="close">×</button></div>${controlsPaneHtml()}<div class="pmeta"><button class="ghost leave-room">${t('play.leave')}</button></div>`;
+      panel.classList.remove('is-narrow');
+      panel.innerHTML = `<div class="pmain"><div class="panel-head"><span>${t('play.room', { room: `<b>${esc(room)}</b>` })}</span><button class="ghost close" aria-label="close">×</button></div>${controlsPaneHtml()}<div class="pmeta"><button class="ghost leave-room">${t('play.leave')}</button></div></div>`;
       panel.querySelector<HTMLElement>('.leave-room')!.onclick = leave;
       bindControlsPane(panel, applyControls);
       panel.querySelector<HTMLElement>('.close')!.onclick = () => {
@@ -388,9 +390,29 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     // 结算时默认收起二维码，把位置留给战绩
     const showQr = qrOpen ?? (!ended && !players.some((p) => !p.bot && p.id !== meId));
 
+    // 大厅 / 结算有「队伍 / 设置 / 战绩 / 按键」四个分页；比赛中只有「队伍 / 按键」，竖排在抽屉左缘
+    const tabs = inMatch ? (['teams', 'controls'] as const) : (['teams', 'settings', 'stats', 'controls'] as const);
+    const tab = (tabs as readonly string[]).includes(panelTab) ? panelTab : 'teams';
+    const label = { teams: t('play.tabTeams'), settings: t('play.tabSettings'), stats: t('stats.tab'), controls: t('ctl.title') };
+    const tabIcon = { teams: icon.users, settings: icon.gear, stats: icon.chart, controls: icon.pad };
+    // 按键分页时抽屉缩成窄条，只放按键设置，两侧手柄露出来实时预览
+    const narrow = tab === 'controls';
+    panel.classList.toggle('is-narrow', narrow);
+    let html = `<nav class="prail"><button class="pcollapse" aria-label="${t('screen.closePanel')}">${icon.right}</button>${tabs
+      .map((k) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}" aria-pressed="${tab === k}">${tabIcon[k]}<span>${label[k]}</span></button>`)
+      .join('')}</nav><div class="pmain">`;
+    if (narrow) {
+      html += `<div class="panel-head"><span>${label.controls}</span><button class="ghost close" aria-label="close">×</button></div>${controlsPaneHtml()}</div>`;
+      panel.innerHTML = html;
+      bindControlsPane(panel, applyControls);
+      panel.querySelectorAll<HTMLButtonElement>('.prail [data-tab]').forEach((b) => { b.onclick = () => { panelTab = b.dataset.tab as typeof panelTab; renderPanel(); }; });
+      panel.querySelectorAll<HTMLElement>('.close, .pcollapse').forEach((b) => { b.onclick = () => { panelOpen = false; renderPanel(); }; });
+      return;
+    }
+
     // 头部：房间信息、二维码开关（本机是主机时）、关闭
     const watchers = r.watchers ? ` · ${t('play.watchers', { n: r.watchers })}` : '';
-    let html = `<div class="panel-head"><span>${t('play.room', { room: `<b>${esc(room)}</b>` })} · ${t('play.online', { n: players.filter((p) => !p.bot).length })}${watchers}</span>`;
+    html += `<div class="panel-head"><span>${t('play.room', { room: `<b>${esc(room)}</b>` })} · ${t('play.online', { n: players.filter((p) => !p.bot).length })}${watchers}</span>`;
     if (isHost) html += `<button class="ghost qr-toggle">${t('play.qr')} ${showQr ? '▴' : '▾'}</button>`;
     html += `<button class="ghost close" aria-label="close">×</button></div>`;
     if (isHost && showQr) {
@@ -403,13 +425,6 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       html += `<div class="result-strip">${resultLineHtml(r.end)}<button class="ghost result-x" aria-label="${t('screen.closePanel')}">×</button></div>`;
     }
 
-    // 大厅 / 结算有「队伍 / 设置 / 战绩 / 按键」四个标签；比赛中只有「队伍 / 按键」
-    const tabs = inMatch ? (['teams', 'controls'] as const) : (['teams', 'settings', 'stats', 'controls'] as const);
-    const tab = (tabs as readonly string[]).includes(panelTab) ? panelTab : 'teams';
-    const label = { teams: t('play.tabTeams'), settings: t('play.tabSettings'), stats: t('stats.tab'), controls: t('ctl.title') };
-    html += `<div class="ptabs">${tabs
-      .map((k) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${label[k]}</button>`)
-      .join('')}</div>`;
     html += '<div class="pbody">';
     // 观战者：哪队还有真人空位就能直接加入那队
     const hasRoom = (team: Team) => players.filter((p) => !p.bot && p.team === team).length < CONFIG.maxPerTeam;
@@ -428,8 +443,6 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       if (isOwner && players.some((p) => p.id !== meId && p.link !== 'local')) html += `<p class="muted small swipe-hint">${t('play.swipeHint')}</p>`;
     } else if (tab === 'stats') {
       html += statsTabHtml(history, meId, me?.name ?? '');
-    } else if (tab === 'controls') {
-      html += controlsPaneHtml();
     } else {
       html += isOwner ? settingsHtml(st) : `<p class="cfg-summary">${settingsSummary(st)}</p>`;
     }
@@ -453,7 +466,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     }
     // 教程在新标签页打开，不打断当前连接
     const tip = watching ? t('play.watchTip') : lobby ? t(isHost ? 'play.hostTip' : 'play.warmup') : '';
-    html += `<div class="pmeta">${tip ? `<span>${tip}</span>` : ''}<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a>${isHost ? '<button class="ghost switch-game">换成软乎乎冒险</button>' : ''}<button class="ghost leave-room">${t('play.leave')}</button></div></div>`;
+    html += `<div class="pmeta">${tip ? `<span>${tip}</span>` : ''}<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a>${isHost ? '<button class="ghost switch-game">换成软乎乎冒险</button>' : ''}<button class="ghost leave-room">${t('play.leave')}</button></div></div></div>`;
     panel.innerHTML = html;
     if (local) bindLanAddress(panel, () => {
       QRCode.toDataURL(joinUrl({ room, pin: opts?.pin }), { width: 220, margin: 1 }).then((url) => {
@@ -466,7 +479,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       const el = panel.querySelector<HTMLElement>(sel);
       if (el) el.onclick = fn;
     };
-    panel.querySelectorAll<HTMLButtonElement>('.ptabs button').forEach((b) => {
+    panel.querySelectorAll<HTMLButtonElement>('.prail [data-tab]').forEach((b) => {
       b.onclick = () => {
         panelTab = b.dataset.tab as typeof panelTab;
         renderPanel();
@@ -488,11 +501,12 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     on('.end', () => confirm(t('play.confirmEnd')) && game?.endMatch());
     on('.back', () => game?.toLobby());
     on('.leave-room', leave);
-    bindControlsPane(panel, applyControls);
     on('.switch-game', () => switchHostGame('adventure'));
-    on('.close', () => {
-      panelOpen = false;
-      renderPanel();
+    panel.querySelectorAll<HTMLElement>('.close, .pcollapse').forEach((b) => {
+      b.onclick = () => {
+        panelOpen = false;
+        renderPanel();
+      };
     });
     bindLobby(panel, players, {
       settings: (patch) => send({ t: 'settings', patch }),
@@ -507,6 +521,10 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     panelOpen = !panelOpen;
     renderPanel();
   };
+  bindDrawer($('.play'), panel, () => {
+    panelOpen = false;
+    renderPanel();
+  });
   const camBtn = $('.cam');
   camBtn.onclick = () => {
     renderer.follow = !renderer.follow;
