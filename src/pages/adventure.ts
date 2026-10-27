@@ -1,6 +1,7 @@
 import './adventure.css';
-import { AdventureGame, CHARACTERS, LEVELS, MAP_THEMES, MODES, modeInfo, modeLevels, padInput, validMode, validSkin, type AdventureInput, type AdventureView, type ModeId } from '../game/adventure';
+import { AdventureGame, CHARACTERS, DEFAULT_SKIN, LEVELS, MAP_THEMES, MODES, modeInfo, modeLevels, padInput, validMode, validSkin, type AdventureInput, type AdventureView, type ModeId } from '../game/adventure';
 import { AdventureRenderer, drawAvatar, loadCharacterSprites } from '../game/adventure-render';
+import { characterMatches, characterOf, legacySkin } from '../game/characters';
 import { AdventureHost } from '../net/adventure-host';
 import { ClientNet } from '../net/client';
 import { HostNet } from '../net/host';
@@ -24,41 +25,52 @@ const HINTS: Record<ModeId, string> = {
   eat: '靠近队友按 A 吃掉，再按 A 把他吐出去，被吃的人按 A 挣脱；把队友吐到对岸踩按钮放下吊桥',
   stack: '跳到队友头上叠罗汉，从头顶起跳更高；爬上墙顶踩按钮，给大家放下台阶',
 };
-const storedSkin = () => { const value = Number(store.get('adventure.skin')); return validSkin(value) ? value : 0; };
+const storedSkin = () => { const value = legacySkin(store.get('adventure.skin')); return validSkin(value) ? value : DEFAULT_SKIN; };
 const logo = () => `<span class="adv-logo-flower" aria-hidden="true">✿</span><span>${gameName('adventure')}<small>little picnic club</small></span>`;
 const nav = `<nav class="adv-nav"><a class="adv-brand" href="#/adventure">${logo()}</a><div><a href="#/">回到小聚场</a><button class="adv-full" aria-label="进入全屏">全屏 ↗</button></div></nav>`;
-// 角色多了以后用下拉：当前角色带小头像，展开后每一项也有头像预览
-const choices = () => `<details class="adv-picker"><summary aria-label="选择角色"><canvas class="adv-picked-avatar" aria-hidden="true"></canvas><span><b class="adv-picked-name"></b><small class="adv-picked-note"></small></span><i aria-hidden="true">▾</i></summary><div class="adv-options">${CHARACTERS.map((c, i) => `<button class="adv-character" data-skin="${i}" aria-pressed="false" aria-label="选择${c.name}，${c.subtitle}"><canvas aria-hidden="true"></canvas><b>${c.name}</b><small>${c.subtitle.split(' · ')[1]}</small></button>`).join('')}</div></details>`;
+// 角色多了以后用下拉：当前角色带小头像，展开后先是搜索框，每一项也有头像预览；角色列表等本机角色读完再填
+const choices = () => `<details class="adv-picker"><summary aria-label="选择角色"><canvas class="adv-picked-avatar" aria-hidden="true"></canvas><span><b class="adv-picked-name"></b><small class="adv-picked-note"></small></span><i aria-hidden="true">▾</i></summary><div class="adv-options"></div></details>`;
 async function avatars(root: HTMLElement) {
   await loadCharacterSprites();
-  root.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => drawAvatar(button.querySelector('canvas')!, Number(button.dataset.skin)));
+  root.querySelectorAll<HTMLElement>('.adv-options').forEach((options) => {
+    options.innerHTML = `<label class="adv-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="搜索小伙伴" aria-label="搜索角色名字或特点" autocomplete="off"></label>${CHARACTERS.map((c) => `<button class="adv-character" data-skin="${c.id}" aria-pressed="false" aria-label="选择${esc(c.name)}，${esc(c.subtitle)}"><canvas aria-hidden="true"></canvas><b>${esc(c.name)}</b><small>${esc(c.subtitle.split(' · ')[1] || c.subtitle)}</small></button>`).join('')}<p class="adv-search-empty" hidden>没有找到这个小伙伴</p><a class="adv-more" href="#/characters">${isLanPage() ? '看看所有角色 →' : '没找到？去角色图鉴看看更多 →'}</a>`;
+    const input = options.querySelector('input')!;
+    input.oninput = () => {
+      let shown = 0;
+      options.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => { button.hidden = !characterMatches(characterOf(button.dataset.skin!), input.value); if (!button.hidden) shown++; });
+      options.querySelector<HTMLElement>('.adv-search-empty')!.hidden = shown > 0;
+    };
+  });
+  root.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => drawAvatar(button.querySelector('canvas')!, button.dataset.skin!));
 }
-function selected(root: HTMLElement, skin: number) {
-  root.style.setProperty('--adv-accent', CHARACTERS[skin].accent);
-  root.querySelectorAll<HTMLElement>('[data-skin]').forEach((button) => button.setAttribute('aria-pressed', String(Number(button.dataset.skin) === skin)));
+function selected(root: HTMLElement, skin: string) {
+  const c = characterOf(skin);
+  root.style.setProperty('--adv-accent', c.accent);
+  root.querySelectorAll<HTMLElement>('[data-skin]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.skin === c.id)));
   root.querySelectorAll<HTMLDetailsElement>('.adv-picker').forEach((picker) => {
     picker.open = false;
     drawAvatar(picker.querySelector<HTMLCanvasElement>('.adv-picked-avatar')!, skin);
-    picker.querySelector('.adv-picked-name')!.textContent = CHARACTERS[skin].name;
-    picker.querySelector('.adv-picked-note')!.textContent = CHARACTERS[skin].subtitle;
+    picker.querySelector('.adv-picked-name')!.textContent = c.name;
+    picker.querySelector('.adv-picked-note')!.textContent = c.subtitle;
   });
 }
 
 export async function mountAdventureMenu(app: HTMLElement) {
   document.title = `${gameName('adventure')} · Little Lobby`;
   let skin = storedSkin();
-  app.innerHTML = `<main class="adventure adv-menu">${nav}<section class="adv-hero"><div class="adv-welcome"><span class="adv-eyebrow">A TINY ADVENTURE, TOGETHER</span><h1>今天，和谁<br>一起去<span>冒险？</span></h1><p>踩着软软的草地，捡一点小点心。<br>跳过小水洼，和朋友在终点碰头。</p><div class="adv-menu-actions"><a class="adv-primary" href="#/adventure-host?solo=1">一个人先逛逛 <span>→</span></a><a class="adv-secondary" href="${isLanPage() ? `#/join/${window.__LITTLE_LOBBY_LAN__!.room}?lan=1&game=adventure` : `#/adventure-host${isNativeApp() ? '?lan=1' : ''}`}">${isLanPage() ? '回到朋友的房间' : isNativeApp() ? '和朋友离线出发' : '和朋友一起玩'} <span>↗</span></a></div><small class="adv-network-note">${isNativeApp() || isLanPage() ? '同一个 Wi-Fi / 热点，扫码就能一起玩，无需外网。' : '单人无需联网 · 离线联机请用原生应用开房，朋友手机扫码加入。'}</small></div><div class="adv-preview"><span class="adv-sticker">没有淘汰，只有再试一次 ♡</span><canvas class="adv-preview-canvas" aria-label="可爱角色和平台关卡预览"></canvas><div class="adv-preview-caption"><span>01 / 莓莓散步道</span><span>跳一跳 · 收集 · 一起到终点</span></div></div></section><section class="adv-wardrobe"><div><span class="adv-eyebrow">PICK YOUR LITTLE BUDDY</span><h2>挑一位小伙伴</h2><p>随时换角色，在同一张地图一起冒险。</p><strong class="adv-theme-label"></strong></div>${choices()}</section><section class="adv-trip"><span>✦ 三站小旅行</span>${modeLevels('classic').map((li, i) => `<span><b>0${i + 1}</b>${LEVELS[li].name}</span>`).join('')}<span>多人还有：串一串 · 吃吐吐 · 叠罗汉</span></section><p class="adv-original">一二、布布、小白、小金毛 · 每个人都能选择自己喜欢的角色</p></main>`;
+  app.innerHTML = `<main class="adventure adv-menu">${nav}<section class="adv-hero"><div class="adv-welcome"><span class="adv-eyebrow">A TINY ADVENTURE, TOGETHER</span><h1>今天，和谁<br>一起去<span>冒险？</span></h1><p>踩着软软的草地，捡一点小点心。<br>跳过小水洼，和朋友在终点碰头。</p><div class="adv-menu-actions"><a class="adv-primary" href="#/adventure-host?solo=1">一个人先逛逛 <span>→</span></a><a class="adv-secondary" href="${isLanPage() ? `#/join/${window.__LITTLE_LOBBY_LAN__!.room}?lan=1&game=adventure` : `#/adventure-host${isNativeApp() ? '?lan=1' : ''}`}">${isLanPage() ? '回到朋友的房间' : isNativeApp() ? '和朋友离线出发' : '和朋友一起玩'} <span>↗</span></a></div><small class="adv-network-note">${isNativeApp() || isLanPage() ? '同一个 Wi-Fi / 热点，扫码就能一起玩，无需外网。' : '单人无需联网 · 离线联机请用原生应用开房，朋友手机扫码加入。'}</small></div><div class="adv-preview"><span class="adv-sticker">没有淘汰，只有再试一次 ♡</span><canvas class="adv-preview-canvas" aria-label="可爱角色和平台关卡预览"></canvas><div class="adv-preview-caption"><span>01 / 莓莓散步道</span><span>跳一跳 · 收集 · 一起到终点</span></div></div></section><section class="adv-wardrobe"><div><span class="adv-eyebrow">PICK YOUR LITTLE BUDDY</span><h2>挑一位小伙伴</h2><p>随时换角色，在同一张地图一起冒险。</p><strong class="adv-theme-label"></strong></div>${choices()}</section><section class="adv-trip"><span>✦ 三站小旅行</span>${modeLevels('classic').map((li, i) => `<span><b>0${i + 1}</b>${LEVELS[li].name}</span>`).join('')}<span>多人还有：串一串 · 吃吐吐 · 叠罗汉</span></section><p class="adv-original"><a href="#/characters">打开角色图鉴，看看所有小伙伴 →</a></p></main>`;
   try { await avatars(app); }
   catch (error) { app.querySelector('.adv-preview-caption')!.textContent = String(error); return; }
+  skin = characterOf(skin).id;
   const renderer = new AdventureRenderer(app.querySelector('canvas.adv-preview-canvas')!);
-  const preview = new AdventureGame(); preview.add(1, CHARACTERS[skin].name, skin);
+  const preview = new AdventureGame(); preview.add(1, characterOf(skin).name, skin);
   const update = () => {
     selected(app.querySelector('.adventure')!, skin);
-    app.querySelector('.adv-theme-label')!.textContent = `${CHARACTERS[skin].name} · 地图由房主选择`;
-    preview.skin(1, skin); preview.players.get(1)!.name = CHARACTERS[skin].name;
+    app.querySelector('.adv-theme-label')!.textContent = `${characterOf(skin).name} · 地图由房主选择`;
+    preview.skin(1, skin); preview.players.get(1)!.name = characterOf(skin).name;
   };
   update();
-  app.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => { button.onclick = () => { skin = Number(button.dataset.skin); store.set('adventure.skin', String(skin)); update(); }; });
+  app.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => { button.onclick = () => { skin = button.dataset.skin!; store.set('adventure.skin', skin); update(); }; });
   app.querySelector<HTMLButtonElement>('.adv-full')!.onclick = () => { void enterFullscreen(); };
   let frame = 0, closed = false;
   const draw = () => { if (closed) return; renderer.draw(preview.view(1), skin); frame = requestAnimationFrame(draw); };
@@ -139,6 +151,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   };
   try { await avatars(app); }
   catch (error) { status(`角色图片加载失败，请刷新重试`, false); toast(String(error), 6000); return; }
+  skin = characterOf(skin).id;
   const renderer = new AdventureRenderer($<HTMLCanvasElement>('.stage'));
   const pad = new Gamepad($('.pad'), { buttons: [{ bit: BTN_B, key: 'B', label: '跳跃', cls: 'b' }, { bit: BTN_A, key: 'A', label: '吃 / 吐', cls: 'a' }] });
   pad.show(BTN_A, false);
@@ -161,7 +174,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     if (host?.localId !== undefined) { host.game.skin(host.localId, skin); host.publish(); }
     if (client?.linked) client.sendJson({ t: 'adventure-skin', skin });
   };
-  app.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => { button.onclick = () => { skin = Number(button.dataset.skin); store.set('adventure.skin', String(skin)); setSkin(); }; });
+  app.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => { button.onclick = () => { skin = button.dataset.skin!; store.set('adventure.skin', skin); setSkin(); }; });
   setSkin();
 
   function send() {
@@ -257,7 +270,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       $('.adv-next').textContent = state.phase === 'complete' ? '再去散一次步' : '下一站 →';
     }
     const key = JSON.stringify(state.players.map((p) => [p.id, p.name, p.skin, p.online, p.reached]));
-    if (key !== rosterKey) { rosterKey = key; $('.adv-roster').innerHTML = state.players.map((p) => `<span class="${p.online ? '' : 'is-offline'}"><i style="background:${CHARACTERS[p.skin]?.accent || '#ccc'}"></i>${esc(p.name)}${p.reached ? ' ✓' : !p.online ? ' · 重连中' : ''}</span>`).join(''); }
+    if (key !== rosterKey) { rosterKey = key; $('.adv-roster').innerHTML = state.players.map((p) => `<span class="${p.online ? '' : 'is-offline'}"><i style="background:${characterOf(p.skin)?.accent || '#ccc'}"></i>${esc(p.name)}${p.reached ? ' ✓' : !p.online ? ' · 重连中' : ''}</span>`).join(''); }
     const start = $<HTMLButtonElement>('.adv-start');
     start.hidden = !mode.host || state.phase !== 'lobby';
     const online = state.players.filter((p) => p.online).length, needTwo = modeInfo(state.mode).coop && online < 2;

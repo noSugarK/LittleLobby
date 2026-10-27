@@ -9,16 +9,9 @@ promo/
 /docs/
 /output/
 /scripts/
-/public/adventure/characters/*
-!/public/adventure/characters/yier-atlas.png
-!/public/adventure/characters/bubu-atlas.png
-!/public/adventure/characters/xiaobai-atlas.png
-!/public/adventure/characters/jinmao-atlas.png
-!/public/adventure/characters/nailong-atlas.png
-!/public/adventure/characters/naiwa-atlas.png
-!/public/adventure/characters/niulai-atlas.png
-!/public/adventure/characters/lulu-atlas.png
-!/public/adventure/characters/baobao-atlas.png
-!/public/adventure/characters/doudou-atlas.png
-!/public/adventure/characters/*-full-atlas.png
+# 角色文件夹只提交运行时用的三个文件，生成的源图、草稿和预览留在本地
+/public/characters/*/*
+!/public/characters/*/character.json
+!/public/characters/*/atlas.png
+!/public/characters/*/full-atlas.png
 /AGENTS.md

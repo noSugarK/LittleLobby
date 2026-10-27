@@ -107,7 +107,8 @@ npm run app:build  # 构建当前平台的安装包
 | --- | --- |
 | `src/` | 页面、游戏逻辑和联机代码（`game/` 游戏，`net/` 联机，`ui/` 界面组件，`pages/` 页面） |
 | `src-tauri/` | 原生应用、局域网服务与平台配置 |
-| `public/` | 品牌图标、首页插图、角色精灵图集 |
+| `public/` | 品牌图标、首页插图 |
+| `public/characters/` | 角色：每个角色一个文件夹（多语言文案 + 精灵表），规范和生成提示词见其中的 README |
 | `tests/` | 回归测试（`node --test`） |
 | `.github/workflows/` | 网页部署与安装包构建 |
 | `.github/scripts/` | 发版入口，以及 Android 工程配置与签名脚本 |

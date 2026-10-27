@@ -55,8 +55,10 @@ test('手柄输入驱动主机：键盘斜向也能边走边跳，换装不打�
   globalThis.localStorage = storage(); globalThis.sessionStorage = storage();
   try {
     const { mountAdventure } = await import('../src/pages/adventure.ts');
+    const { CHARACTERS } = await import('../src/game/characters.ts');
+    CHARACTERS.push(...['yier', 'jinmao'].map((id) => ({ id, name: id, accent: '#f5a8b8', subtitle: 'a · b', description: '', origin: '', look: '' })));
     const app = new Element();
-    const skins = [0, 3].map((skin) => { const b = new Element(); b.dataset.skin = String(skin); return b; });
+    const skins = ['yier', 'jinmao'].map((skin) => { const b = new Element(); b.dataset.skin = skin; return b; });
     app.children.set('all:[data-skin]', skins);
     await mountAdventure(app, { host: true, solo: true });
     const host = globalThis.__adventureHost, pad = globalThis.__pad;
@@ -65,7 +67,7 @@ test('手柄输入驱动主机：键盘斜向也能边走边跳，换装不打�
     move(Math.SQRT1_2, -Math.SQRT1_2);
     assert.deepEqual(host.localInput, { axis: 1, jump: true, act: false });
     skins[1].onclick();
-    assert.equal(host.game.players.get(host.localId).skin, 3);
+    assert.equal(host.game.players.get(host.localId).skin, 'jinmao');
     assert.deepEqual(host.localInput, { axis: 1, jump: true, act: false });
     move(-1, 0, 0b10); // 反向 + B 键
     assert.deepEqual(host.localInput, { axis: -1, jump: true, act: false });

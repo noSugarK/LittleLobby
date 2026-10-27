@@ -1,0 +1,25 @@
+{
+  "id": "lulu",
+  "accent": "#f39a52",
+  "name": {
+    "zh-CN": "噜噜",
+    "zh-TW": "嚕嚕",
+    "en": "Lulu"
+  },
+  "subtitle": {
+    "zh-CN": "水豚噜噜 · 南瓜小帽",
+    "zh-TW": "水豚嚕嚕 · 南瓜小帽",
+    "en": "Capybara · pumpkin hat"
+  },
+  "description": {
+    "zh-CN": "头顶小南瓜的水豚，佛系、悠闲，最爱泡澡和放假，天塌下来也慢慢来。",
+    "zh-TW": "頭頂小南瓜的水豚，佛系、悠閒，最愛泡澡和放假，天塌下來也慢慢來。",
+    "en": "A laid-back capybara with a little pumpkin on its head. Loves baths and holidays, and takes everything slowly."
+  },
+  "origin": {
+    "zh-CN": "「水豚噜噜」",
+    "zh-TW": "「水豚嚕嚕」",
+    "en": "Capybara Lulu"
+  },
+  "look": "capybara: light warm-yellow body (#f9cf55), big orange muzzle covering the lower face and orange \"shorts\" (#f08a3c), rounded-rectangle head merging into a barrel body, small round ears on top, round glossy dark eyes with a white highlight, tiny calm mouth, small orange pumpkin with a brown stem on top of the head, short arms, stubby feet, small round tail"
+}

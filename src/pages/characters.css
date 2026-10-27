@@ -1,0 +1,47 @@
+/* ---------- 角色图鉴：沿用首页的颜色变量、头部和卡片风格 ---------- */
+.ch-head { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.ch-crumb { display: flex; align-items: center; gap: 6px; color: var(--h-mu); font-size: 15px; font-weight: 700; white-space: nowrap; }
+.ch-crumb .ico { width: 16px; height: 16px; opacity: .7; }
+.ch-intro { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px 32px; padding: 28px 0 24px; }
+.ch-intro .lh-lede { margin-bottom: 0; }
+.ch-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.ch-search { display: flex; align-items: center; gap: 10px; width: min(340px, 100%); height: 46px; padding: 0 16px; border: 1px solid var(--h-line); border-radius: 14px; background: var(--h-panel); color: var(--h-mu); }
+.ch-search:focus-within { border-color: var(--h-ring); box-shadow: 0 0 0 3px var(--h-ac-soft); }
+.ch-search .ico { width: 18px; height: 18px; flex: none; }
+.home .ch-search input { flex: 1; min-width: 0; border: 0; outline: none; background: none; color: var(--h-ink); font: inherit; font-size: 15px; }
+.ch-filter { display: flex; padding: 4px; gap: 2px; border: 1px solid var(--h-line); border-radius: 14px; background: var(--h-panel); }
+.home .ch-filter button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: none; color: var(--h-mu); font-size: 14px; font-weight: 700; cursor: pointer; }
+.home .ch-filter button b { margin-left: 4px; font-weight: 600; opacity: .75; }
+.home .ch-filter button[aria-checked='true'] { background: var(--h-ink); color: var(--h-bg); }
+.ch-note { margin: 0 0 16px; padding: 12px 16px; border-radius: 14px; background: var(--h-ac-soft); color: var(--h-ink); font-size: 14px; }
+.ch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 16px; }
+.ch-card { display: flex; flex-direction: column; padding: 16px 18px 18px; border: 1px solid var(--h-line); border-radius: 22px; background: var(--h-panel); }
+.ch-card[hidden] { display: none; }
+/* 角色站在一团自己主题色的柔光上 */
+.ch-art { display: grid; place-items: center; aspect-ratio: 1.15; margin: -4px -6px 8px; border-radius: 18px; background: radial-gradient(closest-side, color-mix(in srgb, var(--ch-accent) 42%, transparent), transparent); }
+.ch-art canvas { width: 120px; height: 120px; }
+.ch-card h2 { margin: 0; font-size: 19px; font-weight: 850; }
+.ch-origin { margin: 4px 0 0; font-size: 13px; color: var(--h-mu); }
+.ch-desc { flex: 1; margin: 10px 0 14px; font-size: 14px; line-height: 1.6; color: var(--h-mu); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ch-foot { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+.ch-pill { display: inline-flex; align-items: center; min-height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--h-line); color: var(--h-brand); font-size: 13px; font-weight: 750; }
+.ch-pill.is-done { border-color: color-mix(in srgb, var(--h-turf) 60%, transparent); color: var(--h-turf); }
+.home .ch-remove { margin-left: auto; padding: 4px 0; border: 0; background: none; color: var(--h-mu); font-size: 13px; text-decoration: underline; cursor: pointer; }
+.home .ch-get { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 40px; border: 0; border-radius: 12px; background: var(--h-ac); color: var(--h-acfg); font-size: 15px; font-weight: 750; cursor: pointer; transition: background-color .15s; }
+.home .ch-get:hover { background: #c4432a; }
+.ch-get .ico { width: 18px; height: 18px; }
+.ch-progress { display: grid; gap: 6px; width: 100%; font-size: 13px; font-weight: 700; color: var(--h-ac); }
+.ch-progress i { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--h-ac) 18%, transparent); overflow: hidden; }
+.ch-progress i::before { content: ''; display: block; width: var(--p, 0%); height: 100%; background: var(--h-ac); transition: width .2s; }
+.ch-error { margin: 0; font-size: 13px; color: var(--h-ac); }
+.ch-empty { padding: 48px 0; text-align: center; color: var(--h-mu); }
+@media (max-width: 640px) {
+  .ch-crumb { display: none; }
+  .ch-intro { padding-top: 12px; }
+  .ch-search { width: 100%; }
+  .ch-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .ch-card { padding: 12px 12px 14px; border-radius: 18px; }
+  .ch-art canvas { width: 92px; height: 92px; }
+  .ch-desc { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) { .ch-progress i::before, .home .ch-get { transition: none; } }

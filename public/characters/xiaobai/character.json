@@ -1,0 +1,25 @@
+{
+  "id": "xiaobai",
+  "accent": "#c9d6e8",
+  "name": {
+    "zh-CN": "小白",
+    "zh-TW": "小白",
+    "en": "Xiaobai"
+  },
+  "subtitle": {
+    "zh-CN": "白色线条小狗 · 圆圆小耳朵",
+    "zh-TW": "白色線條小狗 · 圓圓小耳朵",
+    "en": "White line puppy · round ears"
+  },
+  "description": {
+    "zh-CN": "白白的线条小狗，耳朵圆圆的，总是笑眯眯，跟谁都能玩到一块。",
+    "zh-TW": "白白的線條小狗，耳朵圓圓的，總是笑瞇瞇，跟誰都能玩到一塊。",
+    "en": "A white line-drawn puppy with round ears, always grinning and happy to play with anyone."
+  },
+  "origin": {
+    "zh-CN": "「线条小狗」",
+    "zh-TW": "「線條小狗」",
+    "en": "Line Puppy"
+  },
+  "look": "white line-art puppy, big round head, small rounded ears, dot eyes, wide happy \"w\" mouth"
+}

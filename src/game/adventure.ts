@@ -1,15 +1,5 @@
-export const CHARACTERS = [
-  { name: '一二', sprite: 'yier', accent: '#f5a8b8', subtitle: '白色小熊 · 小黑布鞋' },
-  { name: '布布', sprite: 'bubu', accent: '#eeb76b', subtitle: '棕色小熊 · 圆圆小脚' },
-  { name: '小白', sprite: 'xiaobai', accent: '#c9d6e8', subtitle: '白色线条小狗 · 圆圆小耳朵' },
-  { name: '小金毛', sprite: 'jinmao', accent: '#f0c46f', subtitle: '金色线条小狗 · 红色小项圈' },
-  { name: '奶龙', sprite: 'nailong', accent: '#f7cf4f', subtitle: '黄色小恐龙 · 绿眼睛' },
-  { name: '奶蛙', sprite: 'naiwa', accent: '#e9c13f', subtitle: '黄色梨形奶蛙 · 灰色小手' },
-  { name: '牛来', sprite: 'niulai', accent: '#e0a33a', subtitle: '金色小牛 · 半睁眼' },
-  { name: '噜噜', sprite: 'lulu', accent: '#f39a52', subtitle: '水豚噜噜 · 南瓜小帽' },
-  { name: '包包', sprite: 'baobao', accent: '#eadcc4', subtitle: '白白小包子 · 褶褶头顶' },
-  { name: '豆豆', sprite: 'doudou', accent: '#a9cf6a', subtitle: '绿色小豆芽 · 两片叶子' },
-] as const;
+import { DEFAULT_SKIN, validSkin } from './characters';
+export { CHARACTERS, DEFAULT_SKIN, validSkin } from './characters';
 /** Shared map art is independent of each player's chosen character. */
 export const MAP_THEMES = [
   { sky: '#fff3e9', grass: '#aad5aa', accent: '#f5a8b8', item: '草莓', treat: 0 },
@@ -26,7 +16,6 @@ export const MODES = [
 export type ModeId = typeof MODES[number]['id'];
 export const validMode = (mode: unknown): mode is ModeId => MODES.some((m) => m.id === mode);
 export const modeInfo = (mode: ModeId) => MODES.find((m) => m.id === mode)!;
-export const validSkin = (skin: unknown): skin is number => Number.isInteger(skin) && Number(skin) >= 0 && Number(skin) < CHARACTERS.length;
 export interface Rect { x: number; y: number; w: number; h: number; }
 /** 机关：踩板上的重量（含着队友的人算 2）达到 need 时激活；solid 激活时出现（吊桥、台阶），gate 激活时消失（闸门）。latch 激活后保持。 */
 export interface Device { plate: Rect; need: number; latch?: boolean; solid?: Rect[]; gate?: Rect[] }
@@ -108,7 +97,7 @@ export interface AdventureInput { axis: number; jump: boolean; act?: boolean; }
 export const padInput = (jx: number, jy: number, b: boolean, enabled: boolean, a = false): AdventureInput =>
   ({ axis: enabled && Math.abs(jx) > 0.3 ? Math.sign(jx) : 0, jump: enabled && (b || jy < -0.6), act: enabled && a });
 export interface Adventurer {
-  id: number; name: string; skin: number; online: boolean; x: number; y: number; vx: number; vy: number;
+  id: number; name: string; skin: string; online: boolean; x: number; y: number; vx: number; vy: number;
   grounded: boolean; facing: number; hearts: number; invulnerable: number; checkpoint: number;
   coins: number[]; deaths: number; reached: boolean;
   /** 吃吐吐：正含着的队友 / 含着自己的队友，-1 表示没有。 */
@@ -147,9 +136,9 @@ export class AdventureGame {
   active = new Set<number>();
   private clock = 0;
 
-  add(id: number, name: string, skin = 0) {
+  add(id: number, name: string, skin: string = DEFAULT_SKIN) {
     if (this.players.has(id) || this.players.size >= 8) return false;
-    this.players.set(id, { id, name: name.slice(0, 12), skin: validSkin(skin) ? skin : 0, online: true, x: 90 + (id % 4) * 42, y: 456, vx: 0, vy: 0, grounded: false, facing: 1, hearts: 3, invulnerable: 0, checkpoint: -1, coins: [], deaths: 0, reached: false, eating: -1, eatenBy: -1 });
+    this.players.set(id, { id, name: name.slice(0, 12), skin: validSkin(skin) ? skin : DEFAULT_SKIN, online: true, x: 90 + (id % 4) * 42, y: 456, vx: 0, vy: 0, grounded: false, facing: 1, hearts: 3, invulnerable: 0, checkpoint: -1, coins: [], deaths: 0, reached: false, eating: -1, eatenBy: -1 });
     this.controls.set(id, { axis: 0, jump: false, act: false, actQueued: false, held: 0, launch: 0, seen: this.clock, buffer: 0, coyote: 0, rise: 0 });
     return true;
   }

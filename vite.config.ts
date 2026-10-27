@@ -1,6 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import os from 'node:os';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 // 开发时大屏若用 localhost 打开，二维码需要换成局域网 IP 才能被手机访问
 function lanIp(): string {
@@ -12,11 +14,24 @@ function lanIp(): string {
   return '';
 }
 
+// 原生应用只内置清单里 builtin 的角色，其余在角色图鉴里下载；网页版保留全部角色
+function appCharacters(): Plugin {
+  return {
+    name: 'app-characters',
+    writeBundle({ dir = 'dist' }) {
+      const file = join(dir, 'characters', 'index.json');
+      const manifest = JSON.parse(readFileSync(file, 'utf8')) as { builtin: string[]; characters: string[] };
+      for (const id of manifest.characters) if (!manifest.builtin.includes(id)) rmSync(join(dir, 'characters', id), { recursive: true, force: true });
+      writeFileSync(file, JSON.stringify({ ...manifest, characters: manifest.builtin }, null, 2) + '\n');
+    },
+  };
+}
+
 export default defineConfig(({ command, mode }) => ({
   // 相对路径 + hash 路由：部署到 GitHub Pages 任意仓库名下都能直接用
   base: './',
   // 手机端的屏幕常亮、全屏等能力需要 HTTPS；NO_HTTPS=1 可关闭（本机调试用）
-  plugins: command === 'serve' && mode !== 'app' && !process.env.NO_HTTPS ? [basicSsl()] : [],
+  plugins: command === 'serve' && mode !== 'app' && !process.env.NO_HTTPS ? [basicSsl()] : command === 'build' && mode === 'app' ? [appCharacters()] : [],
   define: {
     __DEV_LAN_IP__: JSON.stringify(command === 'serve' ? lanIp() : ''),
   },

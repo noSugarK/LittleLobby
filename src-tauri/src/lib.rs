@@ -1,3 +1,4 @@
+mod characters;
 mod lan;
 use tauri::Manager;
 
@@ -6,7 +7,15 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(lan::LanServer::default())
-        .invoke_handler(tauri::generate_handler![lan::start_lan, lan::stop_lan, lan::discover_lan])
+        .invoke_handler(tauri::generate_handler![
+            lan::start_lan,
+            lan::stop_lan,
+            lan::discover_lan,
+            characters::list_characters,
+            characters::character_file,
+            characters::save_character,
+            characters::delete_character
+        ])
         .on_window_event(|window, event| {
             if window.label() == "main" && matches!(event, tauri::WindowEvent::Destroyed) {
                 let server = window.state::<lan::LanServer>().inner().clone();

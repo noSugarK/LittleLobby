@@ -1,0 +1,25 @@
+{
+  "id": "yier",
+  "accent": "#f5a8b8",
+  "name": {
+    "zh-CN": "一二",
+    "zh-TW": "一二",
+    "en": "Yier"
+  },
+  "subtitle": {
+    "zh-CN": "白色小熊 · 小黑布鞋",
+    "zh-TW": "白色小熊 · 小黑布鞋",
+    "en": "White bear · little black shoes"
+  },
+  "description": {
+    "zh-CN": "软乎乎的白色小熊，脸蛋粉粉的，系着棕色小领结，穿一双小黑布鞋，爱笑也爱撒娇。",
+    "zh-TW": "軟乎乎的白色小熊，臉蛋粉粉的，繫著棕色小領結，穿一雙小黑布鞋，愛笑也愛撒嬌。",
+    "en": "A squishy white bear with pink cheeks, a brown bow tie and little black shoes. Loves to smile and be cuddled."
+  },
+  "origin": {
+    "zh-CN": "「一二布布」",
+    "zh-TW": "「一二布布」",
+    "en": "Yier & Bubu"
+  },
+  "look": "small white bear, round head, two dark-brown round ears, pink blush, tiny \":3\" mouth, brown bow tie, little black shoes"
+}

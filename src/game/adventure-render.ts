@@ -43,7 +43,7 @@ export class AdventureRenderer {
   private camera = 0;
   private level = -1;
   private last = performance.now();
-  private animations = new Map<number, { action: BuddyAction; since: number; skin: number }>();
+  private animations = new Map<number, { action: BuddyAction; since: number; skin: string }>();
   constructor(readonly canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
     this.observer = new ResizeObserver(() => this.resize()); this.observer.observe(canvas); this.resize();
@@ -54,7 +54,7 @@ export class AdventureRenderer {
     this.canvas.width = Math.round(this.width * this.dpr); this.canvas.height = Math.round(this.height * this.dpr);
   }
   close() { this.observer.disconnect(); }
-  draw(s: AdventureView, _skin: number) {
+  draw(s: AdventureView, _skin: string) {
     const ctx = this.ctx, level = LEVELS[s.level], theme = MAP_THEMES[level.theme];
     const now = performance.now(), dt = Math.min(.05, (now - this.last) / 1000); this.last = now;
     const scale = this.height / 460, worldWidth = this.width / scale;

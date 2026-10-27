@@ -17,21 +17,23 @@ registerHooks({
     return { format: 'module', shortCircuit: true, source: ts.transpile(readFileSync(new URL(url), 'utf8'), { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }) };
   },
 });
-const { AdventureGame, LEVELS, CHARACTERS, enemyX, modeLevels, padInput, solids } = await import('../src/game/adventure.ts');
+const { AdventureGame, LEVELS, enemyX, modeLevels, padInput, solids } = await import('../src/game/adventure.ts');
 const { AdventureHost } = await import('../src/net/adventure-host.ts');
 const { joinHashFromQr } = await import('../src/ui/scan.ts');
 const tick = (g, frames, input = { axis: 0, jump: false }) => { for (let i = 0; i < frames; i++) { g.input(1, input); g.step(1 / 60); } };
 function game() { const g = new AdventureGame(); g.add(1, '一二'); g.start(); tick(g, 2); return g; }
 
-test('一二与布布切换只改造型，保留位置、收集与检查点；非法角色不生效', () => {
+test('切换角色只改造型，保留位置、收集与检查点；非法角色 id 不生效', () => {
   const g = game(), p = g.players.get(1); p.coins = [1]; p.checkpoint = 0;
-  for (let skin = 0; skin < CHARACTERS.length; skin++) {
+  assert.equal(p.skin, 'yier');
+  // 主机不必拥有这个角色：画面上会用默认角色代替，但 id 照样同步给其他人
+  for (const skin of ['bubu', 'nailong', 'some-new-buddy']) {
     const before = [p.x, p.y, p.hearts, p.checkpoint, [...p.coins]];
     g.skin(1, skin); assert.equal(p.skin, skin);
     assert.deepEqual([p.x, p.y, p.hearts, p.checkpoint, p.coins], before);
   }
-  for (const invalid of [-1, CHARACTERS.length, 99, '1', NaN, null]) g.skin(1, invalid);
-  assert.equal(p.skin, CHARACTERS.length - 1);
+  for (const invalid of [-1, 3, '', 'Nailong', '../x', 'a'.repeat(33), NaN, null]) g.skin(1, invalid);
+  assert.equal(p.skin, 'some-new-buddy');
 });
 
 test('长按跳得更高，短按仍能跳起；台阶会落地，离线旧输入会停下', () => {
@@ -123,7 +125,7 @@ test('主机过滤乱序、旧关卡和越界输入；按身份重连，角色�
   const deliver = (patch) => cb.onJson('one', { t: 'adventure-input', epoch: host.game.epoch, seq: 5, axis: 1, jump: false, ...patch });
   deliver({}); deliver({ seq: 4, axis: -1 }); deliver({ seq: 6, axis: NaN }); deliver({ seq: 6, epoch: 0, axis: -1 });
   tick(host.game, 0); host.game.step(1 / 60); assert.ok(host.game.players.get(1).vx > 0);
-  cb.onJson('one', { t: 'adventure-skin', skin: 1 }); assert.equal(host.game.players.get(1).skin, 1);
+  cb.onJson('one', { t: 'adventure-skin', skin: 'bubu' }); assert.equal(host.game.players.get(1).skin, 'bubu');
   host.game.players.get(1).coins = [0, 1];
   assert.equal(cb.onHello('new', { token: 't', name: 'P' }), null);
   assert.equal(host.game.players.size, 1); assert.deepEqual(host.game.players.get(1).coins, [0, 1]);

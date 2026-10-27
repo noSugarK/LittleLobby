@@ -14,20 +14,37 @@ registerHooks({
   },
   load(url, context, next) {
     if (!url.endsWith('.ts')) return next(url, context);
-    return { format: 'module', shortCircuit: true, source: ts.transpile(readFileSync(new URL(url), 'utf8').replace('import.meta.env.BASE_URL', '"/LittleLobby/"'), { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }) };
+    return { format: 'module', shortCircuit: true, source: ts.transpile(readFileSync(new URL(url), 'utf8').replaceAll('import.meta.env.BASE_URL', '"/LittleLobby/"'), { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }) };
   },
 });
 const { buddyFrame, loadCharacterSprites, drawBuddyImage } = await import('../src/game/adventure-sprites.ts');
-const { CHARACTERS } = await import('../src/game/adventure.ts');
+const { CHARACTERS, parseCharacter } = await import('../src/game/characters.ts');
+const manifest = JSON.parse(readFileSync(new URL('../public/characters/index.json', import.meta.url), 'utf8'));
+// 浏览器里 fetch 站内文件；测试里直接读 public/ 目录
+const serveLocal = () => { globalThis.fetch = async (url) => {
+  const file = new URL(`../public/${String(url).replace('/LittleLobby/', '')}`, import.meta.url);
+  return existsSync(file) ? new Response(readFileSync(file)) : new Response('', { status: 404 });
+}; };
 
-test('十个角色都有带透明通道的完整精灵表 PNG（含大肚肚版）', () => {
-  assert.deepEqual(CHARACTERS.map((p) => [p.name, p.sprite]), [['一二', 'yier'], ['布布', 'bubu'], ['小白', 'xiaobai'], ['小金毛', 'jinmao'], ['奶龙', 'nailong'], ['奶蛙', 'naiwa'], ['牛来', 'niulai'], ['噜噜', 'lulu'], ['包包', 'baobao'], ['豆豆', 'doudou']]);
-  for (const character of CHARACTERS) for (const variant of ['', '-full']) {
-    const png = readFileSync(new URL(`../public/adventure/characters/${character.sprite}${variant}-atlas.png`, import.meta.url));
-    assert.equal(png.subarray(1, 4).toString(), 'PNG');
-    assert.equal(png.readUInt32BE(16), 1024); assert.equal(png.readUInt32BE(20), 1280);
-    assert.equal(png[25], 6, 'RGBA PNG');
+test('每个角色文件夹都符合规范：中英文案齐全、两张带透明通道的 1024×1280 精灵表，内置角色都在清单里', () => {
+  assert.ok(manifest.builtin.length && manifest.builtin.every((id) => manifest.characters.includes(id)));
+  assert.deepEqual(manifest.builtin, ['yier', 'bubu', 'xiaobai', 'jinmao']);
+  assert.equal(new Set(manifest.characters).size, manifest.characters.length);
+  for (const id of manifest.characters) {
+    const meta = JSON.parse(readFileSync(new URL(`../public/characters/${id}/character.json`, import.meta.url), 'utf8'));
+    const c = parseCharacter(meta, id);
+    for (const field of ['name', 'subtitle', 'description', 'origin']) assert.ok(meta[field]['zh-CN'] && meta[field].en, `${id}.${field} 需要中英文`);
+    assert.match(c.subtitle, / · /, `${id} 的 subtitle 写成「种类 · 特点」`);
+    assert.ok(c.look, `${id} 需要 look（生成图片用的外形描述）`);
+    for (const file of ['atlas.png', 'full-atlas.png']) {
+      const png = readFileSync(new URL(`../public/characters/${id}/${file}`, import.meta.url));
+      assert.equal(png.subarray(1, 4).toString(), 'PNG');
+      assert.equal(png.readUInt32BE(16), 1024); assert.equal(png.readUInt32BE(20), 1280);
+      assert.equal(png[25], 6, `${id}/${file} 需要 RGBA PNG`);
+    }
   }
+  assert.throws(() => parseCharacter({ id: 'x', accent: '#ffffff', name: '只有中文' }, 'x'), /不符合规范/);
+  assert.throws(() => parseCharacter({ ...JSON.parse(readFileSync(new URL('../public/characters/yier/character.json', import.meta.url), 'utf8')) }, 'bubu'), /不符合规范/);
 });
 
 test('待机和跑动循环，起跳与下落停留在末帧，左右采样各自的动作行', () => {
@@ -49,14 +66,16 @@ test('本地精灵加载失败可重试，成功后复用图片，绘制直接�
     naturalWidth = 1024; naturalHeight = 1280;
     set src(value) { urls.push(value); queueMicrotask(() => fail ? this.onerror() : this.onload()); }
   };
+  serveLocal();
   try {
     await assert.rejects(loadCharacterSprites(), /角色图片未能加载/);
+    assert.deepEqual(CHARACTERS.map((c) => c.id), manifest.characters);
     fail = false; await loadCharacterSprites(); const count = urls.length; await loadCharacterSprites();
     assert.equal(urls.length, count);
-    assert.ok(urls.every((url) => url.startsWith('/LittleLobby/adventure/characters/')));
-    assert.ok(urls.some((url) => url.endsWith('yier-atlas.png')));
-    assert.ok(urls.some((url) => url.endsWith('bubu-atlas.png')));
-    const calls = []; drawBuddyImage({ drawImage: (...args) => calls.push(args) }, 100, 200, 1, 'run', .2, -1);
+    assert.ok(urls.every((url) => url.startsWith('/LittleLobby/characters/')));
+    assert.ok(urls.includes('/LittleLobby/characters/yier/atlas.png'));
+    assert.ok(urls.includes('/LittleLobby/characters/bubu/full-atlas.png'));
+    const calls = []; drawBuddyImage({ drawImage: (...args) => calls.push(args) }, 100, 200, 'bubu', 'run', .2, -1);
     assert.equal(calls.length, 1); assert.ok(calls[0][0] instanceof Image);
     assert.deepEqual(calls[0].slice(1, 5), [256, 800, 128, 160]);
     assert.equal(calls[0][6] + 146 * .5, 200, '脚底锚点与角色状态无关');

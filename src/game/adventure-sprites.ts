@@ -1,4 +1,4 @@
-import { CHARACTERS } from './adventure';
+import { CHARACTERS, DEFAULT_SKIN, characterOf, characterUrl, loadCharacters } from './characters';
 
 export type BuddyAction = 'idle' | 'run' | 'jump' | 'fall';
 export const SPRITE_CELL = { width: 128, height: 160, baseline: 146, columns: 8, rows: 8 };
@@ -20,34 +20,44 @@ export function buddyFrame(action: BuddyAction, seconds: number, facing: number)
 
 /** 每个角色两张精灵表：平时的样子，以及吃吐吐里含着队友时的大肚肚样子（key 加 :full）。 */
 const sheets = new Map<string, HTMLImageElement>();
-let loading: Promise<void> | undefined;
-export function loadCharacterSprites(): Promise<void> {
-  if (!loading) loading = Promise.all(CHARACTERS.flatMap((character, skin) => (['', '-full'] as const).map((variant) => new Promise<void>((resolve, reject) => {
+export function loadSheet(url: string, name: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
     image.onload = () => {
       if (image.naturalWidth !== SPRITE_CELL.width * SPRITE_CELL.columns || image.naturalHeight !== SPRITE_CELL.height * SPRITE_CELL.rows) {
-        reject(new Error(`${character.name}的精灵表尺寸不正确`)); return;
+        reject(new Error(`${name}的精灵表尺寸不正确`)); return;
       }
-      sheets.set(`${skin}${variant ? ':full' : ''}`, image); resolve();
+      resolve(image);
     };
-    image.onerror = () => reject(new Error(`${character.name}的角色图片未能加载，请刷新重试`));
-    image.src = `${import.meta.env.BASE_URL}adventure/characters/${character.sprite}${variant}-atlas.png`;
-  })))).then(() => {}).catch((error) => { loading = undefined; throw error; });
+    image.onerror = () => reject(new Error(`${name}的角色图片未能加载，请刷新重试`));
+    image.src = url;
+  });
+}
+let loading: Promise<void> | undefined;
+/** 先读本机角色清单，再加载每个角色的两张精灵表；角色有增减时再调用会补齐新的。 */
+export function loadCharacterSprites(): Promise<void> {
+  if (!loading) loading = loadCharacters().then((list) => Promise.all(list.flatMap((character) => (['', ':full'] as const)
+    .filter((variant) => !sheets.has(character.id + variant))
+    .map(async (variant) => { sheets.set(character.id + variant, await loadSheet(characterUrl(character.id, variant ? 'full-atlas.png' : 'atlas.png'), character.name)); }))))
+    .then(() => {}).finally(() => { loading = undefined; });
   return loading;
 }
 
-export function drawBuddyImage(ctx: CanvasRenderingContext2D, x: number, feet: number, skin: number, action: BuddyAction, seconds: number, facing: number, full = false) {
-  const sheet = (full && sheets.get(`${skin}:full`)) || sheets.get(String(skin)) || sheets.get('0');
+const sheetOf = (skin: string) => sheets.get(characterOf(skin)?.id ?? DEFAULT_SKIN) || sheets.get(DEFAULT_SKIN) || sheets.get(CHARACTERS[0]?.id);
+
+export function drawBuddyImage(ctx: CanvasRenderingContext2D, x: number, feet: number, skin: string, action: BuddyAction, seconds: number, facing: number, full = false) {
+  const normal = sheetOf(skin);
+  const fat = full ? sheets.get(`${characterOf(skin)?.id}:full`) : undefined;
+  const sheet = fat || normal;
   if (!sheet) return;
   const frame = buddyFrame(action, seconds, facing);
   // 大肚肚帧为了塞进同样的格子缩得更小，画大两成让头身和平时一样大，脚底对齐
-  const k = full && sheet === sheets.get(`${skin}:full`) ? 1.2 : 1;
+  const k = fat ? 1.2 : 1;
   ctx.drawImage(sheet, frame.x, frame.y, frame.width, frame.height, x - 32 * k, feet - SPRITE_CELL.baseline * .5 * k, 64 * k, 80 * k);
 }
 
-/** 头像画布：默认画待机第一帧；首页的互动角色会传入动作和时间来播放待机 / 跑步 / 跳跃帧。 */
-export function drawBuddyAvatar(canvas: HTMLCanvasElement, skin: number, action: BuddyAction = 'idle', seconds = 0, facing = 1) {
-  const sheet = sheets.get(String(skin));
+/** 头像画布：默认画待机第一帧；首页的互动角色会传入动作和时间来播放待机 / 跑步 / 跳跃帧。传 sheet 可以直接画还没下载的角色。 */
+export function drawBuddyAvatar(canvas: HTMLCanvasElement, skin: string, action: BuddyAction = 'idle', seconds = 0, facing = 1, sheet = sheetOf(skin)) {
   if (!sheet) return;
   canvas.width = 112; canvas.height = 112;
   const frame = buddyFrame(action, seconds, facing);

@@ -1,0 +1,25 @@
+{
+  "id": "bubu",
+  "accent": "#eeb76b",
+  "name": {
+    "zh-CN": "布布",
+    "zh-TW": "布布",
+    "en": "Bubu"
+  },
+  "subtitle": {
+    "zh-CN": "棕色小熊 · 圆圆小脚",
+    "zh-TW": "棕色小熊 · 圓圓小腳",
+    "en": "Brown bear · round little feet"
+  },
+  "description": {
+    "zh-CN": "暖棕色的小熊，脸颊黄黄的，圆滚滚的小脚走起路来一颠一颠，一二最好的伙伴。",
+    "zh-TW": "暖棕色的小熊，臉頰黃黃的，圓滾滾的小腳走起路來一顛一顛，一二最好的夥伴。",
+    "en": "A warm brown bear with yellow cheeks whose round little feet bounce as it walks. Yier’s best friend."
+  },
+  "origin": {
+    "zh-CN": "「一二布布」",
+    "zh-TW": "「一二布布」",
+    "en": "Yier & Bubu"
+  },
+  "look": "small warm-brown bear, round head, round ears with lighter inner ear, yellow cheek blush, \":3\" mouth, short round feet"
+}

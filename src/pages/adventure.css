@@ -126,11 +126,22 @@
 .adv-options .adv-character b { font-size: 13px; margin: 0; }
 .adv-options .adv-character small { display: inline; margin: 0 0 0 auto; font-size: 11px; color: var(--adv-muted); }
 .adv-options .adv-character[aria-pressed='true']::after { display: none; }
+/* 下拉顶部的搜索框滚动时一直钉在上面；搜不到时提示，并引导去角色图鉴 */
+.adv-search { position: sticky; top: -6px; z-index: 1; display: flex; align-items: center; gap: 6px; margin: -6px -6px 2px; padding: 8px 12px; border-bottom: 1px solid #ece3d4; background: inherit; color: var(--adv-muted); }
+.adv-search input { flex: 1; min-width: 0; border: 0; outline: none; background: none; color: inherit; font: inherit; font-size: 13px; }
+.adv-search:focus-within { color: var(--adv-ink, #5d4b40); }
+.adv-options .adv-character[hidden] { display: none; }
+.adv-search-empty { margin: 6px 0; font-size: 12px; text-align: center; color: var(--adv-muted); }
+.adv-more { padding: 6px 10px; font-size: 12px; color: var(--adv-muted); text-decoration: none; }
+.adv-more:hover { text-decoration: underline; }
+.adv-original a { color: inherit; }
 /* 游戏内深色面板 */
 .adv-play .adv-picker { max-width: none; }
 .adv-play .adv-picker > summary, .adv-play .adv-options { background: var(--card, #1d2a22); border-color: var(--line, #ffffff26); color: var(--fg); }
 .adv-play .adv-options { position: static; margin-top: 6px; max-height: 168px; box-shadow: none; }
 .adv-play .adv-picker > summary small, .adv-play .adv-options .adv-character small { color: var(--muted); }
+.adv-play .adv-search { border-color: var(--line, #ffffff26); }
+.adv-play .adv-search, .adv-play .adv-search-empty, .adv-play .adv-more { color: var(--muted); }
 .adv-play .dpad i { background: rgba(110, 89, 77, 0.1); border-color: rgba(110, 89, 77, 0.4); box-shadow: none; }
 .adv-play .dpad i::after { background: rgba(110, 89, 77, 0.55); }
 .adv-play .dpad i.on { background: rgba(110, 89, 77, 0.3); }

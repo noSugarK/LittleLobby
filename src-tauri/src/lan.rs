@@ -137,6 +137,8 @@ struct Address {
 
 struct Hub {
     room: String,
+    /// Downloaded characters to serve next to the built-in ones.
+    characters: Option<std::path::PathBuf>,
     key: String,
     host: Mutex<Option<mpsc::Sender<Message>>>,
     peers: Mutex<HashMap<u32, Peer>>,
@@ -155,13 +157,18 @@ async fn wait_for_stop(stop: &mut watch::Receiver<bool>) {
 
 #[tauri::command]
 pub async fn start_lan(
+    app: tauri::AppHandle,
     room: String,
     state: tauri::State<'_, LanServer>,
 ) -> Result<ServerInfo, String> {
-    start_server(room, &state).await
+    start_server(room, &state, crate::characters::dir(&app).ok()).await
 }
 
-async fn start_server(room: String, state: &LanServer) -> Result<ServerInfo, String> {
+async fn start_server(
+    room: String,
+    state: &LanServer,
+    characters: Option<std::path::PathBuf>,
+) -> Result<ServerInfo, String> {
     let mut current = state.0.lock().await;
     if !(4..=8).contains(&room.len())
         || !room
@@ -205,6 +212,7 @@ async fn start_server(room: String, state: &LanServer) -> Result<ServerInfo, Str
     let (stop, _) = watch::channel(false);
     let hub = Arc::new(Hub {
         room,
+        characters,
         key: key.clone(),
         host: Mutex::new(None),
         peers: Mutex::new(HashMap::new()),
@@ -446,7 +454,22 @@ async fn deliver(hub: &Hub, cid: Option<u32>, message: Message, snapshot: bool) 
 async fn asset(State(hub): State<Arc<Hub>>, uri: Uri) -> Response {
     let path = uri.path().trim_start_matches('/');
     let path = if path.is_empty() { "index.html" } else { path };
-    let Some((_, bytes)) = ASSETS.iter().find(|(name, _)| *name == path) else {
+    let embedded = |p: &str| ASSETS.iter().find(|(name, _)| *name == p).map(|(_, b)| *b);
+    let downloaded;
+    let bytes: &[u8] = if path == "characters/index.json" {
+        // Phones see the host's downloaded characters as if they were built in.
+        downloaded = crate::characters::manifest(embedded(path), hub.characters.as_deref());
+        &downloaded
+    } else if let Some(bytes) = embedded(path) {
+        bytes
+    } else if let Some(bytes) = path
+        .strip_prefix("characters/")
+        .and_then(|rest| rest.split_once('/'))
+        .and_then(|(id, file)| crate::characters::read(hub.characters.as_deref()?, id, file))
+    {
+        downloaded = bytes;
+        &downloaded
+    } else {
         return StatusCode::NOT_FOUND.into_response();
     };
     let mime = match path.rsplit('.').next().unwrap_or("") {
@@ -523,7 +546,7 @@ mod tests {
     #[ignore]
     async fn browser_smoke() {
         let state = LanServer::default();
-        let info = start_server("ABCDE".into(), &state).await.unwrap();
+        let info = start_server("ABCDE".into(), &state, None).await.unwrap();
         let target = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("target");
         let json = serde_json::to_string(&info).unwrap();
         std::fs::write(target.join("lan-smoke.json"), &json).unwrap();
@@ -537,10 +560,28 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn serves_downloaded_characters_to_players() {
+        let root = std::env::temp_dir().join(format!("ll-lan-characters-{}", uuid::Uuid::new_v4()));
+        let mut png = b"\x89PNG\r\n\x1a\n\0\0\0\x0dIHDR".to_vec();
+        png.extend_from_slice(&1024u32.to_be_bytes());
+        png.extend_from_slice(&1280u32.to_be_bytes());
+        png.extend_from_slice(&[8, 6, 0, 0, 0]);
+        crate::characters::save(&root, "zz-test", r#"{"id":"zz-test","name":{"zh-CN":"测","en":"Test"}}"#, &png, &png).unwrap();
+        let state = LanServer::default();
+        let info = start_server("ABCDE".into(), &state, Some(root.clone())).await.unwrap();
+        let index = http(info.port, "/characters/index.json").await;
+        assert!(index.starts_with("HTTP/1.1 200") && index.contains("\"zz-test\""));
+        assert!(http(info.port, "/characters/zz-test/atlas.png").await.starts_with("HTTP/1.1 200"));
+        assert!(http(info.port, "/characters/zz-test/../../secret").await.starts_with("HTTP/1.1 404"));
+        state.shutdown().await;
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[tokio::test]
     async fn serves_offline_assets_routes_messages_and_stops_with_host() {
         let state = LanServer::default();
-        assert!(start_server("../../bad".into(), &state).await.is_err());
-        let info = start_server("ABCDE".into(), &state).await.unwrap();
+        assert!(start_server("../../bad".into(), &state, None).await.is_err());
+        let info = start_server("ABCDE".into(), &state, None).await.unwrap();
         let page = http(info.port, "/").await;
         assert!(page.starts_with("HTTP/1.1 200"));
         assert!(page.contains("window.__LITTLE_LOBBY_LAN__={\"room\":\"ABCDE\"}"));
@@ -715,7 +756,8 @@ mod tests {
         let (stop, _) = watch::channel(false);
         let (tx, _rx) = mpsc::channel(1);
         let hub = Arc::new(Hub {
-            room: "ABCDE".into(), key: "secret".into(), host: Mutex::new(Some(tx)),
+            room: "ABCDE".into(),
+            characters: None, key: "secret".into(), host: Mutex::new(Some(tx)),
             peers: Mutex::new(HashMap::new()), next: AtomicU32::new(1), stop: stop.clone(),
         });
         let responder = tokio::spawn(respond_to_discovery(socket, hub, 12345));
@@ -733,7 +775,7 @@ mod tests {
     #[tokio::test]
     async fn local_round_trip_with_snapshots() {
         let state = LanServer::default();
-        let info = start_server("ABCDE".into(), &state).await.unwrap();
+        let info = start_server("ABCDE".into(), &state, None).await.unwrap();
         let host_url = format!("ws://127.0.0.1:{}/host?key={}", info.port, info.key);
         let player_url = format!("ws://127.0.0.1:{}/ws?room=ABCDE", info.port);
         let (mut host, _) = connect_async_with_config(host_url, None, true).await.unwrap();
@@ -772,7 +814,8 @@ mod tests {
         let (snapshot, mut latest) = watch::channel(None);
         let (stop, _) = watch::channel(false);
         let hub = Hub {
-            room: "ABCDE".into(), key: "test".into(), host: Mutex::new(None),
+            room: "ABCDE".into(),
+            characters: None, key: "test".into(), host: Mutex::new(None),
             peers: Mutex::new(HashMap::from([(1, Peer { control, snapshot })])),
             next: AtomicU32::new(2), stop,
         };

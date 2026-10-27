@@ -107,7 +107,8 @@ npm run app:build  # build installers for the current platform
 | --- | --- |
 | `src/` | Pages, game logic and networking (`game/`, `net/`, `ui/` components, `pages/`) |
 | `src-tauri/` | Native app, LAN server and platform configuration |
-| `public/` | Brand icons, home page art, character sprite atlases |
+| `public/` | Brand icons and home page art |
+| `public/characters/` | Characters: one folder each (multilingual text + sprite atlases); see its README for the spec and generation prompts |
 | `tests/` | Regression tests (`node --test`) |
 | `.github/workflows/` | Website deployment and installer builds |
 | `.github/scripts/` | Release entry point, plus Android project and signing scripts |

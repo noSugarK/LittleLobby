@@ -74,7 +74,7 @@ export class AdventureHost {
     this.net = factory?.(room, cb) ?? null;
     if (this.net?.signal) this.net.signal.onStatus = (ok) => this.onStatus(ok);
   }
-  addLocal(name: string, skin = 0) {
+  addLocal(name: string, skin?: string) {
     if (this.localId !== undefined) return;
     const id = this.nextId++;
     if (this.game.add(id, name, skin)) this.localId = id;

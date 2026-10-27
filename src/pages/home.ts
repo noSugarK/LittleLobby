@@ -33,20 +33,20 @@ function drawModeArt(canvas: HTMLCanvasElement, mode: ModeId) {
   canvas.width = 320; canvas.height = 200;
   ctx.scale(2, 2);
   if (mode === 'rope') {
-    drawBuddyImage(ctx, 50, 92, 0, 'run', 0.2, 1);
-    drawBuddyImage(ctx, 110, 92, 1, 'run', 0.5, 1);
+    drawBuddyImage(ctx, 50, 92, 'yier', 'run', 0.2, 1);
+    drawBuddyImage(ctx, 110, 92, 'bubu', 'run', 0.5, 1);
     ctx.lineCap = 'round';
     const rope = () => { ctx.beginPath(); ctx.moveTo(58, 70); ctx.quadraticCurveTo(80, 92, 102, 70); };
     ctx.lineWidth = 5; ctx.strokeStyle = '#e4686c'; rope(); ctx.stroke();
     ctx.lineWidth = 2.5; ctx.setLineDash([5, 6]); ctx.strokeStyle = '#fff6ea'; rope(); ctx.stroke();
   } else if (mode === 'eat') {
-    drawBuddyImage(ctx, 80, 94, 3, 'idle', 0, 1, true);
+    drawBuddyImage(ctx, 80, 94, 'jinmao', 'idle', 0, 1, true);
   } else {
     // 三层摞起来比卡片高，缩小一点整组放进去
     ctx.translate(80, 98); ctx.scale(0.62, 0.62);
-    drawBuddyImage(ctx, 0, 0, 1, 'idle', 0, 1);
-    drawBuddyImage(ctx, 0, -40, 2, 'idle', 0.3, 1);
-    drawBuddyImage(ctx, 0, -80, 0, 'idle', 0.6, 1);
+    drawBuddyImage(ctx, 0, 0, 'bubu', 'idle', 0, 1);
+    drawBuddyImage(ctx, 0, -40, 'xiaobai', 'idle', 0.3, 1);
+    drawBuddyImage(ctx, 0, -80, 'yier', 'idle', 0.6, 1);
   }
 }
 
@@ -55,6 +55,7 @@ function drawModeArt(canvas: HTMLCanvasElement, mode: ModeId) {
 function bindCast(app: HTMLElement) {
   const cast = app.querySelector<HTMLElement>('.lh-cast');
   if (!cast) return;
+  cast.innerHTML = CHARACTERS.map((c) => `<span class="lh-buddy" data-cast="${c.id}"><canvas width="112" height="112"></canvas></span>`).join('');
   const buddies = [...cast.querySelectorAll<HTMLElement>('.lh-buddy')];
   const size = () => buddies[0].offsetWidth || 104;
   const gap = () => size() * 1.9; // 队伍里前后两个角色的间距
@@ -78,7 +79,7 @@ function bindCast(app: HTMLElement) {
   });
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const start = Math.max(0, (cast.clientWidth - gap() * (buddies.length - 1) - size()) / 2);
-    buddies.forEach((buddy, i) => { place(buddy, start + i * gap()); drawBuddyAvatar(buddy.querySelector('canvas')!, i); });
+    buddies.forEach((buddy, i) => { place(buddy, start + i * gap()); drawBuddyAvatar(buddy.querySelector('canvas')!, CHARACTERS[i].id); });
     return;
   }
   let last = now(), lastDraw = 0;
@@ -102,7 +103,7 @@ function bindCast(app: HTMLElement) {
     // 精灵帧约 12 帧每秒就够看，省电
     if (time - lastDraw > 80) {
       lastDraw = time;
-      buddies.forEach((buddy, i) => drawBuddyAvatar(buddy.querySelector('canvas')!, i, state[i].action, (time - state[i].since) / 1000, 1));
+      buddies.forEach((buddy, i) => drawBuddyAvatar(buddy.querySelector('canvas')!, CHARACTERS[i].id, state[i].action, (time - state[i].since) / 1000, 1));
     }
     requestAnimationFrame(draw);
   };
@@ -122,7 +123,7 @@ export function mountHome(app: HTMLElement) {
   const showHost = !isLanPage();
   const showLobby = !isLanPage();
   const gameArt = (id: GameId) => id === 'football' ? pitchArt
-    : `<span class="lh-buddies" aria-hidden="true"><canvas data-buddy="0" width="112" height="112"></canvas><canvas data-buddy="1" width="112" height="112"></canvas></span>`;
+    : `<span class="lh-buddies" aria-hidden="true"><canvas data-buddy="yier" width="112" height="112"></canvas><canvas data-buddy="bubu" width="112" height="112"></canvas></span>`;
 
   app.innerHTML = `
   <div class="site home${native || isLanPage() ? ' app-home' : ''}">
@@ -138,7 +139,7 @@ export function mountHome(app: HTMLElement) {
       ${native ? `<div class="network-mode seg lh-network" role="group" aria-label="${t('lan.mode')}"><button data-network="online" class="${lan ? '' : 'on'}">${t('lan.online')}</button><button data-network="lan" class="${lan ? 'on' : ''}">${t('lan.local')}</button></div>` : ''}
       ${lan ? `<p class="lh-note">${t('lan.hint')}</p>` : ''}
 
-      <div class="lh-cast" aria-hidden="true">${CHARACTERS.map((_, i) => `<span class="lh-buddy" data-cast="${i}"><canvas data-buddy="${i}" width="112" height="112"></canvas></span>`).join('')}</div>
+      <div class="lh-cast" aria-hidden="true"></div>
       <div class="lh-actions${showJoin && showHost ? '' : ' is-single'}">
         ${showJoin ? `<section class="lh-panel lh-join" aria-labelledby="lh-join-title">
           <h2 id="lh-join-title">${t('home.joinTitle')}</h2>
@@ -216,6 +217,7 @@ export function mountHome(app: HTMLElement) {
 
       <section class="lh-section lh-guide-wrap">
         <a class="lh-guide" href="#/guide">${icon.book}<span>${t('guide.cta')}</span>${icon.right}</a>
+        <a class="lh-guide" href="#/characters">${icon.users}<span>${t('chars.cta')}</span>${icon.right}</a>
       </section>
     </main>
     ${siteFooter()}
@@ -225,7 +227,7 @@ export function mountHome(app: HTMLElement) {
   bindSiteTools(app);
   void loadCharacterSprites().then(() => {
     if (!app.querySelector('.home')) return;
-    app.querySelectorAll<HTMLCanvasElement>('[data-buddy]').forEach((canvas) => drawBuddyAvatar(canvas, Number(canvas.dataset.buddy)));
+    app.querySelectorAll<HTMLCanvasElement>('[data-buddy]').forEach((canvas) => drawBuddyAvatar(canvas, canvas.dataset.buddy!));
     app.querySelectorAll<HTMLCanvasElement>('[data-mode-art]').forEach((canvas) => drawModeArt(canvas, canvas.dataset.modeArt as ModeId));
     bindCast(app);
   }).catch(() => { /* Decorative characters do not block joining a room. */ });

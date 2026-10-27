@@ -1,0 +1,25 @@
+{
+  "id": "jinmao",
+  "accent": "#f0c46f",
+  "name": {
+    "zh-CN": "小金毛",
+    "zh-TW": "小金毛",
+    "en": "Jinmao"
+  },
+  "subtitle": {
+    "zh-CN": "金色线条小狗 · 红色小项圈",
+    "zh-TW": "金色線條小狗 · 紅色小項圈",
+    "en": "Golden line puppy · red collar"
+  },
+  "description": {
+    "zh-CN": "金黄色的线条小狗，耷拉着大耳朵，戴着红色小项圈，热情又黏人。",
+    "zh-TW": "金黃色的線條小狗，耷拉著大耳朵，戴著紅色小項圈，熱情又黏人。",
+    "en": "A golden line-drawn puppy with big floppy ears and a red collar. Warm-hearted and clingy."
+  },
+  "origin": {
+    "zh-CN": "「线条小狗」",
+    "zh-TW": "「線條小狗」",
+    "en": "Line Puppy"
+  },
+  "look": "golden-yellow line-art puppy, long floppy ears, dot eyes, happy \"w\" mouth, red collar"
+}

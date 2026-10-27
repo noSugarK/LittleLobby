@@ -1,0 +1,25 @@
+{
+  "id": "baobao",
+  "accent": "#eadcc4",
+  "name": {
+    "zh-CN": "包包",
+    "zh-TW": "包包",
+    "en": "Baobao"
+  },
+  "subtitle": {
+    "zh-CN": "白白小包子 · 褶褶头顶",
+    "zh-TW": "白白小包子 · 褶褶頭頂",
+    "en": "Steamed bun · pleated top"
+  },
+  "description": {
+    "zh-CN": "刚出笼的小包子，头顶一圈褶褶，软软糯糯，走路会轻轻弹一下。",
+    "zh-TW": "剛出籠的小包子，頭頂一圈褶褶，軟軟糯糯，走路會輕輕彈一下。",
+    "en": "A freshly steamed bun with a pleated top. Soft and squishy, it bounces a little with every step."
+  },
+  "origin": {
+    "zh-CN": "原创",
+    "zh-TW": "原創",
+    "en": "Original"
+  },
+  "look": "living steamed bun (baozi): soft warm-white round squashy body, pleated twist on top of the head, round glossy black dot eyes with white highlight set far apart, tiny happy smile, faint pink blush, tiny stubby arms and legs"
+}

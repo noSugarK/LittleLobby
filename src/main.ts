@@ -69,6 +69,7 @@ async function route() {
   if (page === 'screen') mountScreen(app);
   else if (page === 'host') mountPlay(app, { kind: 'host' });
   else if (page === 'guide') mountGuide(app);
+  else if (page === 'characters') { const { mountCharacters } = await import('./pages/characters'); await mountCharacters(app); }
   else if (page === 'join' && arg) {
     const q = new URLSearchParams(query);
     let server: string | undefined;

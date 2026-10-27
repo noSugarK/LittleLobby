@@ -1,0 +1,25 @@
+{
+  "id": "doudou",
+  "accent": "#a9cf6a",
+  "name": {
+    "zh-CN": "豆豆",
+    "zh-TW": "豆豆",
+    "en": "Doudou"
+  },
+  "subtitle": {
+    "zh-CN": "绿色小豆芽 · 两片叶子",
+    "zh-TW": "綠色小豆芽 · 兩片葉子",
+    "en": "Bean sprout · two little leaves"
+  },
+  "description": {
+    "zh-CN": "一颗刚发芽的小绿豆，头顶两片嫩叶，自信满满，觉得自己哪天能长成大树。",
+    "zh-TW": "一顆剛發芽的小綠豆，頭頂兩片嫩葉，自信滿滿，覺得自己哪天能長成大樹。",
+    "en": "A freshly sprouted green bean with two tender leaves on top. Full of confidence that it will grow into a big tree one day."
+  },
+  "origin": {
+    "zh-CN": "原创",
+    "zh-TW": "原創",
+    "en": "Original"
+  },
+  "look": "little green bean-sprout spirit: soft pea-green kidney-bean body standing upright, one small two-leaf sprout on top of the head, round black eyes with white highlight, tiny confident smirk, short arms and legs with darker green hands and feet"
+}
