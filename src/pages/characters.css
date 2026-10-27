@@ -25,6 +25,7 @@
 .ch-desc { flex: 1; margin: 10px 0 14px; font-size: 14px; line-height: 1.6; color: var(--h-mu); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .ch-foot { display: flex; align-items: center; gap: 10px; min-height: 40px; }
 .ch-pill { display: inline-flex; align-items: center; min-height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--h-line); color: var(--h-brand); font-size: 13px; font-weight: 750; }
+.ch-pill .ico { width: 15px; height: 15px; margin-right: 4px; }
 .ch-pill.is-done { border-color: color-mix(in srgb, var(--h-turf) 60%, transparent); color: var(--h-turf); }
 .home .ch-remove { margin-left: auto; padding: 4px 0; border: 0; background: none; color: var(--h-mu); font-size: 13px; text-decoration: underline; cursor: pointer; }
 .home .ch-get { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 40px; border: 0; border-radius: 12px; background: var(--h-ac); color: var(--h-acfg); font-size: 15px; font-weight: 750; cursor: pointer; transition: background-color .15s; }

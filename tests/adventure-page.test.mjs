@@ -56,7 +56,7 @@ test('手柄输入驱动主机：键盘斜向也能边走边跳，换装不打�
   try {
     const { mountAdventure } = await import('../src/pages/adventure.ts');
     const { CHARACTERS } = await import('../src/game/characters.ts');
-    CHARACTERS.push(...['yier', 'jinmao'].map((id) => ({ id, name: id, accent: '#f5a8b8', subtitle: 'a · b', description: '', origin: '', look: '' })));
+    CHARACTERS.push(...['yier', 'jinmao'].map((id) => ({ id, name: id, accent: '#f5a8b8', subtitle: 'a · b', description: '', origin: '', look: '', search: id })));
     const app = new Element();
     const skins = ['yier', 'jinmao'].map((skin) => { const b = new Element(); b.dataset.skin = skin; return b; });
     app.children.set('all:[data-skin]', skins);

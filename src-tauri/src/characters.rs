@@ -9,6 +9,9 @@ use tauri::{ipc::Response, AppHandle, Manager};
 const FILES: [&str; 3] = ["character.json", "atlas.png", "full-atlas.png"];
 const PNG: &[u8] = b"\x89PNG\r\n\x1a\n";
 
+/// Text fields in character.json, each `{ "zh-CN", "zh-TW"?, "en" }` (see public/characters/README.md).
+const TEXT_FIELDS: [&str; 4] = ["name", "subtitle", "description", "origin"];
+
 pub fn valid_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= 32
@@ -59,6 +62,19 @@ pub fn manifest(builtin: Option<&[u8]>, root: Option<&Path>) -> Vec<u8> {
     serde_json::to_vec(&value).unwrap_or_default()
 }
 
+/// Same rules as `parseCharacter` in src/game/characters.ts, so nothing malformed reaches LAN players.
+fn meta_ok(meta: &Value, id: &str) -> bool {
+    let text_ok = |v: &Value| {
+        v["zh-CN"].as_str().is_some_and(|s| !s.is_empty())
+            && v["en"].as_str().is_some_and(|s| !s.is_empty())
+            && (v["zh-TW"].is_null() || v["zh-TW"].is_string())
+    };
+    let accent_ok = meta["accent"].as_str().is_some_and(|a| {
+        a.len() == 7 && a.starts_with('#') && a[1..].bytes().all(|b| b.is_ascii_hexdigit())
+    });
+    meta["id"].as_str() == Some(id) && accent_ok && TEXT_FIELDS.iter().all(|f| text_ok(&meta[*f]))
+}
+
 fn atlas_ok(png: &[u8]) -> bool {
     // IHDR width and height follow the signature, length and chunk type.
     png.len() > 24
@@ -72,11 +88,8 @@ pub fn save(root: &Path, id: &str, meta: &str, atlas: &[u8], full: &[u8]) -> Res
         return Err("Invalid character id".into());
     }
     let parsed: Value = serde_json::from_str(meta).map_err(|e| e.to_string())?;
-    if parsed["id"].as_str() != Some(id)
-        || !parsed["name"]["zh-CN"].is_string()
-        || !parsed["name"]["en"].is_string()
-    {
-        return Err("character.json does not match this character".into());
+    if !meta_ok(&parsed, id) {
+        return Err("character.json does not follow the character spec".into());
     }
     if !atlas_ok(atlas) || !atlas_ok(full) {
         return Err("Character atlases must be 1024x1280 PNG files".into());
@@ -131,24 +144,55 @@ pub fn delete_character(app: AppHandle, id: String) -> Result<(), String> {
     delete(&dir(&app)?, &id)
 }
 
+/// A minimal valid atlas header for tests (shared with the LAN server tests).
+#[cfg(test)]
+pub fn test_atlas() -> Vec<u8> {
+    let mut png = PNG.to_vec();
+    png.extend_from_slice(&[0, 0, 0, 13]);
+    png.extend_from_slice(b"IHDR");
+    png.extend_from_slice(&1024u32.to_be_bytes());
+    png.extend_from_slice(&1280u32.to_be_bytes());
+    png.extend_from_slice(&[8, 6, 0, 0, 0]);
+    png
+}
+
+/// A character.json that follows the spec, for tests.
+#[cfg(test)]
+pub fn test_meta(id: &str) -> String {
+    let text = r#"{"zh-CN":"测试","en":"Test"}"#;
+    format!(r##"{{"id":"{id}","accent":"#f7cf4f","name":{text},"subtitle":{text},"description":{text},"origin":{text}}}"##)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     fn atlas() -> Vec<u8> {
-        let mut png = PNG.to_vec();
-        png.extend_from_slice(&[0, 0, 0, 13]);
-        png.extend_from_slice(b"IHDR");
-        png.extend_from_slice(&1024u32.to_be_bytes());
-        png.extend_from_slice(&1280u32.to_be_bytes());
-        png.extend_from_slice(&[8, 6, 0, 0, 0]);
-        png
+        test_atlas()
+    }
+
+    #[test]
+    fn rejects_character_json_that_breaks_the_spec() {
+        let ok: Value = serde_json::from_str(&test_meta("nailong")).unwrap();
+        assert!(meta_ok(&ok, "nailong"));
+        for (field, bad) in [
+            ("accent", serde_json::json!("red")),
+            ("subtitle", serde_json::json!("只有中文")),
+            ("description", serde_json::json!({ "zh-CN": "中文" })),
+            ("origin", serde_json::json!({ "zh-CN": "中文", "en": "" })),
+            ("name", serde_json::json!({ "zh-CN": "中文", "en": "En", "zh-TW": 1 })),
+        ] {
+            let mut meta = ok.clone();
+            meta[field] = bad;
+            assert!(!meta_ok(&meta, "nailong"), "{field} should be rejected");
+        }
+        assert!(!meta_ok(&ok, "naiwa"), "id must match the folder");
     }
 
     #[test]
     fn saves_lists_serves_and_deletes_downloaded_characters() {
         let root = std::env::temp_dir().join(format!("ll-characters-{}", uuid::Uuid::new_v4()));
-        let meta = r##"{"id":"nailong","name":{"zh-CN":"奶龙","en":"Nailong"},"accent":"#f7cf4f"}"##;
+        let meta = &test_meta("nailong");
         assert!(save(&root, "../x", meta, &atlas(), &atlas()).is_err());
         assert!(save(&root, "nailong", meta, b"not a png", &atlas()).is_err());
         assert!(save(&root, "naiwa", meta, &atlas(), &atlas()).is_err(), "id must match");

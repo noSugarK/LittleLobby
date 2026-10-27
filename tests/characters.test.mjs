@@ -46,7 +46,7 @@ globalThis.__TAURI__ = { core: { invoke: async (command, args) => {
 } } };
 
 const characters = await import('../src/game/characters.ts');
-const { CHARACTERS, loadCharacters, reloadCharacters, loadCatalog, downloadCharacter, removeCharacter, characterUrl, characterMatches, characterOf, legacySkin, validSkin } = characters;
+const { CHARACTERS, loadCharacters, reloadCharacters, loadCatalog, downloadCharacter, removeCharacter, characterUrl, characterMatches, characterOf, legacySkin, validSkin, isRemote } = characters;
 
 test('旧版本按序号存的角色换成 id；角色 id 只允许小写字母、数字和连字符', () => {
   assert.equal(legacySkin('2'), 'xiaobai');
@@ -85,6 +85,7 @@ test('应用联网模式直接用线上的完整角色，不需要下载', async
   assert.deepEqual(CHARACTERS.map((c) => c.id), fullManifest.characters);
   assert.equal(characterUrl('lulu', 'atlas.png'), 'https://nosugark.github.io/LittleLobby/characters/lulu/atlas.png');
   assert.equal(characterUrl('yier', 'atlas.png'), '/LittleLobby/characters/yier/atlas.png', '内置角色仍然读本地');
+  assert.ok(isRemote('lulu') && !isRemote('yier'), '图鉴据此把没下载的角色显示成「联网可直接用」');
   assert.ok(!disk.size);
   assert.equal((await loadCharacters()).length, fullManifest.characters.length);
 });

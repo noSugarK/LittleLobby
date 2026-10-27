@@ -1,7 +1,7 @@
 import './adventure.css';
-import { AdventureGame, CHARACTERS, DEFAULT_SKIN, LEVELS, MAP_THEMES, MODES, modeInfo, modeLevels, padInput, validMode, validSkin, type AdventureInput, type AdventureView, type ModeId } from '../game/adventure';
+import { AdventureGame, LEVELS, MAP_THEMES, MODES, modeInfo, modeLevels, padInput, validMode, type AdventureInput, type AdventureView, type ModeId } from '../game/adventure';
 import { AdventureRenderer, drawAvatar, loadCharacterSprites } from '../game/adventure-render';
-import { characterMatches, characterOf, legacySkin } from '../game/characters';
+import { CHARACTERS, DEFAULT_SKIN, characterMatches, characterOf, legacySkin, validSkin, type SkinId } from '../game/characters';
 import { AdventureHost } from '../net/adventure-host';
 import { ClientNet } from '../net/client';
 import { HostNet } from '../net/host';
@@ -9,7 +9,7 @@ import { LanClient } from '../net/lan-client';
 import { LanHost } from '../net/lan-host';
 import { isLanPage, isNativeApp, lanBaseUrl, lanSession, startLan, stopLan } from '../net/lan-session';
 import { bindLanAddress, lanInfoHtml } from '../ui/lan-room';
-import { canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, store, vibrate } from '../ui/util';
+import { canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, showMatching, store, vibrate } from '../ui/util';
 import { Gamepad } from '../ui/gamepad';
 import { bindControlsPane, controlsPaneHtml } from '../ui/controls-pane';
 import { bindDrawer } from '../ui/drawer';
@@ -33,17 +33,13 @@ const choices = () => `<details class="adv-picker"><summary aria-label="选择�
 async function avatars(root: HTMLElement) {
   await loadCharacterSprites();
   root.querySelectorAll<HTMLElement>('.adv-options').forEach((options) => {
-    options.innerHTML = `<label class="adv-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="搜索小伙伴" aria-label="搜索角色名字或特点" autocomplete="off"></label>${CHARACTERS.map((c) => `<button class="adv-character" data-skin="${c.id}" aria-pressed="false" aria-label="选择${esc(c.name)}，${esc(c.subtitle)}"><canvas aria-hidden="true"></canvas><b>${esc(c.name)}</b><small>${esc(c.subtitle.split(' · ')[1] || c.subtitle)}</small></button>`).join('')}<p class="adv-search-empty" hidden>没有找到这个小伙伴</p><a class="adv-more" href="#/characters">${isLanPage() ? '看看所有角色 →' : '没找到？去角色图鉴看看更多 →'}</a>`;
+    options.innerHTML = `<label class="adv-search">${icon.search}<input type="search" placeholder="${t('chars.pick')}" aria-label="${t('chars.search')}" autocomplete="off"></label>${CHARACTERS.map((c) => `<button class="adv-character" data-skin="${c.id}" aria-pressed="false" aria-label="选择${esc(c.name)}，${esc(c.subtitle)}"><canvas aria-hidden="true"></canvas><b>${esc(c.name)}</b><small>${esc(c.subtitle.split(' · ')[1] || c.subtitle)}</small></button>`).join('')}<p class="adv-search-empty" hidden>${t('chars.empty')}</p><a class="adv-more" href="#/characters">${t(isLanPage() ? 'chars.pickAll' : 'chars.pickMore')} →</a>`;
     const input = options.querySelector('input')!;
-    input.oninput = () => {
-      let shown = 0;
-      options.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => { button.hidden = !characterMatches(characterOf(button.dataset.skin!), input.value); if (!button.hidden) shown++; });
-      options.querySelector<HTMLElement>('.adv-search-empty')!.hidden = shown > 0;
-    };
+    input.oninput = () => showMatching(options.querySelectorAll<HTMLElement>('[data-skin]'), (button) => characterMatches(characterOf(button.dataset.skin!), input.value), options.querySelector<HTMLElement>('.adv-search-empty'));
   });
   root.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => drawAvatar(button.querySelector('canvas')!, button.dataset.skin!));
 }
-function selected(root: HTMLElement, skin: string) {
+function selected(root: HTMLElement, skin: SkinId) {
   const c = characterOf(skin);
   root.style.setProperty('--adv-accent', c.accent);
   root.querySelectorAll<HTMLElement>('[data-skin]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.skin === c.id)));
@@ -65,9 +61,10 @@ export async function mountAdventureMenu(app: HTMLElement) {
   const renderer = new AdventureRenderer(app.querySelector('canvas.adv-preview-canvas')!);
   const preview = new AdventureGame(); preview.add(1, characterOf(skin).name, skin);
   const update = () => {
+    const { name } = characterOf(skin);
     selected(app.querySelector('.adventure')!, skin);
-    app.querySelector('.adv-theme-label')!.textContent = `${characterOf(skin).name} · 地图由房主选择`;
-    preview.skin(1, skin); preview.players.get(1)!.name = characterOf(skin).name;
+    app.querySelector('.adv-theme-label')!.textContent = `${name} · 地图由房主选择`;
+    preview.skin(1, skin); preview.players.get(1)!.name = name;
   };
   update();
   app.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => { button.onclick = () => { skin = button.dataset.skin!; store.set('adventure.skin', skin); update(); }; });

@@ -1,6 +1,6 @@
 # Design
 
-Scope: the home page (`src/pages/home.ts`, `src/pages/home.css`). Game pages keep their own fullscreen language (`src/style.css`, `.play`).
+Scope: the home page (`src/pages/home.ts`, `src/pages/home.css`) and the characters page, which reuses it (`src/pages/characters.ts`, `src/pages/characters.css`). Game pages keep their own fullscreen language (`src/style.css`, `.play`).
 
 ## Direction
 
@@ -35,8 +35,18 @@ System CJK sans (PingFang SC → Hiragino Sans GB → Microsoft YaHei → Noto S
 - **Lobby**: full-width table on a panel, hover tint in accent-soft. With no rooms (or while loading) the whole section collapses to one panel row: title, status pill, "开个公开房间 →" (ticks 公开大厅, opens 房间设置, focuses 大屏开房).
 - **Games**: two equal cards (text, players pill, links on top; illustration `public/home/<game>.webp` at 3:2 below), then a row of three co-op mode cards (rope / eat / stack) whose art is drawn from the game's own sprite frames.
 - **Offline download**: brand-teal band like the join panel; four cream buttons (Windows / macOS / Linux / Android) that point at the latest GitHub release's installers, falling back to the releases page; note line shows the version or "安装包即将发布". Hidden in the native app and LAN page. Art `public/home/offline.webp`.
-- **Hero**: one-line headline with the subline under it; the four characters stand in the same row on the host panel's top edge.
-- **Cast (interactive)**: idle frames play (blink/breathe); characters lean toward the mouse, run in place facing the cursor on hover, and jump with a name + heart bubble on click or tap. All motion is off under reduced motion.
+- **Hero**: one-line headline (wraps only on phones) with the subline under it. The cast strip takes no layout space: it overlays the headline area and the characters' feet overlap the top edge of the join and host panels.
+- **Cast (parade)**: every available character walks in one full-width row, entering at the left screen edge and leaving at the right, about two character widths apart, looping forever. At the screen centre each one turns to face you, jumps, and shows its name bubble, then walks on. Clicking or tapping a character makes it jump too. Under reduced motion the row stands still, evenly spaced.
+- **Guide links**: full-width soft-accent rows under the games, one for the tutorial and one for the characters page.
+
+## Characters page (`#/characters`)
+
+Same tokens, header and footer as the home page; the header adds a `›` crumb with the page title next to the wordmark.
+
+- **Toolbar**: search field (searches every language of name, trait and origin) and, in the native app, a segmented filter 全部 / 已拥有 / 可下载 with counts.
+- **Cards**: auto-fill grid (5 across on desktop, 2 on phones). Each card has the idle sprite on a soft radial glow in the character's `accent`, name, muted origin, description clamped to three lines, and a status footer.
+- **Status footer**: web and LAN pages show "可直接使用". The native app shows 内置 (outline pill), 已下载 with a check icon plus a 移除 text link, "联网可直接用" plus a 下载离线用 text link in online mode, or a coral 下载 button that turns into a thin coral progress bar while downloading.
+- **Entry points**: the home guide row, the adventure page's "打开角色图鉴" line, and the link at the bottom of every character picker.
 
 ## Rules
 

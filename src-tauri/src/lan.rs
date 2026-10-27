@@ -562,11 +562,8 @@ mod tests {
     #[tokio::test]
     async fn serves_downloaded_characters_to_players() {
         let root = std::env::temp_dir().join(format!("ll-lan-characters-{}", uuid::Uuid::new_v4()));
-        let mut png = b"\x89PNG\r\n\x1a\n\0\0\0\x0dIHDR".to_vec();
-        png.extend_from_slice(&1024u32.to_be_bytes());
-        png.extend_from_slice(&1280u32.to_be_bytes());
-        png.extend_from_slice(&[8, 6, 0, 0, 0]);
-        crate::characters::save(&root, "zz-test", r#"{"id":"zz-test","name":{"zh-CN":"测","en":"Test"}}"#, &png, &png).unwrap();
+        let png = crate::characters::test_atlas();
+        crate::characters::save(&root, "zz-test", &crate::characters::test_meta("zz-test"), &png, &png).unwrap();
         let state = LanServer::default();
         let info = start_server("ABCDE".into(), &state, Some(root.clone())).await.unwrap();
         let index = http(info.port, "/characters/index.json").await;
@@ -756,8 +753,7 @@ mod tests {
         let (stop, _) = watch::channel(false);
         let (tx, _rx) = mpsc::channel(1);
         let hub = Arc::new(Hub {
-            room: "ABCDE".into(),
-            characters: None, key: "secret".into(), host: Mutex::new(Some(tx)),
+            room: "ABCDE".into(), characters: None, key: "secret".into(), host: Mutex::new(Some(tx)),
             peers: Mutex::new(HashMap::new()), next: AtomicU32::new(1), stop: stop.clone(),
         });
         let responder = tokio::spawn(respond_to_discovery(socket, hub, 12345));
@@ -814,8 +810,7 @@ mod tests {
         let (snapshot, mut latest) = watch::channel(None);
         let (stop, _) = watch::channel(false);
         let hub = Hub {
-            room: "ABCDE".into(),
-            characters: None, key: "test".into(), host: Mutex::new(None),
+            room: "ABCDE".into(), characters: None, key: "test".into(), host: Mutex::new(None),
             peers: Mutex::new(HashMap::from([(1, Peer { control, snapshot })])),
             next: AtomicU32::new(2), stop,
         };

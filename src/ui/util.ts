@@ -172,6 +172,14 @@ export function joinUrl({ room, pin }: RoomRef) {
 /** public/brand 下的品牌素材地址（兼容 GitHub Pages 子路径） */
 export const brand = (file: string) => `${import.meta.env.BASE_URL}brand/${file}`;
 
+/** 列表筛选：keep 为真的项显示，其余隐藏；一项都没有时显示 empty。返回显示的数量。 */
+export function showMatching(items: Iterable<HTMLElement>, keep: (el: HTMLElement) => boolean, empty?: HTMLElement | null) {
+  let shown = 0;
+  for (const el of items) { el.hidden = !keep(el); if (!el.hidden) shown++; }
+  if (empty) empty.hidden = shown > 0;
+  return shown;
+}
+
 export function esc(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }

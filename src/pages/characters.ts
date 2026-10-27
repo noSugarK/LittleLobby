@@ -1,7 +1,7 @@
 import { t } from '../i18n';
 import { bindSiteTools, icon, siteFooter, siteTools } from '../ui/site';
-import { brand, esc } from '../ui/util';
-import { canDownload, characterMatches, downloadCharacter, downloadedCharacters, loadCatalog, removeCharacter, type Character } from '../game/characters';
+import { brand, esc, showMatching } from '../ui/util';
+import { canDownload, characterMatches, downloadCharacter, downloadedCharacters, isRemote, loadCatalog, removeCharacter, type Character } from '../game/characters';
 import { drawBuddyAvatar, loadCharacterSprites, loadSheet } from '../game/adventure-sprites';
 import './home.css';
 import './characters.css';
@@ -25,7 +25,7 @@ export async function mountCharacters(app: HTMLElement) {
       <section class="ch-intro">
         <div><h1 class="lh-title">${t('chars.title')}</h1><p class="lh-lede">${t(download ? 'chars.desc' : 'chars.descWeb')}</p></div>
         <div class="ch-tools">
-          <label class="ch-search"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input type="search" placeholder="${t('chars.search')}" aria-label="${t('chars.search')}" autocomplete="off"></label>
+          <label class="ch-search">${icon.search}<input type="search" placeholder="${t('chars.search')}" aria-label="${t('chars.search')}" autocomplete="off"></label>
           ${download ? `<div class="ch-filter" role="radiogroup" aria-label="${t('chars.title')}">${(['all', 'owned', 'more'] as Filter[]).map((f) => `<button type="button" role="radio" data-filter="${f}" aria-checked="${f === 'all'}">${t(`chars.${f}`)} <b></b></button>`).join('')}</div>` : ''}
         </div>
       </section>
@@ -43,11 +43,13 @@ export async function mountCharacters(app: HTMLElement) {
   $('.ch-note').hidden = catalog.online || !download;
   let owned = new Set([...catalog.builtin, ...downloaded]);
   let filter: Filter = 'all';
-  const isOwned = (c: Character) => !download || owned.has(c.id);
+  // 联网模式下没下载的角色也能直接用，算「已拥有」；还可以下载下来留着离线 / 局域网用
+  const isOwned = (c: Character) => !download || owned.has(c.id) || isRemote(c.id);
 
   const status = (c: Character) => !download ? `<span class="ch-pill">${t('chars.ready')}</span>`
     : catalog.builtin.includes(c.id) ? `<span class="ch-pill">${t('chars.builtin')}</span>`
-    : owned.has(c.id) ? `<span class="ch-pill is-done">${t('chars.downloaded')} ✓</span><button type="button" class="ch-remove" data-remove="${c.id}">${t('chars.remove')}</button>`
+    : owned.has(c.id) ? `<span class="ch-pill is-done">${icon.check}${t('chars.downloaded')}</span><button type="button" class="ch-remove" data-remove="${c.id}">${t('chars.remove')}</button>`
+    : isRemote(c.id) ? `<span class="ch-pill">${t('chars.online')}</span><button type="button" class="ch-remove" data-get="${c.id}">${t('chars.keep')}</button>`
     : `<button type="button" class="ch-get" data-get="${c.id}">${icon.download}${t('chars.download')}</button>`;
   const card = (c: Character) => `<article class="ch-card" data-id="${c.id}" style="--ch-accent:${c.accent}">
       <div class="ch-art"><canvas width="112" height="112" aria-hidden="true"></canvas></div>
@@ -65,13 +67,10 @@ export async function mountCharacters(app: HTMLElement) {
   }
 
   const apply = () => {
-    let shown = 0;
-    grid.querySelectorAll<HTMLElement>('.ch-card').forEach((el) => {
+    showMatching(grid.querySelectorAll<HTMLElement>('.ch-card'), (el) => {
       const c = catalog.list.find((x) => x.id === el.dataset.id)!;
-      el.hidden = !characterMatches(c, input.value) || (filter === 'owned' && !isOwned(c)) || (filter === 'more' && isOwned(c));
-      if (!el.hidden) shown++;
-    });
-    $('.ch-empty').hidden = shown > 0;
+      return characterMatches(c, input.value) && (filter === 'all' || (filter === 'owned') === isOwned(c));
+    }, $('.ch-empty'));
     app.querySelectorAll<HTMLElement>('[data-filter]').forEach((b) => {
       const f = b.dataset.filter as Filter;
       b.setAttribute('aria-checked', String(f === filter));

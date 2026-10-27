@@ -1,5 +1,4 @@
-import { DEFAULT_SKIN, validSkin } from './characters';
-export { CHARACTERS, DEFAULT_SKIN, validSkin } from './characters';
+import { DEFAULT_SKIN, validSkin, type SkinId } from './characters';
 /** Shared map art is independent of each player's chosen character. */
 export const MAP_THEMES = [
   { sky: '#fff3e9', grass: '#aad5aa', accent: '#f5a8b8', item: '草莓', treat: 0 },
@@ -97,7 +96,7 @@ export interface AdventureInput { axis: number; jump: boolean; act?: boolean; }
 export const padInput = (jx: number, jy: number, b: boolean, enabled: boolean, a = false): AdventureInput =>
   ({ axis: enabled && Math.abs(jx) > 0.3 ? Math.sign(jx) : 0, jump: enabled && (b || jy < -0.6), act: enabled && a });
 export interface Adventurer {
-  id: number; name: string; skin: string; online: boolean; x: number; y: number; vx: number; vy: number;
+  id: number; name: string; skin: SkinId; online: boolean; x: number; y: number; vx: number; vy: number;
   grounded: boolean; facing: number; hearts: number; invulnerable: number; checkpoint: number;
   coins: number[]; deaths: number; reached: boolean;
   /** 吃吐吐：正含着的队友 / 含着自己的队友，-1 表示没有。 */
@@ -136,7 +135,7 @@ export class AdventureGame {
   active = new Set<number>();
   private clock = 0;
 
-  add(id: number, name: string, skin: string = DEFAULT_SKIN) {
+  add(id: number, name: string, skin: SkinId = DEFAULT_SKIN) {
     if (this.players.has(id) || this.players.size >= 8) return false;
     this.players.set(id, { id, name: name.slice(0, 12), skin: validSkin(skin) ? skin : DEFAULT_SKIN, online: true, x: 90 + (id % 4) * 42, y: 456, vx: 0, vy: 0, grounded: false, facing: 1, hearts: 3, invulnerable: 0, checkpoint: -1, coins: [], deaths: 0, reached: false, eating: -1, eatenBy: -1 });
     this.controls.set(id, { axis: 0, jump: false, act: false, actQueued: false, held: 0, launch: 0, seen: this.clock, buffer: 0, coyote: 0, rise: 0 });

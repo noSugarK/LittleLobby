@@ -6,7 +6,8 @@ import { HISTORY_KEY, brand, esc, isPin, normalizeCode, store } from '../ui/util
 import { isLanPage, isNativeApp, stopLan } from '../net/lan-session';
 import { bindLanLobby, lanLobbyHtml } from '../ui/lan-lobby';
 import { GAMES, gameInfo, gameName, validGame, type GameId } from '../room/catalog';
-import { CHARACTERS, MODES, type ModeId } from '../game/adventure';
+import { MODES, type ModeId } from '../game/adventure';
+import { CHARACTERS } from '../game/characters';
 import './home.css';
 import { drawBuddyAvatar, drawBuddyImage, loadCharacterSprites, type BuddyAction } from '../game/adventure-sprites';
 
