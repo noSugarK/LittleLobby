@@ -182,6 +182,13 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Full history and tags: the notes list commits since the previous tag
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
       - uses: actions/download-artifact@v7
         with:
           pattern: installer-*
@@ -193,10 +200,12 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
+          node .github/scripts/release-notes.mjs "$RELEASE_TAG" > "$RUNNER_TEMP/notes.md"
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" installers/* --clobber
+            gh release edit "$RELEASE_TAG" --title "Little Lobby $RELEASE_TAG" --notes-file "$RUNNER_TEMP/notes.md"
           else
-            args=(--verify-tag --title "小聚场 · Little Lobby $RELEASE_TAG" --generate-notes)
+            args=(--verify-tag --title "Little Lobby $RELEASE_TAG" --notes-file "$RUNNER_TEMP/notes.md")
             if [[ "${RELEASE_TAG#v}" == *-* ]]; then args+=(--prerelease); fi
             gh release create "$RELEASE_TAG" installers/* "${args[@]}"
           fi

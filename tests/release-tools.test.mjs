@@ -8,6 +8,28 @@ import { fileURLToPath } from 'node:url';
 import { check, versions, write } from '../.github/scripts/release.mjs';
 import { prepareAndroid } from '../.github/scripts/prepare-android.mjs';
 import { configureSigning } from '../.github/scripts/configure-android-signing.mjs';
+import { releaseNotes } from '../.github/scripts/release-notes.mjs';
+
+test('release notes group commits and always list the downloads', () => {
+  const notes = releaseNotes({
+    tag: 'v1.2.0-beta.3', previous: 'v1.2.0-beta.2', logins: true,
+    commits: [
+      { sha: 'aaaaaaa1', author: 'noSugarK', subject: 'chore: release v1.2.0-beta.3' },
+      { sha: 'bbbbbbb2', author: 'friend', subject: 'fix: hide the menu when closed' },
+      { sha: 'ccccccc3', author: 'noSugarK', subject: 'feat(home)!: add offline downloads' },
+      { sha: 'ddddddd4', author: 'noSugarK', subject: 'refactor: unify names' },
+      { sha: 'eeeeeee5', author: 'noSugarK', subject: 'Merge pull request #1 from x/y' },
+    ],
+  });
+  assert.match(notes, /## What's new\n\n- \*\*Breaking:\*\* Add offline downloads \(ccccccc\)/);
+  assert.match(notes, /## Fixes\n\n- Hide the menu when closed \(bbbbbbb\)/);
+  assert.match(notes, /## Other changes\n\n- Unify names \(ddddddd\)/);
+  assert.doesNotMatch(notes, /release v1\.2\.0|Merge pull/);
+  assert.match(notes, /\[LittleLobby_1\.2\.0-beta\.3_android-arm64\.apk\]\(https:\/\/github\.com\/noSugarK\/LittleLobby\/releases\/download\/v1\.2\.0-beta\.3\/LittleLobby_1\.2\.0-beta\.3_android-arm64\.apk\)/);
+  assert.equal(notes.split('| Windows |').length - 1, 2);
+  assert.match(notes, /## Contributors\n\n@noSugarK, @friend/);
+  assert.match(notes, /compare\/v1\.2\.0-beta\.2\.\.\.v1\.2\.0-beta\.3/);
+});
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const temp = () => mkdtempSync(join(tmpdir(), 'little-lobby-'));

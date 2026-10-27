@@ -46,7 +46,7 @@ export function configureSigning(env = process.env, listAliases = keytoolAliases
   return signed;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     configureSigning();
   } catch (error) {

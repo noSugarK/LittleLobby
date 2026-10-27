@@ -96,4 +96,4 @@ export function prepareAndroid(app = 'src-tauri/gen/android/app') {
   writeFileSync(gradle, `${text.trimEnd()}\n${SIGNING}`);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) prepareAndroid();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) prepareAndroid();
