@@ -1,6 +1,6 @@
 // Release notes in one fixed format, built from Conventional Commit subjects since the previous tag.
 //   node .github/scripts/release-notes.mjs v0.2.0-beta.2 [previous-tag] > notes.md
-// With GH_TOKEN and GITHUB_REPOSITORY set (CI), contributors are GitHub logins from the compare API;
+// With GH_TOKEN and GITHUB_REPOSITORY set (CI), authors are @mentioned GitHub logins (GitHub shows them as contributor avatars);
 // otherwise they fall back to commit author names.
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
@@ -30,7 +30,9 @@ export function releaseNotes({ tag, previous, commits, repo = REPO, logins = fal
     // Release bumps and merge commits carry no user-facing change.
     if (!m || (m[1] === 'chore' && /^release\b/.test(m[4])) || c.subject.startsWith('Merge ')) continue;
     const text = m[4].charAt(0).toUpperCase() + m[4].slice(1);
-    const line = `- ${m[3] ? '**Breaking:** ' : ''}${text} (${c.sha.slice(0, 7)})`;
+    // GitHub turns @mentions into its own contributor avatars under the notes, so authors go on each line instead of a separate list.
+    const by = c.author ? ` by ${logins ? '@' : ''}${c.author}` : '';
+    const line = `- ${m[3] ? '**Breaking:** ' : ''}${text}${by} (${c.sha.slice(0, 7)})`;
     (groups[m[1]] ?? groups.other).push(line);
   }
   const out = [];
@@ -42,8 +44,6 @@ export function releaseNotes({ tag, previous, commits, repo = REPO, logins = fal
     .map(([os, suffix, note]) => `| ${os} | [LittleLobby_${version}_${suffix}](${base}/LittleLobby_${version}_${suffix}) | ${note} |`)
     .join('\n')}\n\nNo install needed to play in a browser: https://nosugark.github.io/LittleLobby/. Friends join from their phone browser either way.`);
 
-  const people = [...new Set(commits.map((c) => c.author).filter(Boolean))];
-  if (people.length) out.push(`## Contributors\n\n${people.map((p) => (logins ? `@${p}` : p)).join(', ')}`);
   out.push(previous
     ? `**Full changelog**: https://github.com/${repo}/compare/${previous}...${tag}`
     : `**Full changelog**: https://github.com/${repo}/commits/${tag}`);

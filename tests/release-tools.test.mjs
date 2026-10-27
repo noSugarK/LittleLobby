@@ -21,13 +21,14 @@ test('release notes group commits and always list the downloads', () => {
       { sha: 'eeeeeee5', author: 'noSugarK', subject: 'Merge pull request #1 from x/y' },
     ],
   });
-  assert.match(notes, /## What's new\n\n- \*\*Breaking:\*\* Add offline downloads \(ccccccc\)/);
-  assert.match(notes, /## Fixes\n\n- Hide the menu when closed \(bbbbbbb\)/);
-  assert.match(notes, /## Other changes\n\n- Unify names \(ddddddd\)/);
+  assert.match(notes, /## What's new\n\n- \*\*Breaking:\*\* Add offline downloads by @noSugarK \(ccccccc\)/);
+  assert.match(notes, /## Fixes\n\n- Hide the menu when closed by @friend \(bbbbbbb\)/);
+  assert.match(notes, /## Other changes\n\n- Unify names by @noSugarK \(ddddddd\)/);
   assert.doesNotMatch(notes, /release v1\.2\.0|Merge pull/);
   assert.match(notes, /\[LittleLobby_1\.2\.0-beta\.3_android-arm64\.apk\]\(https:\/\/github\.com\/noSugarK\/LittleLobby\/releases\/download\/v1\.2\.0-beta\.3\/LittleLobby_1\.2\.0-beta\.3_android-arm64\.apk\)/);
   assert.equal(notes.split('| Windows |').length - 1, 2);
-  assert.match(notes, /## Contributors\n\n@noSugarK, @friend/);
+  // GitHub lists @mentioned authors as contributor avatars itself; a second list would duplicate it.
+  assert.doesNotMatch(notes, /## Contributors/);
   assert.match(notes, /compare\/v1\.2\.0-beta\.2\.\.\.v1\.2\.0-beta\.3/);
 });
 
