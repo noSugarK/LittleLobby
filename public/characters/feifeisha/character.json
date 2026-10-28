@@ -1,0 +1,25 @@
+{
+  "id": "feifeisha",
+  "accent": "#8fb8ec",
+  "name": {
+    "zh-CN": "肥肥鲨",
+    "zh-TW": "肥肥鯊",
+    "en": "Chubby Shark"
+  },
+  "subtitle": {
+    "zh-CN": "小胖鲨鱼 · 笑出小尖牙",
+    "zh-TW": "小胖鯊魚 · 笑出小尖牙",
+    "en": "Baby shark · tiny-toothed grin"
+  },
+  "description": {
+    "zh-CN": "圆滚滚的浅蓝小鲨鱼，总是张大嘴笑出一排小尖牙，喜欢拿着风车跑，也爱坐在码头边拍云。",
+    "zh-TW": "圓滾滾的淺藍小鯊魚，總是張大嘴笑出一排小尖牙，喜歡拿著風車跑，也愛坐在碼頭邊拍雲。",
+    "en": "A round little pastel-blue shark who grins with a row of tiny teeth. Loves running with a pinwheel and photographing clouds from the pier."
+  },
+  "origin": {
+    "zh-CN": "「肥肥鲨」",
+    "zh-TW": "「肥肥鯊」",
+    "en": "Chubby Shark"
+  },
+  "look": "chubby baby shark: soft pastel periwinkle-blue body (#aecbf2), one rounded pear-shaped body where head and torso merge with no neck, big white belly and white lower face, wide open happy mouth (salmon-pink inside) with tiny white triangle teeth on the upper lip, happy closed-arc eyes, pink blush cheeks, three tiny stroke marks on top of the head, a pointed fin flap on each side of the head, short paddle-like flipper arms, smooth stubby round feet with no toes, small rounded tail fin"
+}
