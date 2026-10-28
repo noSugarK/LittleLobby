@@ -158,15 +158,21 @@ export class AdventureGame {
   setMode(mode: unknown) {
     if (!validMode(mode) || this.phase === 'playing') return false;
     this.mode = mode;
-    if (this.phase !== 'lobby') this.phase = 'lobby';
+    this.phase = 'lobby'; this.warmUp();
     return true;
   }
   /** 房主中途回大厅换玩法：结束本局，房间和伙伴都保留。 */
   toLobby() {
     if (this.phase === 'lobby') return false;
     for (const p of this.players.values()) { p.eating = p.eatenBy = -1; p.reached = false; }
-    this.phase = 'lobby'; this.active.clear();
+    this.phase = 'lobby'; this.warmUp();
     return true;
+  }
+  /** 大厅里大家可以在所选玩法的第一关里先走走跳跳，出发时再统一回到起点。 */
+  private warmUp() {
+    this.level = modeLevels(this.mode)[0];
+    this.time = 0; this.stars.clear(); this.defeated.clear(); this.active.clear();
+    for (const p of this.players.values()) { p.checkpoint = -1; p.coins = []; p.hearts = 3; this.respawn(p, false); }
   }
   canStart(mode = this.mode) {
     const online = [...this.players.values()].filter((p) => p.online).length;
@@ -252,7 +258,7 @@ export class AdventureGame {
     return hanging;
   }
   step(dt: number, visible = true) {
-    if (!Number.isFinite(dt) || dt <= 0 || dt > 0.1 || this.phase !== 'playing') return;
+    if (!Number.isFinite(dt) || dt <= 0 || dt > 0.1 || this.phase === 'clear' || this.phase === 'complete') return;
     this.clock += dt;
     this.paused = !visible;
     if (!visible) return;
@@ -328,7 +334,7 @@ export class AdventureGame {
     }
     this.press(level);
     const online = all.filter((p) => p.online);
-    if (online.length && online.every((p) => p.reached)) {
+    if (this.phase === 'playing' && online.length && online.every((p) => p.reached)) {
       const levels = modeLevels(this.mode);
       this.phase = this.level === levels[levels.length - 1] ? 'complete' : 'clear';
     }
@@ -356,7 +362,7 @@ export class AdventureGame {
       if (p.vy > 50 && oldBottom < e.y - 15) { this.defeated.add(i); p.vy = -430; }
       else if (p.invulnerable === 0) this.respawn(p);
     });
-    if (this.stars.size === level.stars.length && near(p, level.goal + 20, 460, 64)) {
+    if (this.phase === 'playing' && this.stars.size === level.stars.length && near(p, level.goal + 20, 460, 64)) {
       if (p.eating >= 0) this.release(p.id);
       p.reached = true; p.vx = p.vy = 0;
     }

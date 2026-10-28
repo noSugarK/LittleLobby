@@ -128,7 +128,7 @@ export class AdventureRenderer {
       // 被吃掉的队友藏在肚子里，不单独画
       if (!p.online || p.eatenBy >= 0 || (p.invulnerable > 0 && Math.floor(now / 90) % 2)) continue;
       oval(ctx, p.x + 17, p.y + 45, 19, 4, '#70594f1c');
-      const action: BuddyAction = s.phase !== 'playing' || p.reached ? 'idle' : !p.grounded ? p.vy < -20 ? 'jump' : 'fall' : Math.abs(p.vx) > 30 ? 'run' : 'idle';
+      const action: BuddyAction = s.phase === 'clear' || s.phase === 'complete' || p.reached ? 'idle' : !p.grounded ? p.vy < -20 ? 'jump' : 'fall' : Math.abs(p.vx) > 30 ? 'run' : 'idle';
       let animation = this.animations.get(p.id);
       if (!animation || animation.action !== action || animation.skin !== p.skin) {
         animation = { action, since: now, skin: p.skin }; this.animations.set(p.id, animation);

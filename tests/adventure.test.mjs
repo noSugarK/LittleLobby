@@ -299,3 +299,18 @@ test('房主中途回大厅：放出被吃的人，可以换玩法重新出发',
   assert.deepEqual([a.eating, b.eatenBy], [-1, -1]);
   assert.equal(g.setMode('stack'), true); assert.equal(g.start(), true); assert.equal(LEVELS[g.level].mode, 'stack');
 });
+
+test('开局前在大厅里就能走动跳跃；到终点也不会结束，出发时回到起点', () => {
+  const g = new AdventureGame(); g.add(1, 'a');
+  const p = g.players.get(1), x0 = p.x;
+  for (let i = 0; i < 30; i++) g.step(1 / 60);
+  g.input(1, { axis: 1, jump: false });
+  for (let i = 0; i < 30; i++) g.step(1 / 60);
+  assert.equal(g.phase, 'lobby'); assert.ok(p.x > x0 + 50, '大厅里可以走');
+  for (const [i] of LEVELS[g.level].stars.entries()) g.stars.add(i);
+  p.x = LEVELS[g.level].goal; p.y = 416; g.step(1 / 60);
+  assert.equal(p.reached, false); assert.equal(g.phase, 'lobby');
+  assert.equal(g.setMode('rope'), true); assert.equal(g.level, modeLevels('rope')[0], '换玩法后在新玩法的第一关里走');
+  assert.equal(g.setMode('classic'), true); assert.equal(g.start(), true);
+  assert.equal(p.x, 90 + 42); assert.equal(g.stars.size, 0);
+});
