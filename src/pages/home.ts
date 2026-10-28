@@ -406,7 +406,5 @@ export function mountHome(app: HTMLElement) {
   });
   const refresh = $<HTMLButtonElement>('.lh-refresh');
   if (refresh) refresh.onclick = () => watch.refresh();
-  const timer = setInterval(render, 10_000);
-  // 离开首页就断开大厅连接，来回切换页面不会越积越多
-  window.addEventListener('hashchange', () => { watch.close(); clearInterval(timer); }, { once: true });
+  setInterval(render, 10_000); // 换页会整页刷新（见 main.ts），连接和定时器随页面一起释放
 }

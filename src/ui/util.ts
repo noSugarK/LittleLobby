@@ -93,6 +93,20 @@ export function isFullscreen() {
   return (isNativeApp() && /Android/.test(navigator.userAgent)) || !!(d.fullscreenElement || d.webkitFullscreenElement) || matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
 }
 
+/** iOS Safari 不认 user-scalable=no，连点会放大。只在游戏页（.play）拦双击和捏合放大：
+ *  两个拇指同时按摇杆和按键会被当成捏合；已经放大时放行捏合，让人能缩回去；离开游戏页不拦。 */
+export function blockGameZoom() {
+  const inGame = () => !!document.querySelector('.play');
+  const zoomed = () => (window.visualViewport?.scale ?? 1) > 1.01;
+  document.addEventListener('gesturestart', (e) => { if (inGame() && !zoomed()) e.preventDefault(); });
+  let last = 0;
+  document.addEventListener('touchend', (e) => {
+    const now = e.timeStamp, quick = now - last < 350;
+    last = now;
+    if (quick && e.cancelable && inGame() && !zoomed() && !(e.target as Element | null)?.closest?.('input, textarea, select')) e.preventDefault();
+  }, { passive: false });
+}
+
 /** 必须在 click/touchend/keydown 等用户手势内调用（触屏的 pointerdown 不算手势） */
 export async function enterFullscreen(landscape = false): Promise<boolean> {
   if (isFullscreen()) return true;

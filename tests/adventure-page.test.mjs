@@ -147,6 +147,11 @@ test('扫码玩家开局显示按键，延迟身份和主机重开后仍能加�
     assert.match(failed.querySelector('.go').textContent, /重试/);
     assert.equal(typeof failed.querySelector('.go').onclick, 'function');
     assert.equal(typeof failed.querySelector('.return-home').onclick, 'function');
+    const failedHost = new Element();
+    await mountAdventure(failedHost, { host: true, solo: true });
+    assert.equal(failedHost.querySelector('.join').hidden, false, '房主加载失败也能看到重试按钮');
+    assert.equal(failedHost.querySelector('.join .name').hidden, true);
+    assert.match(failedHost.querySelector('.go').textContent, /重试/);
   } finally {
     for (const id of intervals) clearInterval(id);
     for (const k of keys) globalThis[k] = originals[k];

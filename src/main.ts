@@ -5,7 +5,7 @@ import { mountHome } from './pages/home';
 import { mountPlay } from './pages/play';
 import { mountScreen } from './pages/screen';
 import { applyTheme } from './ui/site';
-import { esc, normalizeCode, randomCode, roomOpts, store } from './ui/util';
+import { blockGameZoom, esc, normalizeCode, randomCode, roomOpts, store } from './ui/util';
 import { isLanPage, isNativeApp, lanBaseUrl, startLan, stopLan } from './net/lan-session';
 
 // 旧版 iOS（<16）与部分安卓 WebView 没有 roundRect：统一退回直角矩形，避免足球 / 冒险 / 二维码卡片绘制每帧抛错
@@ -18,6 +18,7 @@ document.documentElement.lang = lang;
 document.title = lang === 'en' ? 'Little Lobby' : `${t('app.name')} · Little Lobby`;
 document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute('content', t('app.name'));
 applyTheme();
+blockGameZoom();
 
 async function route() {
   const [path, query = ''] = location.hash.replace(/^#\/?/, '').split('?');

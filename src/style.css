@@ -39,6 +39,12 @@ html[data-theme='dark']:has(.site) body {
   background: #0d1f16;
 }
 
+/* touch-action 只在最近的滚动容器内生效，逐个元素声明才能挡住所有地方的双击放大；
+   摇杆等写了 none / pan-y 的元素优先级更高，不受影响 */
+* {
+  touch-action: manipulation;
+}
+
 #app {
   position: fixed;
   inset: 0;

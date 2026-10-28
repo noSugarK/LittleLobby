@@ -52,9 +52,6 @@ const STATE_TEXT: Record<ClientState, Key> = {
 export type PlayMode = { kind: 'client'; room: string; forceRelay: boolean; pin: string; lock: boolean; lan: boolean; server?: string } | { kind: 'host' };
 
 export function mountPlay(app: HTMLElement, mode: PlayMode) {
-  // 只在手机比赛页拦截双指缩放：两个拇指同时按摇杆和按键时 iOS 会当成捏合。
-  // 其它页面不拦，否则 Mac Safari 智能缩放放大后就缩不回来了
-  document.addEventListener('gesturestart', (e) => e.preventDefault());
   const isHost = mode.kind === 'host';
   const forceRelay = mode.kind === 'client' && mode.forceRelay;
   let room: string;
@@ -534,11 +531,12 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   // ---------- 全屏 ----------
   const fsBtn = $('.fs-btn');
   const iosTip = !canFullscreen() && !isFullscreen();
-  const syncFs = () => (fsBtn.hidden = !canFullscreen() || isFullscreen());
+  // iPhone 没有网页全屏：按钮照样显示，点了告诉他添加到主屏幕
+  const syncFs = () => (fsBtn.hidden = isFullscreen());
   document.addEventListener('fullscreenchange', syncFs);
   document.addEventListener('webkitfullscreenchange', syncFs);
   syncFs();
-  fsBtn.onclick = () => enterFullscreen(true);
+  fsBtn.onclick = () => (iosTip ? toast(t('play.iosTip'), 7000) : enterFullscreen(true));
   // 浏览器只在 touchend/click 等手势里允许全屏；自动重连后在下次抬手时补一次，成功前持续尝试
   let autoFs = canFullscreen();
   const tryFs = () => {

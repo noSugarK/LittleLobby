@@ -84,7 +84,6 @@ export async function mountAdventureMenu(app: HTMLElement) {
 interface AdventureMode { host?: boolean; solo?: boolean; screen?: boolean; lan?: boolean; room?: string; server?: string; pin?: string; }
 /** 与足球手机页同一套布局：全屏画面、顶栏、浮动摇杆 + B 键跳跃、居中菜单面板。 */
 export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
-  document.addEventListener('gesturestart', (e) => e.preventDefault());
   document.title = `${gameName('adventure')} · Little Lobby`;
   let skin = storedSkin(), host: AdventureHost | null = null, client: ClientNet | LanClient | null = null;
   let state: AdventureView | null = null, previous: AdventureView | null = null, received = 0, pid = -1;
@@ -184,6 +183,8 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   catch (error) {
     status('角色图片加载失败，请重试', false); toast(String(error), 6000);
     joinButton.disabled = false; joinButton.textContent = '图片加载失败，点击重试';
+    // 房主平时看不到加入卡片，失败时露出来，只留重试和回首页
+    if (mode.host) { joinEl.hidden = false; $('.join .name').hidden = true; }
     // 原地重来：已下载好的图片保留，只重新下载失败的
     joinButton.onclick = () => { void mountAdventure(app, mode); };
     return;
@@ -255,11 +256,13 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
 
   // ---------- 全屏：与足球页相同，加入后在下一次抬手时补一次 ----------
   const fsBtn = app.querySelector<HTMLButtonElement>('.fs-btn') ?? document.createElement('button');
-  const syncFs = () => { fsBtn.hidden = !canFullscreen() || isFullscreen(); };
+  // iPhone 没有网页全屏：按钮照样显示，点了告诉他添加到主屏幕
+  const iosTip = !canFullscreen() && !isFullscreen();
+  const syncFs = () => { fsBtn.hidden = isFullscreen(); };
   document.addEventListener('fullscreenchange', syncFs, listen);
   document.addEventListener('webkitfullscreenchange', syncFs, listen);
   syncFs();
-  fsBtn.onclick = () => { void enterFullscreen(true); };
+  fsBtn.onclick = () => { if (iosTip) toast(t('play.iosTip'), 7000); else void enterFullscreen(true); };
   let autoFs = canFullscreen();
   const tryFs = () => {
     if (!autoFs || !joinEl.hidden) return;
@@ -429,6 +432,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       const name = $<HTMLInputElement>('.join .name').value.trim().slice(0, 12); if (!name) { $('.join .name').focus(); return; }
       unlockAudio(); void keepAwake();
       void enterFullscreen(true).then((ok) => { if (ok) autoFs = false; });
+      if (iosTip && !store.get('iosTip')) { store.set('iosTip', '1'); toast(t('play.iosTip'), 7000); }
       store.set('adventure.name', name); store.set(joinedKey, '1', false);
       let token = store.get(`adventure.token.${room}`); if (!token) { token = randomCode(16); store.set(`adventure.token.${room}`, token); }
       client?.close();

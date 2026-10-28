@@ -208,3 +208,24 @@ test('old storage keys move to the littlelobby prefix without overwriting newer 
   });
   assert.deepEqual(Object.fromEntries(session.map), { 'littlelobby.hist.ABCDE': '[]' });
 });
+
+test('iOS 游戏页挡住连点和捏合放大，已放大时放行捏合缩回，离开游戏页不拦', async () => {
+  const { blockGameZoom } = await import('../src/ui/util.ts');
+  const originals = { document: globalThis.document, window: globalThis.window };
+  const listeners = {};
+  let inGame = true, scale = 1;
+  globalThis.document = { addEventListener: (type, fn) => { listeners[type] = fn; }, querySelector: () => (inGame ? {} : null) };
+  globalThis.window = { visualViewport: { get scale() { return scale; } } };
+  const event = (timeStamp, target = { closest: () => null }) => ({ timeStamp, target, cancelable: true, prevented: false, preventDefault() { this.prevented = true; } });
+  try {
+    blockGameZoom();
+    const pinch = event(0); listeners.gesturestart(pinch); assert.equal(pinch.prevented, true);
+    const tap1 = event(1000), tap2 = event(1200), tap3 = event(2000);
+    listeners.touchend(tap1); listeners.touchend(tap2); listeners.touchend(tap3);
+    assert.deepEqual([tap1.prevented, tap2.prevented, tap3.prevented], [false, true, false], '只挡 350ms 内的第二下');
+    const input = event(2100, { closest: (s) => (s.includes('input') ? {} : null) }); listeners.touchend(input);
+    assert.equal(input.prevented, false, '输入框连点照常选字');
+    scale = 2; const out = event(3000); listeners.gesturestart(out); assert.equal(out.prevented, false, '放大后可以捏合缩回');
+    scale = 1; inGame = false; const home = event(4000); listeners.gesturestart(home); assert.equal(home.prevented, false);
+  } finally { Object.assign(globalThis, originals); }
+});
