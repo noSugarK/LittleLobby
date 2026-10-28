@@ -64,6 +64,7 @@ All text fields are language maps: `zh-CN` and `en` are required, `zh-TW` falls 
 - **脚底统一落在 y = 146**（格子内坐标），跳跃 / 下落帧也一样，角色的位置由游戏控制。
 - 角色高约 110–125 px、宽不超过 122 px；以头部为准水平居中，摆臂迈腿时身体不要左右晃。
 - 8 帧跑步要首尾相接：右脚着地 → 下沉 → 交错 → 上推 → 左脚着地 → 下沉 → 交错 → 上推。步子小、头的高度只差几个像素，相邻两帧变化要小，否则看起来卡顿。
+- 手臂和腿反向摆动：右腿在前时右手在后、左手在前，第 1 帧和第 5 帧两只手正好交换位置。手一直停在同一个位置的跑步看起来会很僵。
 - `full-atlas.png` 是同样的布局，只是肚子鼓成半透明的大圆球、里面隐约有个小伙伴的影子，双手抱着肚子。游戏里会把它放大 1.2 倍画，所以整个角色要比平时小一圈，头和脚与平时一样大。
 
 ## 生成提示词模板 / Prompt templates
@@ -82,7 +83,7 @@ All text fields are language maps: `zh-CN` and `en` are required, `zh-TW` falls 
 > Create a 2D game SPRITE SHEET of exactly the character shown in the attached reference image (same design, colors, proportions, face, flat 2D sticker style with thick dark-brown outline). Transparent background. Every sprite is the full body at the SAME scale, separated by generous empty space; nothing touches or overlaps; no text, no grid lines, no shadows, no ground.
 > Exactly 4 horizontal rows, all side-scroller poses FACING RIGHT except the idle row:
 > Row 1 — IDLE: 4 frames, front view standing, gentle breathing bob; frame 3 has eyes closed (blink).
-> Row 2 — RUN: 8 frames, a smooth looping run cycle viewed from the side facing right: 1 right leg forward heel contact, 2 weight down, 3 legs passing, 4 push up, 5 left leg forward heel contact, 6 weight down, 7 legs passing, 8 push up. Short quick steps; head and body keep the same size and almost the same height in every frame.
+> Row 2 — RUN: 8 frames, a smooth looping run cycle viewed from the side facing right: 1 right leg forward heel contact, 2 weight down, 3 legs passing, 4 push up, 5 left leg forward heel contact, 6 weight down, 7 legs passing, 8 push up. Arms swing OPPOSITE to the legs like a real runner: when the right leg is forward the right arm is back and the left arm is forward, and the arms clearly trade places between frames 1 and 5. Short quick steps; head and body keep the same size and almost the same height in every frame.
 > Row 3 — JUMP: 2 frames facing right: crouched takeoff, then rising in the air with legs tucked and arms up.
 > Row 4 — FALL: 2 frames facing right: falling with arms raised and legs dangling, then bracing to land.
 > Rows 1, 3, 4 are left-aligned and leave the rest of the row empty.
@@ -96,6 +97,10 @@ All text fields are language maps: `zh-CN` and `en` are required, `zh-TW` falls 
 只改一处时明确「其余保持不变」，例如：
 
 > Edit this sprite sheet: keep EVERYTHING exactly the same (layout, number of frames, poses, sizes, colors, transparent background) and change ONLY the eyes: big round glossy friendly eyes with a small white highlight, no heavy eyelids, no frown. In the blink frame the eyes are happy closed arcs.
+
+只修跑步手臂时：
+
+> Edit this sprite sheet: keep EVERYTHING exactly the same (layout, number of frames, the idle / jump / fall rows, the legs, sizes, colors, transparent background) and change ONLY the arms in the 8-frame RUN row so they swing opposite to the legs like a real runner: when the right leg is forward the right arm is back and the left arm is forward; in frames 1–4 the near arm swings from back to front and in frames 5–8 from front to back, so the two arms clearly trade places. Keep the hands the same shape and color.
 
 ## 切图 / Packing
 
