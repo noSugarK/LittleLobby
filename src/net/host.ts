@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
 import type { RejectReason, Team } from '../game/types';
-import { Signal, isJson, parseJson } from './signal';
+import { Signal, gatheredSdp, isJson, parseJson } from './signal';
 
 export type LinkMode = 'connecting' | 'p2p' | 'relay' | 'lan';
 
@@ -74,10 +74,12 @@ class RemotePeer {
     if (pc !== this.pc || this.closed) return;
     await pc.setLocalDescription(offer);
     if (pc !== this.pc || this.closed) return;
+    const sdp = await gatheredSdp(pc, offer.sdp ?? '');
+    if (pc !== this.pc || this.closed) return;
     // 公共 MQTT 偶尔丢消息：未收到 answer 时每 2.5 秒重发同一 offer
     const send = () => {
       if (pc !== this.pc || this.closed || pc.signalingState !== 'have-local-offer') return;
-      this.host.signal.pub(`c/${this.cid}`, { t: 'offer', sdp: offer.sdp });
+      this.host.signal.pub(`c/${this.cid}`, { t: 'offer', sdp });
       setTimeout(send, 2500);
     };
     send();

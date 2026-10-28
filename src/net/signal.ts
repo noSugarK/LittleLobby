@@ -17,6 +17,19 @@ export function parseJson<T = any>(p: Uint8Array): T | null {
   }
 }
 
+/**
+ * 等 ICE 候选收集完（最多 ms）再取 SDP：候选写进 SDP 后，offer/answer 的重发会一并带上，
+ * 不再依赖只发一次的 QoS 0 候选消息。超时后剩余候选仍走 trickle。
+ */
+export function gatheredSdp(pc: RTCPeerConnection, fallback: string, ms = 1500): Promise<string> {
+  return new Promise((done) => {
+    const finish = () => { clearTimeout(timer); done(pc.localDescription?.sdp ?? fallback); };
+    const timer = setTimeout(finish, ms);
+    if (pc.iceGatheringState === 'complete') finish();
+    else pc.onicegatheringstatechange = () => pc.iceGatheringState === 'complete' && finish();
+  });
+}
+
 /** MQTT 信令通道：只负责建立连接时交换 SDP/ICE，以及 P2P 失败时的中继 */
 export class Signal {
   private client: MqttClient | null = null;

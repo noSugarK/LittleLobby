@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
 import type { RejectReason, Team } from '../game/types';
-import { Signal, isJson, parseJson } from './signal';
+import { Signal, gatheredSdp, isJson, parseJson } from './signal';
 
 export type ClientState = 'signal' | 'waiting' | 'connecting' | 'p2p' | 'relay' | 'lan' | 'lost' | 'rejected';
 
@@ -207,8 +207,10 @@ export class ClientNet {
     if (pc !== this.pc) return;
     await pc.setLocalDescription(answer);
     if (pc !== this.pc) return;
-    this.lastAnswer = answer.sdp ?? '';
-    this.signal.pub(`h/${this.cid}`, { t: 'answer', sdp: answer.sdp });
+    const full = await gatheredSdp(pc, answer.sdp ?? '');
+    if (pc !== this.pc) return;
+    this.lastAnswer = full;
+    this.signal.pub(`h/${this.cid}`, { t: 'answer', sdp: full });
   }
 
   /**

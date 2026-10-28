@@ -310,3 +310,33 @@ test('公开大厅连不上时退避重试，刷新清空并重新订阅，离�
     globalThis.window = originalWindow;
   }
 });
+
+test('answer 等 ICE 收集完再发，SDP 自带候选，补发时也不会丢候选', async () => {
+  const originalRtc = globalThis.RTCPeerConnection;
+  globalThis.RTCPeerConnection = class {
+    iceGatheringState = 'gathering';
+    async setRemoteDescription() {}
+    async createAnswer() { return { sdp: 'answer' }; }
+    async setLocalDescription() {
+      this.localDescription = { sdp: 'answer' };
+      setTimeout(() => {
+        this.localDescription = { sdp: 'answer\na=candidate:srflx' };
+        this.iceGatheringState = 'complete';
+        this.onicegatheringstatechange();
+      }, 10);
+    }
+    close() {}
+  };
+  const client = new ClientNet('ABCDE', info);
+  const sent = [];
+  client.signal = { pub: (...args) => sent.push(args), close() {} };
+  try {
+    await client.onOffer('offer');
+    await client.onOffer('offer'); // 主机重发同一 offer：补发 answer
+    const answers = sent.filter(([, m]) => m.t === 'answer').map(([, m]) => m.sdp);
+    assert.deepEqual(answers, ['answer\na=candidate:srflx', 'answer\na=candidate:srflx']);
+  } finally {
+    client.close();
+    globalThis.RTCPeerConnection = originalRtc;
+  }
+});
