@@ -9,11 +9,11 @@ import { LanClient } from '../net/lan-client';
 import { LanHost } from '../net/lan-host';
 import { isLanPage, isNativeApp, lanBaseUrl, lanSession, startLan, stopLan } from '../net/lan-session';
 import { bindLanAddress, lanInfoHtml } from '../ui/lan-room';
-import { canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, showMatching, store, vibrate } from '../ui/util';
+import { brand, canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, showMatching, store, vibrate } from '../ui/util';
 import { Gamepad } from '../ui/gamepad';
 import { bindControlsPane, controlsPaneHtml } from '../ui/controls-pane';
 import { bindDrawer } from '../ui/drawer';
-import { icon } from '../ui/site';
+import { bindLangSelect, icon, langSelect } from '../ui/site';
 import { BTN_A, BTN_B, BTN_X, BTN_Y } from '../game/types';
 import { t, type Key } from '../i18n';
 import { gameName, switchHostGame } from '../room/catalog';
@@ -105,26 +105,33 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     <div class="topbar">
       <div class="topbar-left"><div class="status"><i></i><span>${mode.host ? '正在准备小世界…' : `房间 ${esc(room)}`}</span></div></div>
       <div class="adv-hud"></div>
-      ${mode.screen ? '' : `<div class="top-actions">
-        <button class="ghost fs-btn" hidden>${t('play.fullscreen')}</button>
-        <button class="ghost menu">${t('play.menu')}</button>
-      </div>`}
+      <div class="top-actions"><button class="ghost round-btn fs-btn" aria-label="${t('play.fullscreen')}" title="${t('play.fullscreen')}" hidden>${icon.expand}</button><button class="ghost round-btn menu" aria-label="${t('play.menu')}">${icon.menu}</button></div>
     </div>
     <div class="card adv-paused" role="status" hidden>房主已切到后台，冒险暂停中。<br>请房主回到游戏，大家就能继续。</div>
+    <img class="corner-logo" src="${brand('logo-sm.png')}" alt="">
     <div class="pad" hidden></div>
+    ${mode.host && !mode.solo ? `<div class="adv-dock game-dock" hidden>
+      ${mode.screen ? '<div class="adv-cast"></div>' : ''}
+      <div class="adv-modes" role="radiogroup" aria-label="玩法">${MODES.map((m) => `<button type="button" role="radio" class="adv-mode" data-mode="${m.id}" title="${esc(m.desc)}">${m.name}</button>`).join('')}</div>
+      <div class="adv-invite"><img class="adv-qr" alt="扫码加入闯关房间" hidden><div><b class="adv-code">${esc(room)}</b><span>${mode.lan ? '连同一 Wi-Fi，扫码加入' : '手机扫码加入'}</span></div></div>
+      <div class="adv-address"></div>
+      <button class="primary adv-start" disabled>准备小背包…</button>
+    </div>` : ''}
+    ${mode.screen ? `<div class="corner-qr tv-corner" hidden><img alt="扫码加入"><b>${esc(room)}</b></div>` : ''}
     <div class="panel card adv-panel drawer" hidden>
-      <nav class="prail"><button class="pcollapse" aria-label="收起菜单">${icon.right}</button><button data-tab="room" class="on" aria-pressed="true">${icon.home}<span>房间</span></button><button data-tab="controls" aria-pressed="false">${icon.pad}<span>${t('ctl.title')}</span></button></nav>
+      <nav class="prail"><button class="pcollapse" aria-label="收起菜单">${icon.right}</button><button data-tab="room" class="on" aria-pressed="true">${icon.home}<span>房间</span></button><button data-tab="controls" aria-pressed="false">${icon.pad}<span>按键</span></button></nav>
       <div class="pmain">
-      <div class="panel-head"><span><b class="adv-level-name">莓莓散步道</b> <span class="adv-level-number">01 / 03</span>${mode.solo ? '' : ` · 房间 <b>${esc(room)}</b>`}</span><button class="ghost close" aria-label="关闭">×</button></div>
+      <div class="panel-head"><span><b class="adv-level-name">莓莓散步道</b> <span class="adv-level-number">01 / 03</span></span><button class="ghost close" aria-label="关闭">×</button></div>
       <div class="adv-tab" data-tabpane="room">
       <p class="adv-progress"></p>
+      <p class="muted small adv-hint">${HINTS.classic}</p>
       <div class="adv-roster"></div>
-      ${mode.host && !mode.solo ? `<div class="adv-modes" role="radiogroup" aria-label="玩法">${MODES.map((m) => `<button type="button" role="radio" class="adv-mode" data-mode="${m.id}"><b>${m.name}</b><small>${m.desc}</small></button>`).join('')}</div>` : '<p class="adv-mode-line"></p>'}
-      ${choices()}
-      <div class="pfoot-row"><button class="primary adv-start" hidden disabled>准备小背包…</button><button class="ghost adv-seat" hidden></button><button class="ghost adv-lobby" hidden>回到大厅选玩法</button></div>
-      ${mode.host && !mode.solo ? `<div class="host-qr adv-invite"><img class="adv-qr" alt="扫码加入闯关房间" hidden><div><div class="room-code sm">${esc(room)}</div><div class="muted small">${mode.lan ? '连同一 Wi-Fi / 热点，用相机扫码加入' : '手机扫码加入，一起闯关'}</div><button class="ghost adv-copy">复制邀请链接</button></div></div>${mode.screen ? '' : '<div class="adv-address"></div>'}` : ''}
-      <p class="muted small adv-instructions"><span class="adv-hint">${HINTS.classic}</span><br>键盘：← → / A D 移动，空格 / ↑ 跳跃，J / E 吃 / 吐</p>
-      <div class="pmeta"><button class="ghost adv-audio" aria-pressed="true">音效 开</button>${mode.host && !mode.solo ? `<button class="ghost switch-game">${t('game.switchTo', { game: gameName('football') })}</button>` : ''}<button class="ghost leave-room">${t('play.leave')}</button></div>
+      <div class="adv-settings">
+        ${mode.screen ? '' : `<div class="adv-row"><span>角色</span>${choices()}</div>`}
+        <label class="adv-row"><span>音效</span><input type="checkbox" class="switch adv-audio" checked></label>
+        <label class="adv-row"><span>${t('lang.label')}</span>${langSelect()}</label>
+      </div>
+      <div class="adv-actions"><button class="ghost adv-lobby" hidden>回到大厅选玩法</button>${mode.host && !mode.solo ? `<button class="ghost switch-game">${t('game.switchTo', { game: gameName('football') })}</button>` : ''}<button class="adv-leave leave-room">${t('play.leave')}</button></div>
       </div>
       <div class="adv-tab" data-tabpane="controls" hidden>${controlsPaneHtml()}</div>
       </div>
@@ -137,29 +144,6 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       <button class="primary go">加入小伙伴</button>
       <button class="ghost return-home">${t('play.home')}</button>
     </div>
-    ${mode.screen ? `<div class="screen-actions">
-      <button class="ghost tv-back" hidden>回到大厅选玩法</button>
-      <button class="ghost switch-game">${t('game.switchTo', { game: gameName('football') })}</button>
-      <button class="ghost leave-room">${t('play.leave')}</button>
-    </div>
-    <div class="lobby card tv-lobby" hidden>
-      <div class="lobby-join">
-        <img class="qr tv-qr" alt="扫码加入闯关房间">
-        <div class="room-code">${esc(room)}</div>
-        <div class="muted small">${mode.lan ? '连同一 Wi-Fi / 热点，用相机扫码加入' : '手机扫码，或打开链接加入'}<br><span class="url tv-url"></span></div>
-        <button class="ghost tv-save">${icon.download}${t('qr.save')}</button>
-        <div class="adv-address"></div>
-      </div>
-      <div class="lobby-side">
-        <div class="lobby-head"><h2>${gameName('adventure')}</h2><span class="tv-tag">TV 大屏</span></div>
-        <div class="adv-modes" role="radiogroup" aria-label="玩法">${MODES.map((m) => `<button type="button" role="radio" class="adv-mode" data-mode="${m.id}"><b>${m.name}</b><small>${m.desc}</small></button>`).join('')}</div>
-        <p class="tv-roster-head">小伙伴 <b class="tv-count">0</b> / 8</p>
-        <div class="tv-roster"></div>
-        <div class="row lobby-actions"><button class="primary start tv-start" disabled>等一位小伙伴加入</button><button class="ghost tv-fs">${t('play.fullscreen')}</button></div>
-        <p class="muted small">手机就是手柄：摇杆移动，B 跳跃；吃吐吐里 A 吃 / 吐</p>
-      </div>
-    </div>
-    <div class="corner-qr tv-corner" hidden><img alt="扫码加入"><b>${esc(room)}</b></div>` : ''}
     <div class="card adv-overlay" hidden><span>✿</span><h2></h2><p class="muted"></p><div class="adv-results"></div><button class="primary adv-next" hidden>下一站 →</button></div>
     <div class="toast" hidden></div>
     <div class="rotate"><span>${t('play.rotate')}</span><button class="ghost leave-room">${t('play.leave')}</button></div>
@@ -225,7 +209,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     } else if (client?.linked) client.sendJson({ t: 'adventure-input', epoch: state.epoch, seq: seq++, ...input }, 1);
   }
   function updateInput() {
-    const enabled = state?.phase === 'playing' && !state.paused && (host ? host.localId !== undefined : !!client?.linked);
+    const enabled = (state?.phase === 'playing' || state?.phase === 'lobby') && !state.paused && (host ? host.localId !== undefined : !!client?.linked);
     const next = padInput(pad.input.jx, pad.input.jy, !!(pad.input.btn & BTN_B), enabled, !!(pad.input.btn & BTN_A));
     if (next.jump && !input.jump && sound) { unlockAudio(); sfxAdventure('jump'); }
     const changed = next.axis !== input.axis || next.jump !== input.jump || next.act !== input.act;
@@ -236,13 +220,13 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   pad.onPress = (bit) => { if (bit === BTN_B) vibrate(8); };
 
   const renderPanel = () => { panel.hidden = !panelOpen || !joinEl.hidden; if (panel.hidden) play.classList.remove('ctl-preview'); else play.classList.toggle('ctl-preview', panel.classList.contains('is-narrow')); };
-  // 大屏没有菜单抽屉：操作都在右上角，和足球大屏一样
   const menuBtn = app.querySelector<HTMLButtonElement>('.menu');
   if (menuBtn) menuBtn.onclick = () => { panelOpen = !panelOpen; renderPanel(); };
   const closePanel = () => { panelOpen = false; renderPanel(); };
   panel.querySelectorAll<HTMLElement>('.close, .pcollapse').forEach((b) => { b.onclick = closePanel; });
   bindDrawer(play, panel, closePanel);
-  $('.adv-audio').onclick = () => { sound = !sound; unlockAudio(); $('.adv-audio').textContent = `音效 ${sound ? '开' : '关'}`; $('.adv-audio').setAttribute('aria-pressed', String(sound)); };
+  $<HTMLInputElement>('.adv-audio').onchange = (e) => { sound = (e.target as HTMLInputElement).checked; unlockAudio(); };
+  bindLangSelect(panel);
   const leave = async () => {
     if (!mode.solo && (host || client) && !(await askConfirm(t(host ? 'play.confirmCloseRoom' : 'play.confirmLeave')))) return;
     autoFs = false;
@@ -295,7 +279,8 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     if (won && previous?.phase === 'playing' && sound) sfxAdventure('clear');
     const time = `${String(Math.floor(state.time / 60)).padStart(2, '0')}:${String(Math.floor(state.time) % 60).padStart(2, '0')}`;
     // 大屏没有自己的角色：显示关卡、星星和时间；手机显示自己的爱心和收集
-    $('.adv-hud').textContent = me
+    $('.adv-hud').textContent = state.phase === 'lobby' ? (!mode.host ? '先走走看，等房主出发' : mode.screen ? '手机扫码加入，人齐了就出发' : '先走走看，人齐了就出发')
+      : me
       ? `${'♥'.repeat(me.hearts) + '♡'.repeat(3 - me.hearts)} · ${MAP_THEMES[level.theme].item} ${me.coins.length}/${level.coins.length} · ✦ ${state.stars.length}/3 · ${time}`
       : `${level.name} · ✦ ${state.stars.length}/3 · ${time}`;
     $('.adv-level-name').textContent = level.name; $('.adv-level-number').textContent = `${modeInfo(state.mode).name} ${String(levels.indexOf(shown) + 1).padStart(2, '0')} / ${String(levels.length).padStart(2, '0')}`;
@@ -323,50 +308,34 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       rosterKey = key;
       $('.adv-roster').innerHTML = state.players.map((p) => `<span class="${p.online ? '' : 'is-offline'}"><i style="background:${characterOf(p.skin)?.accent || '#ccc'}"></i>${esc(p.name)}${p.reached ? ' ✓' : !p.online ? ' · 重连中' : ''}</span>`).join('');
       if (mode.screen) {
-        // 大屏名单：每人一个圆形头像，空位画虚线圈，一共 8 个位置
-        const roster = $('.tv-roster');
-        roster.innerHTML = state.players.map((p) => `<span class="tv-chip${p.online ? '' : ' is-offline'}" style="--chip:${characterOf(p.skin)?.accent || '#ccc'}"><canvas data-skin="${esc(p.skin)}" aria-hidden="true"></canvas><b>${esc(p.name)}</b></span>`).join('')
-          + '<span class="tv-chip is-empty" aria-hidden="true"><i></i></span>'.repeat(Math.max(0, 8 - state.players.length));
-        roster.querySelectorAll<HTMLCanvasElement>('canvas[data-skin]').forEach((c) => drawAvatar(c, c.dataset.skin!));
-        $('.tv-count').textContent = String(state.players.filter((p) => p.online).length);
+        // 大屏左下角：每位小伙伴一个圆头像和名字
+        const cast = $('.adv-cast');
+        cast.innerHTML = state.players.map((p) => `<span class="${p.online ? '' : 'is-offline'}" style="--chip:${characterOf(p.skin)?.accent || '#ccc'}"><canvas data-skin="${esc(p.skin)}" aria-hidden="true"></canvas><b>${esc(p.name)}</b></span>`).join('');
+        cast.querySelectorAll<HTMLCanvasElement>('canvas[data-skin]').forEach((c) => drawAvatar(c, c.dataset.skin!));
       }
     }
-    const start = $<HTMLButtonElement>('.adv-start');
-    start.hidden = !mode.host || state.phase !== 'lobby';
-    const online = state.players.filter((p) => p.online).length, needTwo = modeInfo(state.mode).coop && online < 2;
-    start.disabled = !online || needTwo;
-    start.textContent = !online ? '等一位小伙伴加入' : needTwo ? '合作玩法需要 2 人' : '一起出发 →';
-    if (mode.screen) {
-      const lobby = state.phase === 'lobby';
-      $('.tv-lobby').hidden = !lobby;
-      $('.tv-corner').hidden = lobby || !$<HTMLImageElement>('.tv-corner img').src;
-      play.classList.toggle('in-lobby', lobby);
-      $('.tv-back').hidden = lobby;
-      const tvStart = $<HTMLButtonElement>('.tv-start');
-      tvStart.disabled = start.disabled;
-      tvStart.textContent = !online ? '等一位小伙伴加入' : needTwo ? '合作玩法需要 2 人' : '开始冒险 →';
+    const lobby = state.phase === 'lobby', dock = app.querySelector<HTMLElement>('.adv-dock');
+    if (dock) {
+      dock.hidden = !lobby;
+      const start = $<HTMLButtonElement>('.adv-start'), online = state.players.filter((p) => p.online).length, needTwo = modeInfo(state.mode).coop && online < 2;
+      start.disabled = !online || needTwo;
+      start.textContent = !online ? '等一位小伙伴加入' : needTwo ? '这个玩法要 2 人' : '一起出发';
     }
-    $('.adv-seat').hidden = !mode.host || !!mode.solo || state.phase !== 'lobby';
-    $('.adv-lobby').hidden = !mode.host || !!mode.solo || state.phase === 'lobby';
-    $('.adv-seat').textContent = host?.localId === undefined ? '我也加入冒险' : '仅当大屏观看';
-    const playing = !!me && state.phase === 'playing' && !state.paused && (!!host || !!client?.linked);
+    if (mode.screen) {
+      $('.tv-corner').hidden = lobby || !$<HTMLImageElement>('.tv-corner img').src;
+    }
+    $('.adv-lobby').hidden = !mode.host || !!mode.solo || lobby;
+    const playing = !!me && (state.phase === 'playing' || state.phase === 'lobby') && !state.paused && (!!host || !!client?.linked);
     $('.adv-paused').hidden = !state.paused || state.phase !== 'playing';
     $('.pad').hidden = !playing;
     play.classList.toggle('watching', !me);
     if (!playing) pad.reset();
-    // 进入大厅自动弹出菜单，出发后自动收起；玩家随时可以手动开关
-    if (state.phase !== lastPhase) { lastPhase = state.phase; panelOpen = state.phase === 'lobby' && !mode.screen; renderPanel(); }
+    // 换阶段时收起菜单；大厅里菜单不自动弹出，进来就能先走走
+    if (state.phase !== lastPhase) { lastPhase = state.phase; panelOpen = false; renderPanel(); }
   }
   const start = () => { unlockAudio(); void keepAwake(); pad.reset(); host?.advance(); };
-  $('.adv-start').onclick = start; $('.adv-next').onclick = start;
-  if (mode.screen) {
-    $('.tv-back').onclick = () => { pad.reset(); host?.toLobby(); };
-    $('.tv-start').onclick = start;
-    $('.tv-fs').onclick = () => { void enterFullscreen(true); };
-    $('.tv-save').onclick = () => { const a = document.createElement('a'); a.href = $<HTMLImageElement>('.tv-qr').src; a.download = `LittleLobby-${room}.png`; a.click(); };
-  }
-  $('.adv-lobby').onclick = () => { pad.reset(); host?.toLobby(); };
-  $('.adv-seat').onclick = () => { if (host?.localId === undefined) host?.addLocal(store.get('adventure.name') || '房主', skin); else host.removeLocal(); host?.publish(); };
+  app.querySelector<HTMLButtonElement>('.adv-start')?.addEventListener('click', start); $('.adv-next').onclick = start;
+  $('.adv-lobby').onclick = () => { pad.reset(); host?.toLobby(); closePanel(); };
   function draw() {
     if (closed) return;
     pad.update(); updateInput();
@@ -375,8 +344,6 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       const k = Math.max(0, Math.min(1, (performance.now() - received) / 50));
       view = { ...state, players: state.players.map((p) => { const prev = previous!.players.find((v) => v.id === p.id); return prev && Math.hypot(prev.x - p.x, prev.y - p.y) < 160 ? { ...p, x: prev.x + (p.x - prev.x) * k, y: prev.y + (p.y - prev.y) * k } : p; }) };
     }
-    // 大厅里背景换成所选玩法的第一关，让大家先看看要去的地方
-    if (view.phase === 'lobby') view = { ...view, level: modeLevels(view.mode)[0] };
     renderer.draw(view, skin); frame = requestAnimationFrame(draw);
   }
   frame = requestAnimationFrame(draw);
@@ -398,7 +365,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       host = new AdventureHost(room, mode.solo ? undefined : mode.lan ? (_r, cb) => new LanHost(lanSession()!, cb) : (r, cb) => new HostNet(r, cb), roomPin, !mode.solo && roomOpts().listed);
       if (!mode.screen) host.addLocal(store.get('adventure.name') || (mode.solo ? '小伙伴' : '房主'), skin);
       host.onView = receive;
-      host.onStatus = (ok) => status(ok ? mode.solo ? '单人小旅行' : `${mode.lan ? '局域网 · ' : ''}房间 ${room}` : mode.lan ? '局域网服务已断开' : '正在恢复连接…', ok);
+      host.onStatus = (ok) => status(ok ? mode.solo ? '单人小旅行' : `${mode.lan ? '局域网' : '已连接'} · 房间 ${room}` : mode.lan ? '局域网服务已断开' : '正在恢复连接…', ok);
       await host.start();
       if (closed) return;
       if (mode.solo) host.advance();
@@ -408,22 +375,14 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
         const invite = async () => {
           const current = ++version, url = new URL(joinUrl({ room, pin: roomPin }));
           const [path, query] = url.hash.slice(1).split('?'), params = new URLSearchParams(query); params.set('game', 'adventure'); url.hash = `${path}?${params}`;
-          $('.adv-copy').dataset.url = url.href;
           try {
             const qr = (await import('qrcode')).default, image = await qr.toDataURL(url.href, { width: 220, margin: 1 });
             if (closed || current !== version) return;
             $<HTMLImageElement>('.adv-qr').src = image; $('.adv-qr').hidden = false;
-            if (mode.screen) {
-              $<HTMLImageElement>('.tv-qr').src = image; $<HTMLImageElement>('.tv-corner img').src = image;
-              $('.tv-url').textContent = url.href;
-            }
-          } catch { toast('二维码生成失败，请复制邀请链接。', 4000); }
+            if (mode.screen) $<HTMLImageElement>('.tv-corner img').src = image;
+          } catch { toast(`二维码生成失败，请打开 ${url.href} 加入`, 6000); }
         };
         bindLanAddress($('.adv-address'), () => { void invite(); }); await invite();
-        $('.adv-copy').onclick = async () => {
-          try { await navigator.clipboard.writeText($('.adv-copy').dataset.url || ''); toast('已复制邀请链接'); }
-          catch { prompt('复制邀请链接', $('.adv-copy').dataset.url || ''); }
-        };
       }
     } catch (e) { host?.close(); if (mode.lan) await stopLan().catch(() => {}); status('出发前遇到问题', false); toast(`${String(e)}，可以返回重试。`, 8000); }
   } else {

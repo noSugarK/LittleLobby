@@ -104,6 +104,10 @@ export function settingsHtml(st: Settings): string {
   </div>`;
 }
 
+/** 大屏房主卡片里的比赛模式分段按钮（同样由 bindLobby 绑定） */
+export const modeChipsHtml = (st: Settings) => `<div class="chips">${MATCH_MODES.map((v) =>
+  `<button class="chip ${v === st.mode ? 'on' : ''}" data-k="mode" data-v="${v}">${t(`mode.${v}`)}</button>`).join('')}</div>`;
+
 /** 非房主看到的设置摘要 */
 export function settingsSummary(st: Settings): string {
   return `${t(`mode.${st.mode}`)}${st.mode === 1 ? '' : ` · ${t('play.minutes', { n: st.duration / 60 })}`}${st.party ? ` · ${t(`party.${st.party}`)}` : ''} · AI ${LEVEL_NAME[st.level]}${st.autoFill ? ` · ${t('cfg.autoFill')}` : ''}`;

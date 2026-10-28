@@ -6,10 +6,9 @@ import { HISTORY_KEY, brand, esc, isPin, normalizeCode, store } from '../ui/util
 import { isLanPage, isNativeApp, stopLan } from '../net/lan-session';
 import { bindLanLobby, lanLobbyHtml } from '../ui/lan-lobby';
 import { GAMES, gameInfo, gameName, validGame, type GameId } from '../room/catalog';
-import { MODES, type ModeId } from '../game/adventure';
-import { CHARACTERS, builtinCharacters, loadCharacters } from '../game/characters';
+import { loadCharacters } from '../game/characters';
 import './home.css';
-import { drawBuddyAvatar, drawBuddyImage, hasSheet, loadCharacterSprites, type BuddyAction } from '../game/adventure-sprites';
+import { drawBuddyAvatar, loadCharacterSprites } from '../game/adventure-sprites';
 
 const CODE_LEN = 5;
 
@@ -19,102 +18,6 @@ const pitchArt = `<svg class="lh-pitch" viewBox="0 0 160 100" aria-hidden="true"
   <g class="lh-pitch-line"><rect x="12" y="12" width="136" height="76" rx="3"/><path d="M80 12v76"/><circle cx="80" cy="50" r="13"/><rect x="12" y="34" width="14" height="32"/><rect x="134" y="34" width="14" height="32"/></g>
   <g transform="translate(104 58)"><circle r="12" class="lh-ball"/><path class="lh-ball-patch" d="M0-5l4.8 3.5-1.8 5.6h-6l-1.8-5.6z"/></g>
 </svg>`;
-
-/* 加入面板底部的小插图：手机对着大屏上的二维码 */
-const scanArt = `<svg class="lh-scan-art" viewBox="0 0 120 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-  <rect x="36" y="6" width="78" height="50" rx="6"/><path d="M66 56v8M56 66h30"/>
-  <g stroke-width="2"><rect x="62" y="16" width="10" height="10" rx="1.5"/><rect x="80" y="16" width="10" height="10" rx="1.5"/><rect x="62" y="34" width="10" height="10" rx="1.5"/><path d="M80 34h4v4M88 34v10h-8M80 42v2"/></g>
-  <rect x="6" y="22" width="26" height="44" rx="5" fill="var(--h-join, #0f5c5a)"/><path d="M14 34h10M14 40h10M14 46h6" stroke-width="2" opacity=".75"/>
-  <path d="M32 30l26-8M32 50l26 6" stroke-dasharray="3 4" opacity=".6"/>
-</svg>`;
-const assetUrl = (file: string) => `${import.meta.env.BASE_URL}home/${file}`;
-/** 三种合作玩法的小图：直接用游戏里的角色帧画，和实际玩到的样子一致 */
-function drawModeArt(canvas: HTMLCanvasElement, mode: ModeId) {
-  const ctx = canvas.getContext('2d')!;
-  canvas.width = 320; canvas.height = 200;
-  ctx.scale(2, 2);
-  if (mode === 'rope') {
-    drawBuddyImage(ctx, 50, 92, 'yier', 'run', 0.2, 1);
-    drawBuddyImage(ctx, 110, 92, 'bubu', 'run', 0.5, 1);
-    ctx.lineCap = 'round';
-    const rope = () => { ctx.beginPath(); ctx.moveTo(58, 70); ctx.quadraticCurveTo(80, 92, 102, 70); };
-    ctx.lineWidth = 5; ctx.strokeStyle = '#e4686c'; rope(); ctx.stroke();
-    ctx.lineWidth = 2.5; ctx.setLineDash([5, 6]); ctx.strokeStyle = '#fff6ea'; rope(); ctx.stroke();
-  } else if (mode === 'eat') {
-    drawBuddyImage(ctx, 80, 94, 'jinmao', 'idle', 0, 1, true);
-  } else {
-    // 三层摞起来比卡片高，缩小一点整组放进去
-    ctx.translate(80, 98); ctx.scale(0.62, 0.62);
-    drawBuddyImage(ctx, 0, 0, 'bubu', 'idle', 0, 1);
-    drawBuddyImage(ctx, 0, -40, 'xiaobai', 'idle', 0.3, 1);
-    drawBuddyImage(ctx, 0, -80, 'yier', 'idle', 0.6, 1);
-  }
-}
-
-/** 首页的角色排成一队，从屏幕左边跑出来、跑到右边消失，一直循环；每个角色跑到屏幕正中会转过来朝你跳一下、冒出名字，再接着往右跑。
- *  点击角色也会原地跳一下。系统要求减少动态效果时整队静止站成一排。纯装饰，不影响开房 / 加入。 */
-function bindCast(app: HTMLElement) {
-  const cast = app.querySelector<HTMLElement>('.lh-cast');
-  if (!cast) return;
-  cast.innerHTML = CHARACTERS.map((c) => `<span class="lh-buddy" data-cast="${c.id}"><canvas width="112" height="112"></canvas></span>`).join('');
-  const buddies = [...cast.querySelectorAll<HTMLElement>('.lh-buddy')];
-  const size = () => buddies[0].offsetWidth || 104;
-  const gap = () => size() * 1.9; // 队伍里前后两个角色的间距
-  const SPEED = 70, JUMP_MS = 900; // 像素每秒；正面跳一下的时长
-  const now = () => performance.now();
-  const state = buddies.map((_, i) => ({ action: 'run' as BuddyAction, since: now(), path: -i * gap(), until: 0 }));
-  const place = (buddy: HTMLElement, x: number) => { buddy.style.transform = `translateX(${x.toFixed(1)}px)`; };
-  const hop = (i: number) => {
-    const buddy = buddies[i];
-    Object.assign(state[i], { action: 'idle', since: now(), until: now() + JUMP_MS });
-    buddy.classList.remove('is-jump'); void buddy.offsetWidth; buddy.classList.add('is-jump');
-    buddy.querySelector('.lh-pop')?.remove();
-    const pop = document.createElement('span');
-    pop.className = 'lh-pop'; pop.textContent = CHARACTERS[i].name;
-    buddy.append(pop);
-    setTimeout(() => pop.remove(), 1100);
-  };
-  buddies.forEach((buddy, i) => {
-    buddy.addEventListener('click', () => { if (!state[i].until) hop(i); });
-    buddy.addEventListener('animationend', (e) => { if (e.animationName === 'lh-jump') buddy.classList.remove('is-jump'); });
-  });
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const start = Math.max(0, (cast.clientWidth - gap() * (buddies.length - 1) - size()) / 2);
-    buddies.forEach((buddy, i) => { place(buddy, start + i * gap()); drawBuddyAvatar(buddy.querySelector('canvas')!, CHARACTERS[i].id); });
-    return;
-  }
-  let last = now(), lastDraw = 0;
-  const draw = (time: number) => {
-    if (!app.contains(cast)) return;
-    const dt = Math.min(.1, (time - last) / 1000); last = time;
-    const w = cast.clientWidth, b = size();
-    // 一圈的长度：至少要跑出屏幕，人多时整队首尾相接
-    const loop = Math.max(w + b, buddies.length * gap());
-    buddies.forEach((buddy, i) => {
-      const s = state[i];
-      if (s.until && time > s.until) Object.assign(s, { action: 'run', since: time, until: 0 });
-      const before = s.path < 0 ? -b : s.path % loop - b;
-      if (!s.until) s.path += SPEED * dt;
-      const x = s.path < 0 ? -b : s.path % loop - b;
-      // 跑过屏幕正中的那一刻转过来跳一下
-      const mid = (w - b) / 2;
-      if (!s.until && before < mid && x >= mid && hasSheet(CHARACTERS[i].id)) hop(i);
-      place(buddy, x);
-    });
-    // 精灵帧约 12 帧每秒就够看，省电
-    if (time - lastDraw > 80) {
-      lastDraw = time;
-      // 其余角色在后台慢慢下载，到了才入队，不和进游戏抢带宽
-      buddies.forEach((buddy, i) => {
-        const ready = hasSheet(CHARACTERS[i].id);
-        buddy.style.visibility = ready ? '' : 'hidden';
-        if (ready) drawBuddyAvatar(buddy.querySelector('canvas')!, CHARACTERS[i].id, state[i].action, (time - state[i].since) / 1000, 1);
-      });
-    }
-    requestAnimationFrame(draw);
-  };
-  requestAnimationFrame(draw);
-}
 
 export function mountHome(app: HTMLElement) {
   const savedGame = store.get('game');
@@ -134,36 +37,29 @@ export function mountHome(app: HTMLElement) {
   app.innerHTML = `
   <div class="site home${native || isLanPage() ? ' app-home' : ''}">
     <header class="lh-top">
-      <a class="lh-wordmark" href="#/" aria-label="${t('app.name')}"><img class="lh-mark on-light" src="${brand('mark.svg')}" alt="" width="50" height="35"><img class="lh-mark on-dark" src="${brand('mark-light.svg')}" alt="" width="50" height="35"><span>${t('app.name')}<small>Little Lobby</small></span></a>
+      <a class="lh-wordmark" href="#/" aria-label="${t('app.name')}"><img class="lh-mark on-light" src="${brand('mark.svg')}" alt="" width="40" height="28"><img class="lh-mark on-dark" src="${brand('mark-light.svg')}" alt="" width="40" height="28"><span>${t('app.name')}</span></a>
       ${siteTools()}
     </header>
     <main class="lh-main">
-      <section class="lh-intro">
-        <div><h1 class="lh-title">${t('app.tagline')}</h1>
-        <p class="lh-lede">${t('app.desc')}</p></div>
-      </section>
+      <h1 class="lh-title">${t('app.tagline')}</h1>
       ${native ? `<div class="network-mode seg lh-network" role="group" aria-label="${t('lan.mode')}"><button data-network="online" class="${lan ? '' : 'on'}">${t('lan.online')}</button><button data-network="lan" class="${lan ? 'on' : ''}">${t('lan.local')}</button></div>` : ''}
       ${lan ? `<p class="lh-note">${t('lan.hint')}</p>` : ''}
 
-      <div class="lh-cast" aria-hidden="true"></div>
       <div class="lh-actions${showJoin && showHost ? '' : ' is-single'}">
         ${showJoin ? `<section class="lh-panel lh-join" aria-labelledby="lh-join-title">
           <h2 id="lh-join-title">${t('home.joinTitle')}</h2>
-          <p class="lh-panel-desc">${t('home.joinDesc')}</p>
           <form class="code-form lh-code-form">
             <label class="code-boxes lh-code-boxes">
               ${'<span></span>'.repeat(CODE_LEN)}
               <input class="code" maxlength="${CODE_LEN}" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="${t('join.codeLabel')}">
             </label>
-            <button type="submit" class="lh-btn lh-btn-ink join-btn">${t('join.go')}${icon.right}</button>
+            <button type="submit" class="lh-btn lh-btn-accent join-btn">${t('join.go')}</button>
           </form>
-          ${lan ? '' : `<button type="button" class="lh-btn lh-btn-line scan-btn">${icon.scan}<span>${t('join.scan')}</span></button>
-          <div class="lh-scan-tip">${scanArt}<p><b>${t('home.scanTipTitle')}</b><span>${t('home.scanTip')}</span></p></div>`}
+          ${lan ? '' : `<button type="button" class="lh-link scan-btn">${t('join.scan')}</button>`}
         </section>` : ''}
 
         ${showHost ? `<section class="lh-panel lh-host" aria-labelledby="lh-host-title">
           <h2 id="lh-host-title">${t('home.hostTitle')}</h2>
-          <p class="lh-panel-desc">${t('home.hostDesc')}</p>
           <div class="lh-picker" role="radiogroup" aria-label="${t('home.game')}">
             ${GAMES.map(({ id }) => gameInfo(id)).map((game) => `<button type="button" class="lh-pick" role="radio" data-game="${game.id}" aria-checked="${selectedGame === game.id}">
               <span class="lh-pick-art lh-art-${game.id}">${gameArt(game.id)}</span>
@@ -178,67 +74,34 @@ export function mountHome(app: HTMLElement) {
               <p class="field-err" hidden>${t('host.pinBad')}</p>
             </div>
           </details>
-          <div class="lh-host-btns">
-            <button type="button" class="lh-btn lh-btn-accent create">${icon.tv}<span><b>${t('host.screen')}</b><small>${t('host.screenDesc')}</small></span></button>
-            <button type="button" class="lh-btn lh-btn-line host">${icon.phone}<span><b>${t('host.phone')}</b><small>${t('host.phoneDesc')}</small></span></button>
-          </div>
+          <button type="button" class="lh-btn lh-btn-ink create">${t('host.screen')}</button>
+          <button type="button" class="lh-link host">${t('host.phone')}</button>
         </section>` : ''}
       </div>
 
       ${showLobby ? `<section class="lh-section lh-lobby" aria-labelledby="lh-lobby-title">
-        <div class="lh-section-head"><h2 id="lh-lobby-title">${t('tab.lobby')} <span class="count"></span></h2>${lan ? '' : `<button type="button" class="lh-link lh-refresh">${t('lobby.refresh')}</button><p class="lh-lobby-hint">${t('lobby.hint')}</p><div class="lh-lobby-empty"><span class="lh-lobby-pill">${icon.users}<span class="lh-lobby-state">${t('home.lobbyLoading')}</span></span>${showHost ? `<button type="button" class="lh-link lh-open-public">${t('home.openPublic')}${icon.right}</button>` : ''}</div>`}</div>
+        <div class="lh-section-head"><h2 id="lh-lobby-title">${t('tab.lobby')} <span class="count"></span></h2>${lan ? '' : `<span class="lh-lobby-state">${t('home.lobbyLoading')}</span><button type="button" class="lh-link lh-refresh">${t('lobby.refresh')}</button>`}</div>
         ${lan && native ? `<div class="lh-lan">${lanLobbyHtml()}</div>` : ''}
         <div class="lobby-table" role="table" ${lan ? 'hidden' : ''}>
-          <div class="lrow lhead" role="row"><span>${t('lobby.room')}</span><span>${t('lobby.host')}</span><span>${t('lobby.players')}</span><span>${t('lobby.state')}</span></div>
           <div class="lbody"></div>
         </div>
       </section>` : ''}
 
-      <section class="lh-section lh-games" aria-labelledby="lh-games-title">
-        <div class="lh-section-head"><h2 id="lh-games-title">${t('home.games')}</h2><p>${t('home.gamesLead')}</p></div>
-        <div class="lh-game-grid">${GAMES.map(({ id }) => gameInfo(id)).map((game) => `<article class="lh-game lh-game-${game.id}">
-          <div class="lh-game-text">
-            <h3>${game.name}</h3>
-            <p>${game.caption}</p>
-            <p class="lh-game-meta">${game.players}</p>
-            <div class="lh-game-links">
-              ${showHost ? `<button type="button" class="lh-link" data-use-game="${game.id}">${t('home.useGame')}${icon.right}</button>` : ''}
-              ${game.id === 'adventure' ? `<a class="lh-link" href="#/adventure-host?solo=1">${t('home.solo')}${icon.right}</a>` : ''}
-            </div>
-          </div>
-          <img class="lh-game-img" src="${assetUrl(`${game.id}.webp`)}" alt="" loading="lazy" width="960" height="640">
-        </article>`).join('')}</div>
-        <div class="lh-modes">${MODES.filter((m) => m.coop).map((m) => `<div class="lh-mode"><canvas data-mode-art="${m.id}" width="320" height="200" aria-hidden="true"></canvas><p><b>${m.name}</b><span>${m.desc}</span></p></div>`).join('')}</div>
-      </section>
-
-      ${native || isLanPage() ? '' : `<section class="lh-offline" aria-labelledby="lh-offline-title">
-        <div class="lh-offline-text">
-          <h2 id="lh-offline-title">${t('home.offlineTitle')}</h2>
-          <p>${t('home.offlineDesc')}</p>
-          <div class="lh-dl-grid">${MAIN_DOWNLOADS.map(([label, logo]) => `<a class="lh-dl" data-os="${label}" href="${REPO_URL}/releases" target="_blank" rel="noopener">${logo}<span>${label}</span>${icon.download}</a>`).join('')}</div>
-          <p class="lh-dl-note"><span class="lh-dl-ver">${t('dl.loading')}</span> · <a href="${REPO_URL}/releases" target="_blank" rel="noopener">${t('dl.all')}</a></p>
-        </div>
-        <img class="lh-offline-art" src="${assetUrl('offline.webp')}" alt="" loading="lazy" width="900" height="600">
-      </section>`}
-
-      <section class="lh-section lh-guide-wrap">
-        <a class="lh-guide" href="#/guide">${icon.book}<span>${t('guide.cta')}</span>${icon.right}</a>
-        <a class="lh-guide" href="#/characters">${icon.users}<span>${t('chars.cta')}</span>${icon.right}</a>
-      </section>
+      <p class="lh-more">
+        ${native || isLanPage() ? '' : `<span class="lh-offline">${t('home.offlineTitle')}：${MAIN_DOWNLOADS.map(([label]) => `<a data-os="${label}" href="${REPO_URL}/releases" target="_blank" rel="noopener">${label}</a>`).join(' · ')}</span>`}
+        <a href="#/guide">${t('guide.cta')}</a>
+        <a href="#/characters">${t('chars.cta')}</a>
+      </p>
     </main>
     ${siteFooter()}
   </div>`;
 
   const $ = <T extends HTMLElement>(s: string) => app.querySelector(s) as T | null;
   bindSiteTools(app);
-  // 先只等内置角色（小图和队伍用得到），其余角色等页面空下来再下载
-  void loadCharacters().then(() => loadCharacterSprites(builtinCharacters())).then(() => {
-    if (!app.querySelector('.home')) return;
+  // 开房选择里冒险的小图用角色帧画
+  void loadCharacters().then(() => loadCharacterSprites(['yier', 'bubu'])).then(() => {
     app.querySelectorAll<HTMLCanvasElement>('[data-buddy]').forEach((canvas) => drawBuddyAvatar(canvas, canvas.dataset.buddy!));
-    app.querySelectorAll<HTMLCanvasElement>('[data-mode-art]').forEach((canvas) => drawModeArt(canvas, canvas.dataset.modeArt as ModeId));
-    bindCast(app);
-    setTimeout(() => { if (app.querySelector('.home')) void loadCharacterSprites(CHARACTERS.map((c) => c.id)).catch(() => {}); }, 2000);
-  }).catch(() => { /* Decorative characters do not block joining a room. */ });
+  }).catch(() => { /* Decorative thumbnails do not block joining a room. */ });
 
   const pickGame = (game: GameId) => {
     selectedGame = game;
@@ -248,21 +111,10 @@ export function mountHome(app: HTMLElement) {
   app.querySelectorAll<HTMLButtonElement>('[data-game]').forEach((button) => {
     button.onclick = () => { if (validGame(button.dataset.game)) pickGame(button.dataset.game); };
   });
-  app.querySelectorAll<HTMLButtonElement>('[data-use-game]').forEach((button) => {
-    button.onclick = () => {
-      if (!validGame(button.dataset.useGame)) return;
-      pickGame(button.dataset.useGame);
-      const host = $('.lh-host');
-      host?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
-      host?.querySelector<HTMLElement>(`[data-game="${button.dataset.useGame}"]`)?.focus({ preventScroll: true });
-    };
-  });
   const offline = $('.lh-offline');
   if (offline) {
     void latestRelease().then((release) => {
-      const ver = offline.querySelector('.lh-dl-ver')!;
-      if (!release) { ver.textContent = t('home.soon'); return; }
-      ver.textContent = t('home.latest', { v: release.tag_name });
+      if (!release) return;
       offline.querySelectorAll<HTMLAnchorElement>('[data-os]').forEach((a) => {
         const patterns = MAIN_DOWNLOADS.find(([label]) => label === a.dataset.os)?.[2] ?? [];
         const asset = patterns.map((re) => release.assets.find((x) => re.test(x.name))).find(Boolean);
@@ -271,19 +123,8 @@ export function mountHome(app: HTMLElement) {
         a.removeAttribute('target');
         a.title = `${asset.name} · ${(asset.size / 1048576).toFixed(1)} MB`;
       });
-    }).catch(() => { offline.querySelector('.lh-dl-ver')!.textContent = t('dl.failed'); });
+    }).catch(() => { /* 拿不到版本时链接仍指向发布页 */ });
   }
-  // 大厅空着时「开个公开房间」：勾上公开大厅、展开房间设置，并把焦点交给开房按钮
-  const openPublic = $('.lh-open-public');
-  if (openPublic) openPublic.onclick = () => {
-    const listed = $<HTMLInputElement>('.opt-listed');
-    if (listed) listed.checked = true;
-    const options = $<HTMLDetailsElement>('.lh-options');
-    if (options) options.open = true;
-    const host = $('.lh-host');
-    host?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
-    $('.create')?.focus({ preventScroll: true });
-  };
   app.querySelectorAll<HTMLButtonElement>('[data-network]').forEach((button) => {
     button.onclick = () => {
       store.set('network', button.dataset.network!);

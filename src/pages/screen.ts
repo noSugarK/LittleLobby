@@ -7,8 +7,9 @@ import { t } from '../i18n';
 import { saveQrCard } from '../ui/qrcard';
 import { askConfirm } from '../ui/confirm';
 import { mvpLineHtml, statsTableHtml } from '../ui/stats-ui';
-import { bindLobby, pinLineHtml, settingsHtml, teamCardHtml } from '../ui/settings-ui';
-import { icon } from '../ui/site';
+import { bindLobby, modeChipsHtml, pinLineHtml, settingsHtml, teamCardHtml } from '../ui/settings-ui';
+import { bindDrawer } from '../ui/drawer';
+import { bindLangSelect, icon, langSelect } from '../ui/site';
 import { audioReady, unlockAudio } from '../ui/sound';
 import { lanSession } from '../net/lan-session';
 import { LanHost } from '../net/lan-host';
@@ -28,39 +29,28 @@ export function mountScreen(app: HTMLElement) {
   app.innerHTML = `
   <div class="screen">
     <canvas class="stage"></canvas>
+    <div class="net-badge"><i></i><span>${t(local ? 'lan.starting' : 'status.connectingSignal')}</span></div>
+    <div class="screen-top">
+      <button class="ghost round-btn fs-btn" aria-label="${t('play.fullscreen')}" title="${t('play.fullscreen')} (F)">${icon.expand}</button>
+      <button class="ghost round-btn menu" aria-label="${t('play.menu')}" title="${t('play.menu')} (Esc)">${icon.menu}</button>
+    </div>
+    <img class="corner-logo" src="${brand('logo-white-sm.png')}" alt="${t('app.name')}">
     <div class="corner-qr" hidden>
       <canvas></canvas><div>${t('screen.scanJoin')} · <b>${room}</b>${opts.pin ? ` · ${t('play.pinLine')} ${opts.pin}` : ''}</div>
     </div>
-    <img class="game-logo screen-logo" src="${brand('logo-white-sm.png')}" alt="">
-    <div class="net-badge"><i></i><span>${t(local ? 'lan.starting' : 'status.connectingSignal')}</span></div>
-    <div class="screen-actions">
-      <button class="ghost end-btn" hidden>${t('screen.end')}</button>
-      <button class="ghost open-lobby" hidden>${t('screen.openPanel')}</button>
-      <button class="ghost switch-game">${t('game.switchTo', { game: gameName('adventure') })}</button>
-      <button class="ghost leave-room">${t('play.leave')}</button>
+    <div class="game-dock football-dock" hidden>
+      <div class="tcards"></div>
+      <div class="cfg dock-modes"></div>
+      <div class="dock-invite"><canvas class="qr"></canvas><div><span>${t('screen.scanJoin')}</span><b class="room-code">${room}</b>${pinLineHtml(opts.pin)}</div></div>
+      ${local ? lanInfoHtml() : ''}
+      <button class="primary start"></button>
     </div>
-    <div class="lobby card">
-      <button class="ghost lobby-close" title="${t('screen.closePanel')} (Esc)" aria-label="${t('screen.closePanel')}">×</button>
-      <div class="lobby-join">
-        <canvas class="qr"></canvas>
-        <div class="room-code">${room}</div>
-        ${pinLineHtml(opts.pin)}
-        <div class="muted small">${t('screen.orOpen')}<br><span class="url">${esc(joinUrl({ room }))}</span></div>
-        <button class="ghost save-qr">${icon.download}${t('qr.save')}</button>
-        ${local ? lanInfoHtml() : ''}
-      </div>
-      <div class="lobby-side">
-        <div class="lobby-head">
-          <h2 class="lobby-title">${gameName('football')}</h2><span class="tv-tag">TV 大屏</span>
-          <span class="muted small"><span class="watchers"></span>${t('play.swipeHint')}</span>
-        </div>
-        <div class="tcards"></div>
-        <div class="cfg-wrap"></div>
-        <div class="row lobby-actions">
-          <button class="primary start">${t('play.start')}</button>
-          <button class="fs">${t('play.fullscreen')}</button>
-        </div>
-        <p class="muted small">${t('screen.lobbyTip')}</p>
+    <div class="panel card drawer screen-menu" hidden>
+      <div class="pmain">
+        <div class="panel-head"><span>${t('play.room', { room: `<b>${esc(room)}</b>` })} <span class="watchers muted"></span></span><button class="ghost close" aria-label="${t('screen.closePanel')}">×</button></div>
+        <div class="pbody"><div class="cfg-wrap"></div></div>
+        <div class="pmeta prefs"><label>${t('lang.label')} ${langSelect()}</label><button class="ghost save-qr">${icon.download}${t('qr.save')}</button></div>
+        <div class="pmeta pactions"><button class="ghost end-btn" hidden>${t('screen.end')}</button><button class="ghost switch-game">${t('game.switchTo', { game: gameName('adventure') })}</button><button class="pleave leave-room">${t('play.leave')}</button></div>
       </div>
     </div>
     <div class="result card" hidden></div>
@@ -68,18 +58,17 @@ export function mountScreen(app: HTMLElement) {
   </div>`;
 
   const $ = <T extends HTMLElement>(s: string) => app.querySelector(s) as T;
-  const lobbyEl = $('.lobby');
+  const screenEl = $('.screen');
+  const dockEl = $('.game-dock');
+  const menuEl = $('.screen-menu');
   const resultEl = $('.result');
   const cornerEl = $('.corner-qr');
   const endBtn = $('.end-btn');
   const badge = $('.net-badge');
   const cfgEl = $('.cfg-wrap');
-  const openBtn = $('.open-lobby');
   const watchersEl = $('.watchers');
   let cfgHtml = '';
-  // 大厅面板可以收起，好看清球场上的热身；回到大厅时重新展开
-  let lobbyOpen = true;
-  let lastPhase: Phase = Phase.Lobby;
+  let modesHtml = '';
 
   QRCode.toCanvas($('.qr'), qrUrl, { width: 260, margin: 1 });
   QRCode.toCanvas($('.corner-qr canvas'), qrUrl, { width: 110, margin: 1 });
@@ -87,32 +76,38 @@ export function mountScreen(app: HTMLElement) {
   bindLanAddress(app, () => {
     QRCode.toCanvas($('.qr'), joinUrl({ room, pin: opts.pin }), { width: 260, margin: 1 });
     QRCode.toCanvas($('.corner-qr canvas'), joinUrl({ room, pin: opts.pin }), { width: 110, margin: 1 });
-    $('.url').textContent = joinUrl({ room });
   });
   const game = new HostGame(room, opts, local ? (_room, cb) => new LanHost(local, cb) : undefined);
   const renderer = new Renderer($('.stage'));
 
   game.onStatus = (ok, text) => {
     badge.classList.toggle('ok', ok);
-    badge.querySelector('span')!.textContent = ok && local ? t('status.lan') : text;
+    badge.querySelector('span')!.textContent = `${ok && local ? t('status.lan') : text} · ${room}`;
   };
   game.onRoster = (r) => renderUi(r);
   game.onPhase = () => renderUi(game.rosterMsg());
 
-  const sideEl = $('.lobby-side');
   const cardsEl = $('.tcards');
+  const modesEl = $('.dock-modes');
 
   function renderUi(r: RosterMsg) {
-    // 大屏是管理端：成员都能左滑管理，队伍未满时可添加 AI，空位补满 4 个
-    const card = (team: Team) => teamCardHtml(team, r.players, { hostPid: r.hostPid, manage: true, addAi: true, slots: true, joinable: false });
+    // 大屏是管理端：成员都能左滑管理，队伍未满时可添加 AI
+    const card = (team: Team) => teamCardHtml(team, r.players, { hostPid: r.hostPid, manage: true, addAi: true, slots: false, joinable: false });
     cardsEl.innerHTML = card(0) + card(1);
-    // 设置内容变化时才重绘
+    // 卡片里只放比赛模式，其余设置在菜单里；内容变化时才重绘
     const html = settingsHtml(r.settings);
     if (html !== cfgHtml) {
       cfgHtml = html;
       cfgEl.innerHTML = html;
     }
-    bindLobby(sideEl, r.players, {
+    const modes = modeChipsHtml(r.settings);
+    if (modes !== modesHtml) {
+      modesHtml = modes;
+      modesEl.innerHTML = modes;
+    }
+    const st = r.settings;
+    $('.start').textContent = `${t('play.start')} · ${st.mode === 1 ? t('mode.1') : t('play.minutes', { n: st.duration / 60 })}`;
+    bindLobby(screenEl, r.players, {
       settings: (p) => game.setSettings(p),
       addBot: (team) => game.changeBots(team, 1),
       owner: (pid) => game.setOwner(pid),
@@ -120,15 +115,10 @@ export function mountScreen(app: HTMLElement) {
     });
     watchersEl.textContent = r.watchers ? `${t('play.watchers', { n: r.watchers })} · ` : '';
     const phase = game.sim.phase;
-    if (phase !== lastPhase) {
-      if (phase === Phase.Lobby) lobbyOpen = true;
-      lastPhase = phase;
-    }
     const lobby = phase === Phase.Lobby;
-    lobbyEl.hidden = !lobby || !lobbyOpen;
-    openBtn.hidden = !lobby || lobbyOpen;
-    // 面板收起后二维码挪到角落，仍然可以扫码加入
-    cornerEl.hidden = lobby && lobbyOpen;
+    // 热身时右下角是房主卡片；比赛中换成角落小二维码，晚到的人仍然可以扫码加入
+    dockEl.hidden = !lobby;
+    cornerEl.hidden = lobby;
     endBtn.hidden = phase === Phase.Lobby || phase === Phase.Ended;
     if (phase === Phase.Ended && r.end) {
       const [a, b] = r.end.score;
@@ -145,15 +135,17 @@ export function mountScreen(app: HTMLElement) {
     } else resultEl.hidden = true;
   }
 
-  const setLobbyOpen = (open: boolean) => {
-    lobbyOpen = open;
-    renderUi(game.rosterMsg());
-  };
-  $('.lobby-close').onclick = () => setLobbyOpen(false);
-  openBtn.onclick = () => setLobbyOpen(true);
+  const setMenu = (open: boolean) => { menuEl.hidden = !open; };
+  $('.menu').onclick = () => setMenu(menuEl.hidden);
+  $('.close').onclick = () => setMenu(false);
+  bindDrawer(screenEl, menuEl, () => setMenu(false));
+  bindLangSelect(menuEl);
   $('.start').onclick = () => game.startMatch();
   $('.save-qr').onclick = () => saveQrCard({ room, pin: opts.pin });
-  $('.fs').onclick = () => enterFullscreen();
+  const fsBtn = $('.fs-btn');
+  const syncFs = () => { fsBtn.hidden = !!document.fullscreenElement; };
+  document.addEventListener('fullscreenchange', syncFs);
+  fsBtn.onclick = () => enterFullscreen();
   $('.switch-game').onclick = () => { void switchHostGame('adventure'); };
   $('.leave-room').onclick = async () => {
     if (!(await askConfirm(t('play.confirmCloseRoom')))) return;
@@ -171,7 +163,7 @@ export function mountScreen(app: HTMLElement) {
     if ((e.code === 'Space' || e.code === 'Enter') && (phase === Phase.Lobby || phase === Phase.Ended)) game.startMatch();
     if (e.code === 'KeyF') enterFullscreen();
     if (e.code === 'Escape') {
-      if (phase === Phase.Lobby) setLobbyOpen(!lobbyOpen);
+      if (!menuEl.hidden || phase === Phase.Lobby) setMenu(menuEl.hidden);
       else if (phase === Phase.Ended) game.toLobby();
       else void askConfirm(t('play.confirmEnd')).then((ok) => ok && game.endMatch());
     }

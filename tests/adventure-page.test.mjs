@@ -41,7 +41,7 @@ registerHooks({
     if (url.startsWith('test:adventure/')) return { format: 'module', shortCircuit: true, source: mocks[url.slice('test:adventure/'.length)] };
     if (url.endsWith('.css')) return { format: 'module', shortCircuit: true, source: '' };
     if (!url.endsWith('.ts')) return next(url, context);
-    return { format: 'module', shortCircuit: true, source: ts.transpile(readFileSync(new URL(url), 'utf8'), { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }) };
+    return { format: 'module', shortCircuit: true, source: ts.transpile(readFileSync(new URL(url), 'utf8').replaceAll('import.meta.env.BASE_URL', '"/LittleLobby/"'), { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }) };
   },
 });
 class Element extends EventTarget {

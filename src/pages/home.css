@@ -1,255 +1,128 @@
-/* 小聚场首页：派对游戏官网的标准结构（对标 Jackbox / AirConsole / Kahoot!）——
-   首屏就是「输入房间码加入」与「开房」两块同等分量的面板，其后是公开大厅与游戏介绍。
-   配色跟随 logo：墨绿品牌色、珊瑚橙行动色、奶油白底。按钮用加深的珊瑚橙，白字对比度约 5:1。
+/* 小聚场首页：首屏就是「加入」与「开房」两块同等分量的面板，其后是公开大厅。
+   克制为主：奶油白底、细线面板、一个珊瑚橙行动色，墨绿只用在开房按钮和链接上。
    中文用系统黑体：中文网页字体动辄数 MB，Google Fonts 在国内也不可用。 */
 .site.home {
-  --h-bg: #f7f2e8; --h-panel: #fff; --h-ink: #10302f; --h-mu: #5b6e6b; --h-line: #e6dfd2;
+  --h-bg: #f7f2e8; --h-panel: #fffdf9; --h-ink: #10302f; --h-mu: #5b6e6b; --h-line: #e2dacb;
   --h-brand: #0f5c5a; --h-link: #0f5c5a;
-  --h-ac: #d9502f; --h-acfg: #fff; --h-ring: #ff7a59; --h-ac-soft: #ffe9e1; --h-focus: #d9502f;
-  --h-join: #0f5c5a; --h-join-ink: #fbf7ef; --h-join-mu: #cfe3df;
+  --h-ac: #d9502f; --h-acfg: #fff; --h-ring: #ff7a59; --h-ac-soft: #fbeee6; --h-focus: #d9502f;
   --h-turf: #3aa865; --h-art-ball: #dcf1e3; --h-art-buddy: #ffe4d4;
   --s-bg: var(--h-bg); --s-card: var(--h-panel); --s-fg: var(--h-ink); --s-mu: var(--h-mu); --s-line: var(--h-line);
   --s-ac: var(--h-brand); --s-acfg: #fff; --s-tab: #f0eadf; --s-tabon: var(--h-panel); --s-soft: var(--h-ac-soft); --s-softfg: var(--h-ac);
   font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
   background: var(--h-bg); color: var(--h-ink); color-scheme: light;
   caret-color: var(--h-ac); accent-color: var(--h-brand);
-  scrollbar-color: color-mix(in srgb, var(--h-ink) 25%, transparent) transparent;
 }
 [data-theme='dark'] .site.home {
-  --h-bg: #0b1e1d; --h-panel: #132e2c; --h-ink: #fbf7ef; --h-mu: #a9bdb8; --h-line: #24423f;
-  --h-brand: #8ed8cf; --h-link: #8ed8cf; --h-ring: #ff8a6b; --h-ac-soft: #3a2a24; --h-focus: #ff8a6b;
-  --h-join: #0f6e69;
-  --h-art-ball: #15301f; --h-art-buddy: #3a2620; --s-tab: #10282a; --s-acfg: #0b1e1d;
+  --h-bg: #0b1e1d; --h-panel: #10282a; --h-ink: #fbf7ef; --h-mu: #a9bdb8; --h-line: #24423f;
+  --h-brand: #8ed8cf; --h-link: #8ed8cf; --h-ring: #ff8a6b; --h-ac-soft: #2c2521; --h-focus: #ff8a6b;
+  --h-art-ball: #15301f; --h-art-buddy: #3a2620; --s-tab: #0e2426; --s-acfg: #0b1e1d;
   color-scheme: dark;
 }
 .site.home ::selection { background: var(--h-ring); color: var(--h-ink); }
 .home :where(button, a, summary, input):focus-visible { outline: 3px solid var(--h-focus); outline-offset: 3px; }
-.home .lh-join :where(button, input):focus-visible { outline-color: var(--h-join-ink); }
 
 /* ---------- 顶栏 ---------- */
-.lh-top, .lh-main { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: 32px; }
-.lh-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 84px; padding-top: var(--safe-top, env(safe-area-inset-top, 0px)); }
-.lh-wordmark { display: flex; align-items: center; gap: 12px; text-decoration: none; font-size: 22px; font-weight: 850; letter-spacing: .06em; }
-.lh-wordmark small { display: block; font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--h-mu); margin-top: 2px; }
-/* 品牌图形：客厅沙发手柄（public/brand/mark.svg） */
-.lh-mark { width: 50px; height: auto; display: block; }
+.lh-top, .lh-main { width: 100%; max-width: 1080px; margin-inline: auto; padding-inline: 32px; }
+.lh-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 76px; padding-top: var(--safe-top, env(safe-area-inset-top, 0px)); }
+.lh-wordmark { display: flex; align-items: center; gap: 10px; text-decoration: none; font-size: 20px; font-weight: 800; letter-spacing: .04em; }
+.lh-mark { width: 40px; height: auto; display: block; }
 .lh-mark.on-dark, [data-theme='dark'] .lh-mark.on-light { display: none; }
 [data-theme='dark'] .lh-mark.on-dark { display: block; }
-.home .site-tools { gap: 8px; }
-.home .site-tools .icon-btn, .home .site-tools .lang-select { background: var(--h-panel); border: 1px solid var(--h-line); color: var(--h-ink); border-radius: 12px; }
+.home .site-tools { gap: 4px; }
+.home .site-tools .icon-btn, .home .site-tools .lang-select { background: none; border: 0; color: var(--h-ink); }
 
-/* ---------- 首屏：标题 + 角色 ---------- */
-.lh-main { flex: 1 0 auto; padding-bottom: 56px; }
-.lh-intro { padding: 36px 0 0; }
-.lh-title { margin: 0; font-size: clamp(30px, 3.7vw, 46px); line-height: 1.2; font-weight: 850; letter-spacing: -.01em; white-space: nowrap; }
-.lh-lede { margin: 10px 0 30px; max-width: 34em; font-size: 17px; line-height: 1.7; color: var(--h-mu); }
-/* 角色排成一队铺满整个屏幕宽，脚踩在下方两张卡片的上沿，从左跑到右循环；位置由 home.ts 逐帧设置 */
-.home { overflow-x: hidden; }
-/* 不占版面：整条（含上方 96px 跳跃 / 气泡余量）用负边距叠在标题上层，脚踩卡片上沿 18px。一直在走，挡住的字很快就露出来 */
-.lh-cast { --b: 104px; position: relative; z-index: 2; height: calc(var(--b) + 96px); margin: calc(-78px - var(--b)) calc(50% - 50vw) -18px; overflow: hidden; pointer-events: none; }
-.lh-buddy { position: absolute; left: 0; bottom: 0; cursor: pointer; pointer-events: auto; touch-action: manipulation; -webkit-tap-highlight-color: transparent; will-change: transform; }
-.lh-buddy canvas { display: block; width: var(--b); height: var(--b); transform-origin: 50% 92%; }
-.lh-buddy.is-jump canvas { animation: lh-jump .9s cubic-bezier(.2, .8, .3, 1); }
-@keyframes lh-jump { 0% { translate: 0 0; scale: 1.06 .92; } 30% { translate: 0 -44px; scale: .96 1.05; } 60% { translate: 0 -30px; } 85% { translate: 0 2px; scale: 1.05 .95; } 100% { translate: 0 0; scale: 1; } }
-.lh-pop { position: absolute; left: 50%; top: -6px; translate: -50% 0; white-space: nowrap; pointer-events: none; padding: 4px 10px; border-radius: 999px; background: var(--h-panel); color: var(--h-ink); border: 1px solid var(--h-line); box-shadow: 0 6px 16px -8px #10302f55; font-size: 13px; font-weight: 750; animation: lh-pop 1.1s cubic-bezier(.16, 1, .3, 1) forwards; }
-.lh-pop::before { content: '♥ '; color: var(--h-ring); }
-@keyframes lh-pop { 0% { opacity: 0; translate: -50% 10px; scale: .8; } 20% { opacity: 1; translate: -50% -22px; scale: 1; } 75% { opacity: 1; translate: -50% -30px; } 100% { opacity: 0; translate: -50% -40px; } }
-
+/* ---------- 标题 ---------- */
+.lh-main { flex: 1 0 auto; padding-bottom: 48px; }
+.lh-title { margin: 28px 0 32px; font-size: clamp(30px, 4.4vw, 52px); line-height: 1.15; font-weight: 850; letter-spacing: -.01em; }
 .lh-network { margin: 0 0 14px; max-width: 360px; }
-.lh-note { margin: 0 0 16px; font-size: 14px; line-height: 1.7; color: var(--h-mu); }
+.lh-note { margin: -16px 0 20px; font-size: 14px; line-height: 1.7; color: var(--h-mu); }
 
 /* ---------- 两块主面板 ---------- */
 .lh-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
-.lh-actions.is-single { grid-template-columns: minmax(0, 640px); justify-content: center; }
-.lh-panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 30px; border-radius: 28px; }
-.lh-panel h2 { margin: 0; font-size: 28px; font-weight: 850; letter-spacing: -.01em; }
-.lh-panel-desc { margin: -6px 0 6px; font-size: 15px; line-height: 1.6; }
-.lh-join { background: var(--h-join); color: var(--h-join-ink); box-shadow: 0 20px 44px -24px #0f5c5acc; }
-.lh-join .lh-panel-desc { color: var(--h-join-mu); }
-.lh-host { background: var(--h-panel); border: 1px solid var(--h-line); box-shadow: 0 18px 40px -26px #10302f40; }
-.lh-host .lh-panel-desc { color: var(--h-mu); }
+.lh-actions.is-single { grid-template-columns: minmax(0, 560px); }
+.lh-panel { display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 32px; border: 1px solid var(--h-line); border-radius: 16px; background: var(--h-panel); }
+.lh-panel h2 { margin: 0 0 4px; font-size: 26px; font-weight: 800; }
 
-/* 房间码：五个大格子，真正的输入框透明覆盖在上面 */
-.home .lh-code-form { gap: 12px; }
+/* 房间码：五个描边格子，真正的输入框透明覆盖在上面 */
+.home .lh-code-form { gap: 14px; }
 .home .lh-code-boxes { gap: 10px; }
-.home .lh-code-boxes span { height: 72px; border-radius: 16px; background: #fbf7ef; border: 2px solid #ffffff40; color: #10302f; font: 750 34px/1 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; transition: border-color .15s, transform .15s; }
-.home .lh-code-boxes span.filled { border-color: #fbf7ef; }
-.home .lh-code-boxes span.cur { border-color: var(--h-ring); box-shadow: 0 0 0 4px color-mix(in srgb, var(--h-ring) 45%, transparent); transform: translateY(-2px); }
+.home .lh-code-boxes span { height: 76px; border-radius: 10px; background: var(--h-bg); border: 1.5px solid var(--h-line); color: var(--h-ink); font: 700 34px/1 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; transition: border-color .15s; }
+.home .lh-code-boxes span.filled { border-color: color-mix(in srgb, var(--h-ink) 45%, var(--h-line)); }
+.home .lh-code-boxes span.cur { border-color: var(--h-ac); }
 
-/* 按钮 */
-.home .lh-btn { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px; min-height: 56px; padding: 12px 18px; border-radius: 16px; font-size: 17px; font-weight: 750; cursor: pointer; transition: transform .15s, background-color .15s, box-shadow .15s; }
+/* 按钮：只有两种实心按钮，其余都是文字链接 */
+.home .lh-btn { display: flex; align-items: center; justify-content: center; min-height: 54px; padding: 12px 18px; border: 0; border-radius: 10px; font-size: 17px; font-weight: 750; cursor: pointer; transition: background-color .15s; }
 .home .lh-btn:active { transform: translateY(1px); }
-.home .lh-btn .ico { width: 22px; height: 22px; }
-.home .lh-btn-ink { background: var(--h-ac); color: var(--h-acfg); border: 0; box-shadow: 0 10px 22px -12px #d9502f; }
-.home .lh-btn-ink:hover { background: #c4432a; }
-.home .lh-join .lh-btn-line { background: transparent; color: var(--h-join-ink); border: 2px solid #fbf7ef66; }
-.home .lh-join .lh-btn-line:hover { background: #ffffff14; border-color: #fbf7efaa; }
-.home .lh-btn-accent { background: var(--h-ac); color: var(--h-acfg); border: 0; box-shadow: 0 10px 22px -12px #d9502f; }
+.home .lh-btn-accent { background: var(--h-ac); color: var(--h-acfg); }
 .home .lh-btn-accent:hover { background: #c4432a; }
-.home .lh-host .lh-btn-line { background: var(--h-panel); color: var(--h-ink); border: 1.5px solid var(--h-line); }
-.home .lh-host .lh-btn-line:hover { border-color: var(--h-brand); }
-.home .lh-host-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: auto; }
-.home .lh-host-btns .lh-btn { justify-content: flex-start; text-align: left; min-height: 72px; }
-.home .lh-host-btns span { display: grid; gap: 3px; min-width: 0; }
-.home .lh-host-btns small { font-size: 12px; font-weight: 500; opacity: .92; line-height: 1.4; }
+.home .lh-btn-ink { background: var(--h-ink); color: var(--h-bg); margin-top: auto; }
+.home .lh-btn-ink:hover { background: color-mix(in srgb, var(--h-ink) 88%, var(--h-brand)); }
+.home .lh-link { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; padding: 2px 0; border: 0; background: none; color: var(--h-link); font-size: 15px; font-weight: 650; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; cursor: pointer; }
+.home .lh-link:hover { text-decoration-thickness: 2px; }
+.site.home .lh-link.scan-btn { width: auto; flex-direction: row; padding: 2px 0; background: none; color: var(--h-link); }
 
-/* 加入面板底部：没有房间码时扫大屏上的二维码 */
-.lh-scan-tip { display: flex; align-items: center; gap: 14px; margin-top: auto; padding-top: 14px; border-top: 1px solid #fbf7ef2e; color: var(--h-join-mu); }
-.lh-scan-art { flex: none; width: 92px; height: auto; color: var(--h-join-ink); --h-join: #ff7a59; }
-.lh-scan-tip p { display: grid; gap: 2px; margin: 0; font-size: 14px; line-height: 1.5; }
-.lh-scan-tip b { color: var(--h-join-ink); font-size: 15px; }
-
-/* 游戏选择：两个单选块 */
-.lh-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.home .lh-pick { position: relative; display: grid; gap: 0; padding: 0; border: 2px solid var(--h-line); border-radius: 18px; background: var(--h-panel); text-align: left; overflow: hidden; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
-.home .lh-pick:hover { border-color: color-mix(in srgb, var(--h-ring) 55%, var(--h-line)); }
-.home .lh-pick[aria-checked='true'] { border-color: var(--h-ring); box-shadow: 0 0 0 4px var(--h-ac-soft); }
-.home .lh-pick[aria-checked='true']::after { content: ''; position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--h-ring) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 15px no-repeat; }
-.lh-pick-art { display: grid; place-items: center; height: 86px; }
-.lh-pick-text { display: grid; gap: 2px; padding: 10px 14px 12px; }
-.lh-pick-text b { font-size: 17px; }
-.lh-pick-text small { font-size: 12px; color: var(--h-mu); }
-
-/* 游戏插图（选择块与介绍共用） */
+/* 游戏选择：两行，左边小图，右边名字 */
+.lh-picker { display: grid; gap: 10px; }
+.home .lh-pick { display: flex; align-items: center; gap: 16px; padding: 8px 16px 8px 8px; border: 1.5px solid var(--h-line); border-radius: 12px; background: var(--h-panel); color: var(--h-ink); text-align: left; cursor: pointer; transition: border-color .15s; }
+.home .lh-pick:hover { border-color: color-mix(in srgb, var(--h-ink) 35%, var(--h-line)); }
+.home .lh-pick[aria-checked='true'] { border-color: var(--h-ac); background: var(--h-ac-soft); }
+.lh-pick-art { flex: none; display: grid; place-items: center; width: 120px; height: 72px; border-radius: 8px; overflow: hidden; }
+.lh-pick-text { display: grid; gap: 2px; }
+.lh-pick-text b { font-size: 18px; }
+.lh-pick-text small { font-size: 13px; color: var(--h-mu); }
 .lh-art-football { background: var(--h-art-ball); }
 .lh-art-adventure { background: var(--h-art-buddy); }
-.lh-pitch { width: 118px; height: auto; }
+.lh-pitch { width: 104px; height: auto; }
 .lh-pitch-turf { fill: var(--h-turf); }
 .lh-pitch-line { fill: none; stroke: #fff; stroke-width: 2.4; opacity: .85; }
 .lh-ball { fill: #fff; stroke: #141824; stroke-width: 1.6; }
 .lh-ball-patch { fill: #141824; }
 .lh-buddies { display: flex; align-items: flex-end; height: 100%; }
-.lh-buddies canvas { width: 76px; height: 76px; }
-.lh-buddies canvas + canvas { margin-left: -14px; }
+.lh-buddies canvas { width: 62px; height: 62px; }
+.lh-buddies canvas + canvas { margin-left: -12px; }
 
 /* 房间设置：默认收起，密码填错时自动展开 */
-.lh-options { border-top: 1px solid var(--h-line); padding-top: 12px; }
-.lh-options summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-size: 14px; font-weight: 650; color: var(--h-mu); }
+.lh-options summary { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-size: 14px; color: var(--h-mu); }
 .lh-options summary::-webkit-details-marker { display: none; }
-.lh-options summary::after { content: ''; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .15s; }
+.lh-options summary::after { content: ''; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translateY(-2px); }
 .lh-options[open] summary::after { transform: rotate(-135deg) translateY(-2px); }
 .lh-options-body { display: grid; gap: 10px; padding-top: 12px; }
 .home .lh-options .opt-row, .home .lh-options .pin-field { font-size: 14px; }
 
-/* ---------- 公开大厅 / 游戏介绍 ---------- */
-.lh-section { margin-top: 64px; }
-.lh-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
-.lh-section-head h2 { margin: 0; font-size: 26px; font-weight: 850; display: flex; align-items: center; gap: 10px; }
-.lh-section-head p { margin: 0; font-size: 14px; color: var(--h-mu); }
-.home .lh-lobby .lobby-table { border: 1px solid var(--h-line); border-radius: 20px; background: var(--h-panel); }
+/* ---------- 公开大厅：一张细线列表 ---------- */
+.lh-section { margin-top: 48px; }
+.lh-section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 14px; }
+.lh-section-head h2 { margin: 0; font-size: 22px; font-weight: 800; }
+.lh-section-head .count { color: var(--h-mu); font-weight: 600; }
+.lh-lobby-state { flex: 1; font-size: 14px; color: var(--h-mu); }
+.lh-lobby:not(.is-empty) .lh-lobby-state { visibility: hidden; }
+.home .lh-lobby .lobby-table { border: 1px solid var(--h-line); border-radius: 12px; background: var(--h-panel); }
+.lh-lobby.is-empty .lobby-table { display: none; }
 .home .lh-lobby .lrow { padding: 14px 20px; font-size: 15px; grid-template-columns: 84px minmax(0, 1fr) 56px 72px; }
-.home .lh-lobby .lhead { font-size: 13px; background: var(--s-tab); }
 .home .lh-lobby .lbody .lrow:hover { background: var(--h-ac-soft); }
-/* 没有公开房间时整块收成一行：标题 + 状态胶囊 + 开房链接 */
-.lh-lobby-empty { display: none; align-items: center; gap: 6px 18px; flex-wrap: wrap; }
-.lh-lobby.is-empty .lh-section-head { align-items: center; justify-content: flex-start; margin-bottom: 0; padding: 14px 14px 14px 22px; border: 1px solid var(--h-line); border-radius: 20px; background: var(--h-panel); }
-.lh-lobby.is-empty .lh-section-head h2 { font-size: 20px; }
-.lh-lobby.is-empty .lh-lobby-empty { display: flex; flex: 1; justify-content: space-between; }
-.lh-lobby.is-empty :is(.lh-lobby-hint, .lobby-table) { display: none; }
-.lh-lobby-pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: var(--s-tab); color: var(--h-mu); font-size: 14px; font-weight: 600; }
-.lh-lobby-pill .ico { width: 18px; height: 18px; }
-.home .lh-open-public { padding: 6px 8px; }
-.lh-lan { display: grid; gap: 12px; padding: 22px; border: 1px solid var(--h-line); border-radius: 20px; background: var(--h-panel); }
+.lh-lan { display: grid; gap: 12px; padding: 22px; border: 1px solid var(--h-line); border-radius: 12px; background: var(--h-panel); }
 
-.lh-game-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-.lh-game { position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-height: 340px; aspect-ratio: 3 / 2; overflow: hidden; border: 1px solid var(--h-line); border-radius: 24px; background: var(--h-panel); transition: box-shadow .25s, border-color .25s; }
-/* 插图铺满整张卡片，文字压在底部的深色渐变上；悬停 / 键盘聚焦时插图变淡，文字浮起来 */
-.lh-game-img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; transition: opacity .35s, filter .35s, scale .5s cubic-bezier(.16, 1, .3, 1); }
-.lh-game-football .lh-game-img { background: var(--h-art-ball); }
-.lh-game-adventure .lh-game-img { background: var(--h-art-buddy); }
-.lh-game::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, #0b1e1ded 0%, #0b1e1daa 32%, #0b1e1d00 62%); transition: opacity .35s; pointer-events: none; }
-.lh-game-text { position: relative; z-index: 1; padding: 26px 28px 22px; color: #fbf7ef; transition: translate .35s cubic-bezier(.16, 1, .3, 1); }
-.lh-game-text h3 { margin: 0 0 6px; font-size: 28px; font-weight: 850; text-shadow: 0 2px 12px #0006; transition: scale .35s cubic-bezier(.16, 1, .3, 1); transform-origin: 0 100%; }
-.lh-game-text p:not(.lh-game-meta) { margin: 0; font-size: 16px; line-height: 1.6; color: #e3ece9; text-shadow: 0 1px 8px #0006; }
-.lh-game-meta { display: inline-block; margin: 12px 0 0; padding: 3px 10px; border-radius: 999px; background: var(--h-ac); color: #fff; font-size: 13px; font-weight: 700; }
-.lh-game-links { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 10px; }
-.home .lh-game .lh-link { color: #8ed8cf; }
-.lh-game:hover, .lh-game:focus-within { border-color: var(--h-ring); box-shadow: 0 0 0 3px color-mix(in srgb, var(--h-ring) 55%, transparent), 0 18px 40px -18px #0009; }
-.lh-game:hover .lh-game-img, .lh-game:focus-within .lh-game-img { opacity: .5; filter: blur(2px) saturate(.85); scale: 1.04; }
-.lh-game:hover::after, .lh-game:focus-within::after { background: linear-gradient(to top, #0b1e1df5 0%, #0b1e1dcc 45%, #0b1e1d55 100%); }
-.lh-game:hover .lh-game-text, .lh-game:focus-within .lh-game-text { translate: 0 -6px; }
-.lh-game:hover .lh-game-text h3, .lh-game:focus-within .lh-game-text h3 { scale: 1.06; }
-
-/* 三种合作玩法：角色帧铺满卡片，名字和说明压在底部 */
-.lh-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
-.lh-mode { position: relative; overflow: hidden; border: 1px solid var(--h-line); border-radius: 20px; background: var(--h-art-buddy); transition: box-shadow .25s, border-color .25s; }
-.lh-mode canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; transition: opacity .35s, filter .35s; }
-.lh-mode::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, #0b1e1de6 0%, #0b1e1d88 34%, #0b1e1d00 62%); pointer-events: none; }
-.lh-mode p { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; display: grid; gap: 2px; margin: 0; padding: 14px 16px; font-size: 13px; line-height: 1.5; color: #e3ece9; transition: translate .35s cubic-bezier(.16, 1, .3, 1); }
-.lh-mode b { color: #fbf7ef; font-size: 17px; }
-.lh-mode:hover { border-color: var(--h-ring); box-shadow: 0 0 0 3px color-mix(in srgb, var(--h-ring) 55%, transparent); }
-.lh-mode:hover canvas { opacity: .5; filter: blur(1.5px); }
-.lh-mode:hover p { translate: 0 -4px; }
-
-/* 离线版下载：深色品牌底，和加入面板呼应 */
-.lh-offline { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: center; gap: 28px; margin-top: 64px; padding: 34px 36px; border-radius: 28px; background: var(--h-join); color: var(--h-join-ink); }
-.lh-offline h2 { margin: 0; font-size: 28px; font-weight: 850; }
-.lh-offline-text > p { margin: 8px 0 22px; max-width: 32em; font-size: 16px; line-height: 1.7; color: var(--h-join-mu); }
-.lh-dl-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.home .lh-dl { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 10px 14px; border-radius: 14px; background: #fbf7ef; color: #10302f; font-size: 15px; font-weight: 750; text-decoration: none; transition: transform .15s, box-shadow .15s; }
-.home .lh-dl:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -12px #000a; }
-.home .lh-dl span { flex: 1; }
-.home .lh-dl .ico { width: 20px; height: 20px; flex: none; }
-.home .lh-dl > .ico:last-child { width: 16px; height: 16px; color: var(--h-ac); }
-.home .lh-dl:focus-visible { outline-color: var(--h-join-ink); }
-.lh-dl-note { margin: 14px 0 0; font-size: 13px; color: var(--h-join-mu); }
-.lh-dl-note a { color: var(--h-join-ink); font-weight: 650; }
-.lh-offline-art { display: block; width: 100%; height: auto; }
-.lh-guide-wrap { margin-top: 28px; }
-.home .lh-link { display: inline-flex; align-items: center; gap: 4px; padding: 6px 0; border: 0; background: none; color: var(--h-link); font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer; }
-.home .lh-link .ico { width: 18px; height: 18px; transition: transform .15s; }
-.home .lh-link:hover .ico { transform: translateX(3px); }
-.home .lh-guide { display: flex; align-items: center; gap: 12px; margin-top: 28px; padding: 18px 22px; border-radius: 18px; background: var(--h-ac-soft); color: var(--h-ink); font-size: 16px; font-weight: 650; text-decoration: none; }
-.home .lh-guide span { flex: 1; }
-.home .lh-guide .ico { color: var(--h-ac); }
-[data-theme='dark'] .home .lh-guide .ico { color: var(--h-ring); }
-.home .site-footer { border-top: 1px solid var(--h-line); padding: 22px; font-size: 13px; color: var(--h-mu); }
+/* ---------- 页尾一行：离线下载、教程、图鉴 ---------- */
+.lh-more { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 40px 0 0; padding-top: 20px; border-top: 1px solid var(--h-line); font-size: 14px; color: var(--h-mu); }
+.lh-more a { color: var(--h-link); text-underline-offset: 3px; }
+.lh-offline { flex-basis: 100%; }
+.home .site-footer { padding: 22px; font-size: 13px; color: var(--h-mu); }
 
 /* ---------- 平板 / 手机 ---------- */
-@media (max-width: 900px) {
+@media (max-width: 860px) {
   .lh-actions { grid-template-columns: minmax(0, 1fr); }
-  .lh-modes { grid-template-columns: minmax(0, 1fr); }
-  /* 单列时卡片太高：画面裁成长条 */
-  .lh-mode canvas { aspect-ratio: 16 / 7; object-fit: cover; }
-  .lh-offline { grid-template-columns: minmax(0, 1fr); }
-  .lh-offline-art { max-width: 360px; margin-inline: auto; order: -1; }
-  .lh-dl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .lh-cast { --b: 84px; }
 }
 @media (max-width: 640px) {
-  .lh-top, .lh-main { padding-inline: 18px; }
-  .lh-top { min-height: 68px; }
-  .lh-wordmark { font-size: 19px; gap: 10px; } .lh-wordmark small { font-size: 10px; }
-  .home .site-tools { gap: 6px; } .home .lang-select { font-size: 13px; padding: 6px; }
-  .lh-intro { grid-template-columns: minmax(0, 1fr); padding-top: 12px; gap: 0; }
-  .lh-title { font-size: 30px; }
-  .lh-lede { font-size: 15px; margin: 12px 0 8px; }
-  .lh-title { white-space: normal; }
-  .lh-cast { --b: 76px; margin-top: calc(-82px - var(--b)); margin-bottom: -14px; }
-  .lh-panel { padding: 22px 18px; border-radius: 24px; }
-  .lh-panel h2 { font-size: 24px; }
-  .home .lh-code-boxes { gap: 7px; } .home .lh-code-boxes span { height: 60px; font-size: 28px; border-radius: 14px; }
-  .home .lh-host-btns { grid-template-columns: minmax(0, 1fr); }
-  .home .lh-host-btns .lh-btn { min-height: 64px; }
-  .lh-pick-art { height: 72px; }
-  .lh-section { margin-top: 44px; }
-  .lh-section-head { flex-direction: column; gap: 6px; }
-  .lh-section-head h2 { font-size: 22px; }
+  .lh-top, .lh-main { padding-inline: 16px; }
+  .lh-top { min-height: 64px; }
+  .lh-title { margin: 12px 0 22px; font-size: 30px; }
+  .lh-panel { padding: 22px 18px; }
+  .lh-panel h2 { font-size: 22px; }
+  .home .lh-code-boxes { gap: 7px; } .home .lh-code-boxes span { height: 60px; font-size: 28px; }
+  .lh-pick-art { width: 96px; height: 60px; }
+  .lh-section-head { flex-wrap: wrap; }
   .home .lh-lobby .lrow { padding: 12px 14px; font-size: 14px; grid-template-columns: 64px minmax(0, 1fr) 42px 58px; }
-  .lh-game-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-  .lh-game { min-height: 280px; }
-  .lh-game-text { padding: 20px 20px 16px; }
-  .lh-game-text h3 { font-size: 24px; }
-  .lh-game-text p:not(.lh-game-meta) { font-size: 15px; }
-  .lh-lobby.is-empty .lh-section-head { flex-direction: row; flex-wrap: wrap; padding: 12px 14px 12px 18px; }
-  .lh-lobby.is-empty .lh-lobby-empty { flex-basis: 100%; }
-  .lh-offline { margin-top: 44px; padding: 24px 18px; border-radius: 24px; gap: 14px; }
-  .lh-offline h2 { font-size: 24px; }
-  .lh-offline-text > p { font-size: 15px; }
-  .lh-scan-art { width: 76px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .lh-game-img, .lh-game-text, .lh-game-text h3, .lh-mode canvas, .lh-mode p { transition: none; }
-  .lh-buddy canvas, .lh-buddy.is-jump canvas, .lh-pop { animation: none; transition: none; rotate: 0deg; }
-  .home .lh-btn, .home .lh-pick, .home .lh-code-boxes span, .home .lh-link .ico, .home .lh-dl { transition: none; }
+  .home .lh-btn, .home .lh-pick, .home .lh-code-boxes span { transition: none; }
 }

@@ -100,11 +100,8 @@
 .adv-play .adv-character b { font-size: 13px; margin: 0; }
 .adv-play .adv-character small { display: none; }
 .adv-play .adv-character[aria-pressed='true'] { border-color: var(--adv-accent, #f5a8b8); box-shadow: 0 0 0 2px var(--adv-accent, #f5a8b8); }
-.adv-play .pfoot-row > button { flex: 1; }
-.adv-invite .adv-copy { margin-top: 6px; }
 .adv-address .lan-info { font-size: 11px; }
 .adv-address select { width: 100%; font-size: 11px; }
-.adv-instructions { margin: 0; text-align: center; line-height: 1.7; }
 .adv-play .join h1 { margin: 0; font-size: 24px; }
 .adv-overlay { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow-y: auto; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; z-index: 6; }
 .adv-overlay[hidden] { display: none; }
@@ -153,40 +150,67 @@
 .adv-play .dpad i { background: rgba(110, 89, 77, 0.1); border-color: rgba(110, 89, 77, 0.4); box-shadow: none; }
 .adv-play .dpad i::after { background: rgba(110, 89, 77, 0.55); }
 .adv-play .dpad i.on { background: rgba(110, 89, 77, 0.3); }
-/* 房主选玩法：四个单选块，合作玩法在少于 2 人时灰掉 */
-.adv-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.adv-play .adv-mode { display: grid; gap: 2px; padding: 8px 10px; border-radius: 12px; text-align: left; }
-.adv-mode b { font-size: 14px; }
-.adv-mode small { font-size: 11px; color: var(--muted); line-height: 1.4; }
-.adv-play .adv-mode[aria-checked='true'] { border-color: var(--green); box-shadow: 0 0 0 2px var(--green); }
-.adv-play .adv-mode:disabled { opacity: .45; }
-.adv-mode-line { margin: 0; font-size: 13px; text-align: center; }
 .adv-tab { display: flex; flex-direction: column; gap: 10px; }
 .adv-tab[hidden] { display: none; }
 .adv-play.ctl-preview .pad[hidden] { display: block; }
+.adv-hint { margin: 0; text-align: center; line-height: 1.6; }
 
-/* ---------- 大屏大厅：和足球大屏同一张卡片（左二维码 / 右玩法 + 名单 + 开始），换成冒险的奶油色 ---------- */
-.adv-play.in-lobby .stage { filter: blur(3px) saturate(.9); }
-.adv-play .tv-lobby { --line: #e6dccb; --muted: #9a8a7d; --fg: #6e594d; background: #fcf9f1f2; color: #6e594d; border-color: #eadfcd; border-radius: 28px; box-shadow: 0 24px 60px #5a463a33; }
-.tv-lobby .qr { box-shadow: 0 0 0 1px #eadfcd; }
-.tv-lobby .room-code { color: #5d4b40; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
-.tv-lobby .url { color: #9a8a7d; }
-.adv-play .tv-lobby button { color: #6e594d; background: #fffdf8; border: 1px solid #e2d9c9; }
-.tv-lobby .tv-save { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; }
-.tv-lobby .tv-save .ico { width: 16px; height: 16px; }
-.tv-lobby .lobby-head h2 { margin: 0; font-size: 30px; font-weight: 850; }
-.tv-lobby .lobby-head .tv-tag { padding: 3px 10px; border-radius: 999px; background: #e7f0e4; color: #5f8466; font-size: 12px; font-weight: 700; }
-.adv-play .tv-lobby .adv-mode[aria-checked='true'] { border-color: #789b7e; box-shadow: 0 0 0 2px #789b7e; background: #f3f8f0; }
-.tv-roster-head { margin: 0; font-size: 14px; font-weight: 700; }
-.tv-roster { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
-.tv-chip { display: grid; justify-items: center; gap: 4px; min-width: 0; font-size: 12px; }
-.tv-chip canvas, .tv-chip i { width: 52px; height: 52px; border-radius: 50%; background: color-mix(in srgb, var(--chip, #ccc) 30%, #fff); }
-.tv-chip b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.tv-chip.is-empty i { display: block; background: none; border: 2px dashed #d8cbb7; }
-.tv-chip.is-offline { opacity: .45; }
-.adv-play .tv-lobby .primary.start { background: #789b7e; border-color: #789b7e; color: #fff; }
-.adv-play .tv-lobby .primary.start:disabled { opacity: .55; }
+/* ---------- 顶栏：左上角一行房间号，右上角一个圆形菜单按钮，正中一句提示 ---------- */
+.adv-play { --adv-ink: #5d4b40; --adv-cream: #fffaf1; --adv-edge: #eadfcd; --adv-green: #4f9a6c; }
+/* 菜单、加入卡片、结算卡片都换成和地图一样的奶油色 */
+.adv-play { --fg: var(--adv-ink); --muted: #8a7769; --card: #fffaf1f5; --line: #e6dccb; --green: var(--adv-green); color: var(--fg); }
+.adv-play .card { box-shadow: 0 12px 32px #5a463a26; }
+.adv-play .card button:not(.primary, .adv-mode, .adv-start, .adv-leave) { background: #fff; border-color: var(--line); }
+/* 菜单：一列设置（左名称右控件），房间操作放最下面，退出用红字 */
+.adv-panel .adv-progress, .adv-hint { text-align: left; }
+.adv-panel .adv-roster { justify-content: flex-start; }
+.adv-settings { display: grid; border-top: 1px solid var(--line); }
+.adv-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.adv-row > span { flex: none; color: var(--muted); }
+.adv-row .adv-picker { flex: 1; max-width: 260px; }
+.adv-row .lang-select { min-width: 120px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--fg); font: inherit; font-size: 14px; }
+.adv-actions { display: grid; gap: 8px; margin-top: 4px; }
+.adv-actions .ghost { width: 100%; padding: 10px; font-size: 15px; }
+.adv-play .adv-actions .adv-leave { padding: 8px; border: 0; background: none; color: #d0473f; font-size: 15px; font-weight: 650; }
+.adv-play .status { padding: 0; background: none; border: 0; color: var(--adv-ink); font-size: 15px; font-weight: 750; text-shadow: 0 1px 0 #fff8; }
+.adv-play .round-btn { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; background: var(--adv-cream); border: 1px solid var(--adv-edge); color: var(--adv-ink); box-shadow: 0 4px 12px #5a463a1f; }
+.adv-play .adv-hud { background: #fffaf1d9; color: var(--adv-ink); border: 1px solid var(--adv-edge); }
+
+/* ---------- 大厅：右下角一张小卡片（玩法 / 二维码 / 出发），不挡画面中间 ---------- */
+.adv-dock { width: min(380px, 32vw); border-color: var(--adv-edge); background: var(--adv-cream); color: var(--adv-ink); box-shadow: 0 12px 32px #5a463a26; }
+.adv-dock[hidden] { display: none; }
+.adv-modes { display: flex; padding: 3px; border-radius: 999px; background: #f2e9da; }
+.adv-play .adv-mode { flex: 1; min-width: 0; padding: 7px 4px; border: 0; border-radius: 999px; background: none; color: var(--adv-ink); font-size: 14px; font-weight: 650; white-space: nowrap; }
+.adv-play .adv-mode[aria-checked='true'] { background: var(--adv-green); color: #fff; }
+.adv-play .adv-mode:disabled { opacity: .4; }
+.adv-invite { display: flex; align-items: center; gap: 14px; }
+.adv-qr { width: 92px; height: 92px; flex: none; border-radius: 8px; border: 1px solid var(--adv-edge); }
+.adv-invite > div { display: grid; gap: 2px; }
+.adv-code { font: 800 30px/1.1 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; letter-spacing: .08em; }
+.adv-invite span { font-size: 14px; color: #8a7769; }
+.adv-address:empty { display: none; }
+.adv-play .adv-start { min-height: 50px; border: 0; border-radius: 12px; background: var(--adv-green); color: #fff; font-size: 18px; font-weight: 750; }
+.adv-play .adv-start:disabled { background: #cfc4b2; color: #fff; opacity: 1; }
+/* 手机开房：右下角是跳跃键，卡片挪到右上角菜单下面，并收小 */
+.adv-play:not(.watching) .adv-dock { top: calc(max(8px, var(--safe-top, env(safe-area-inset-top))) + 52px); bottom: auto; width: 260px; gap: 8px; padding: 10px; }
+.adv-play:not(.watching) .adv-mode { font-size: 12px; padding: 5px 2px; }
+.adv-play:not(.watching) .adv-qr { width: 64px; height: 64px; }
+.adv-play:not(.watching) .adv-code { font-size: 22px; }
+.adv-play:not(.watching) .adv-start { min-height: 40px; font-size: 15px; }
+
+/* 大屏卡片最上面一行：小伙伴的圆头像 */
+.adv-cast { display: flex; flex-wrap: wrap; gap: 12px; }
+.adv-cast:empty { display: none; }
+.adv-cast > span { display: grid; justify-items: center; gap: 4px; font-size: 13px; color: var(--adv-ink); }
+.adv-cast canvas { width: 56px; height: 56px; border-radius: 50%; border: 2px solid #fff; background: color-mix(in srgb, var(--chip, #ccc) 30%, #fff); }
+.adv-cast b { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
+.adv-cast .is-offline { opacity: .45; }
 /* 比赛中给晚到的朋友留一个小二维码 */
 .tv-corner { display: grid; justify-items: center; gap: 2px; font-size: 13px; color: #5d4b40; }
 .tv-corner img { display: block; width: 110px; height: 110px; }
-@media (max-width: 800px) { .tv-roster { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-height: 420px) { .adv-dock { width: 300px; } .adv-qr { width: 72px; height: 72px; } }
+.adv-row .switch { appearance: none; -webkit-appearance: none; position: relative; flex: none; width: 44px; height: 26px; margin: 0; border-radius: 13px; background: #d9cdbb; cursor: pointer; }
+.adv-row .switch::after { left: 3px; top: 3px; width: 20px; height: 20px; }
+.adv-row .switch:checked { background: var(--adv-green); }
+.adv-row .switch:focus-visible { outline: 2px solid var(--adv-green); outline-offset: 2px; }
+.adv-panel .pmain { padding-right: 4px; }

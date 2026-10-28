@@ -20,6 +20,8 @@ export const icon = {
   stick: svg('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/>'),
   book: svg('<path d="M4 19V5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h14"/>'),
   right: svg('<path d="M9 6l6 6-6 6"/>'),
+  menu: svg('<path d="M5 7h14M5 12h14M5 17h14"/>'),
+  expand: svg('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
   users: svg('<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>'),
   gear: svg('<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>'),
   chart: svg('<path d="M5 20V11M12 20V5M19 20v-7M3 20h18"/>'),
@@ -70,10 +72,16 @@ export function siteTools() {
   return `<div class="site-tools">
     ${download}
     <button class="icon-btn theme-btn" aria-label="${t(dark ? 'theme.toLight' : 'theme.toDark')}" title="${t(dark ? 'theme.toLight' : 'theme.toDark')}">${dark ? icon.sun : icon.moon}</button>
-    <select class="lang-select" aria-label="${t('lang.label')}">${LANGS.map(
-      ([v, name]) => `<option value="${v}" ${v === lang ? 'selected' : ''}>${name}</option>`,
-    ).join('')}</select>
+    ${langSelect()}
   </div>`;
+}
+/** 语言下拉：首页右上角和游戏菜单共用，选了就整页刷新 */
+export const langSelect = () => `<select class="lang-select" aria-label="${t('lang.label')}">${LANGS.map(
+  ([v, name]) => `<option value="${v}" ${v === lang ? 'selected' : ''}>${name}</option>`,
+).join('')}</select>`;
+export function bindLangSelect(root: ParentNode) {
+  const sel = root.querySelector<HTMLSelectElement>('.lang-select');
+  if (sel) sel.onchange = () => setLang(sel.value as (typeof LANGS)[number][0]);
 }
 
 export function bindSiteTools(root: HTMLElement) {
@@ -109,8 +117,7 @@ export function bindSiteTools(root: HTMLElement) {
     });
     document.addEventListener('click', (e) => !menu.contains(e.target as Node) && (menu.open = false));
   }
-  const sel = root.querySelector<HTMLSelectElement>('.lang-select')!;
-  sel.onchange = () => setLang(sel.value as (typeof LANGS)[number][0]);
+  bindLangSelect(root);
 }
 
 // 安装包名形如 LittleLobby_<版本>_<平台>.<扩展名>，见 release-app.yml

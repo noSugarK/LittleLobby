@@ -29,16 +29,15 @@ System CJK sans (PingFang SC → Hiragino Sans GB → Microsoft YaHei → Noto S
 
 ## Components
 
-- **Join panel**: brand-teal field, five 72px cream code boxes (60px on phones) with a transparent input over them, coral "加入" button, cream outline scan button.
-- **Host panel**: white/raised panel; game picker as two radio tiles (art + name + players, checked = accent ring and check badge); collapsible 房间设置 (public lobby switch, PIN) that opens itself when the PIN is invalid; two host buttons (big screen = accent, phone = outline).
-- **Join scan tip**: under the scan button, a small line-art phone-and-TV SVG with "没有房间码？" (web only, not LAN).
-- **Lobby**: full-width table on a panel, hover tint in accent-soft. A 刷新 text link next to the title reconnects and refetches the list. With no rooms (or while loading) the whole section collapses to one panel row: title, status pill, "开个公开房间 →" (ticks 公开大厅, opens 房间设置, focuses 大屏开房).
-- **Games**: two equal 3:2 cards where the illustration (`public/home/<game>.webp`) fills the card and the title, caption, coral players pill and links sit at the bottom on a dark gradient. On hover or keyboard focus the illustration fades and blurs slightly, the gradient grows, the text lifts and the title grows, and a coral ring appears. Below, three co-op mode cards (rope / eat / stack) use the same treatment over art drawn from the game's sprite frames (cropped to a strip on one-column phones).
-- **Offline download**: brand-teal band like the join panel; four cream buttons (Windows / macOS / Linux / Android) that point at the latest GitHub release's installers, falling back to the releases page; note line shows the version or "安装包即将发布". Hidden in the native app and LAN page. Art `public/home/offline.webp`.
+Restraint first: thin-bordered panels on the cream ground, one coral action (加入), one ink action (大屏开房); everything else is an underlined text link. No gradients, glows, pills or decorative art beyond the two game thumbnails.
+
+- **Header**: wordmark (mark + 小聚场) left; download, theme and language as bare icons right.
+- **Headline**: the slogan as one left-aligned headline, no subline.
+- **Join panel**: five outlined code boxes (76px, 60px on phones) with a transparent input over them, coral "加入" button, "扫描大屏二维码" text link.
+- **Host panel**: game picker as two radio rows (120×72 art thumbnail + name + players; checked = coral border on accent-soft); collapsible 房间设置 (public lobby switch, PIN) that opens itself when the PIN is invalid; ink "大屏开房" button and a "手机开房" text link.
+- **Lobby**: title, a muted status line ("正在找公开房间…" / "暂时没有公开房间"), a 刷新 link; the thin-bordered table only appears when there are rooms.
+- **More line**: under a hairline, offline download links (Windows / macOS / Linux / Android, pointing at the latest release's installers, falling back to the releases page; web only) and the tutorial and characters links.
 - **Header download**: on the web, the download icon opens a popover listing the latest release's installers, with this device's platform first in coral marked 推荐. In the native app the icon is hidden unless the latest release differs from the app's own version; then it shows with a small coral-red dot and the popover heads with "发现新版本 vX" and "当前版本 vY". Never shown on LAN pages.
-- **Hero**: one-line headline (wraps only on phones) with the subline under it. The cast strip takes no layout space: it overlays the headline area and the characters' feet overlap the top edge of the join and host panels.
-- **Cast (parade)**: every available character walks in one full-width row, entering at the left screen edge and leaving at the right, about two character widths apart, looping forever. At the screen centre each one turns to face you, jumps, and shows its name bubble, then walks on. Clicking or tapping a character makes it jump too. Under reduced motion the row stands still, evenly spaced.
-- **Guide links**: full-width soft-accent rows under the games, one for the tutorial and one for the characters page.
 
 ## Characters page (`#/characters`)
 
@@ -51,15 +50,16 @@ Same tokens, header and footer as the home page; the header adds a `›` crumb w
 
 ## Rules
 
-No eyebrow labels, no section numbers, no emoji as icons (icons come from `src/ui/site.ts`), no gradient text, no hard offset shadows. Layout collapses to one column at 900px; phone gutters 18px.
+No eyebrow labels, no section numbers, no emoji as icons (icons come from `src/ui/site.ts`), no gradient text, no hard offset shadows. Layout collapses to one column at 860px; phone gutters 16px.
 
 ## Game screens (`src/style.css` `.play` / `.screen`, `src/pages/adventure.css`)
 
 Every game uses one layout; only its palette and game-specific content change (football: dark green chrome; adventure: cream cards on its own scenes). A game's TV and phone use the same palette.
 
-- **Phone**: top bar with the room status pill on the left, one game info pill (football's canvas score, adventure's HUD) in the centre, and only 全屏 / 菜单 on the right. On iPhone, where the page cannot go fullscreen, 全屏 still shows and explains Add to Home Screen. Game-only actions such as football's 跟随视角 live in the menu footer.
+- **Frame (every game, TV and phone)**: top-left the connection status as plain text with a coloured dot (connected / relay / lost) and the room code; top-centre one info pill (football's score, adventure's HUD); top-right exactly two round icon buttons, 全屏 and 菜单 (全屏 hides once fullscreen; on iPhone it explains Add to Home Screen); bottom-left the 小聚场 logo (small and faded on phones, where the joystick sits). Nothing covers the middle: in the lobby / warm-up everyone can already move.
+- **Host card**: one docked card holds the host's lobby controls and hides once play starts. TV: bottom-right, with players (football: both team lists with + 添加 AI; adventure: round avatars), the mode segmented control, QR + room code, and the start button. Hosting phone: top-right under the round buttons, clear of the action buttons (football: one row, QR + code + 开始比赛; adventure: modes, QR + code, 一起出发). The menu never opens by itself in the lobby; it still opens for football results.
 - **Controls**: joystick or d-pad on the left; on the right the same Y (top) / X (left) / B (right) / A (bottom) diamond in every game. Buttons a game does not use right now stay in place as faint dashed empty slots (adventure: X and Y always, A outside 吃吐吐).
-- **Menu drawer**: same left rail in every game; the first tab is always 房间, the last 按键设置.
-- **TV lobby**: one centred card over the blurred scene, left column QR code, big room code, join address and 保存二维码; right column game title with a "TV 大屏" tag, the game's options (football teams and settings, adventure play modes), the player list, the start button and a hint about the phone controls. Actions (回到大厅 / 结束比赛, 换成另一个游戏, 退出房间) sit top right; the TV has no menu drawer. In play, a small QR code and room code stay in the bottom-right corner for late joiners.
+- **Menu drawer**: same left rail in every game; the first tab is always 房间, the last 按键设置. Every menu has a 语言 select (reloads the page) and puts leaving last as red text. Adventure's drawer is one column: progress, mode hint, roster, then a settings list with hairlines (角色 picker, 音效 switch, 语言 select), then full-width 回到大厅选玩法 / 换游戏 and red 退出房间; it never opens by itself. Football's footer is two rows: 语言 / 视角 / 教程, then 换游戏 and red 退出房间.
+- **TV menu**: the same right-hand drawer as phones. Football: all match settings (mode, party rules, duration, AI level, auto-fill), 语言, 保存二维码, 结束比赛 (in a match), 换游戏 and red 退出房间. In play, a small QR code and room code stay in the bottom-right corner for late joiners.
 - **Confirmations**: always the in-app dialog (`src/ui/confirm.ts`), never `window.confirm`, which the native app's webview may silently cancel.
 

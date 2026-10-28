@@ -39,7 +39,7 @@ const mocks = {
   '../ui/qrcard': 'export const saveQrCard = () => {};',
   '../ui/confirm': 'export const askConfirm = async () => true;',
   '../ui/settings-ui': 'export const bindLobby = () => {}, pinLineHtml = () => "", settingsHtml = () => "", settingsSummary = () => "", teamCardHtml = () => "";',
-  '../ui/site': 'export const icon = {};',
+  '../ui/site': 'export const icon = {}; export const langSelect = () => ""; export const bindLangSelect = () => {};',
   '../ui/sound': 'export const unlockAudio = () => {};',
   '../ui/util': `const values = globalThis.__playConnectionTest.values;
     export const store = { get: (key) => values.get(key) || '', set: (key, value) => values.set(key, value) };

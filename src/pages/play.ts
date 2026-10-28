@@ -32,7 +32,7 @@ import { bindControlsPane, controlsPaneHtml } from '../ui/controls-pane';
 import { bindDrawer } from '../ui/drawer';
 import { saveQrCard } from '../ui/qrcard';
 import { bindLobby, pinLineHtml, settingsHtml, settingsSummary, teamCardHtml } from '../ui/settings-ui';
-import { icon } from '../ui/site';
+import { bindLangSelect, icon, langSelect } from '../ui/site';
 import { unlockAudio } from '../ui/sound';
 import type { Team } from '../game/types';
 import { brand, canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, store, vibrate } from '../ui/util';
@@ -83,10 +83,12 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     <div class="topbar">
       <div class="topbar-left"><div class="status"><i></i><span></span></div></div>
       <div class="top-actions">
-        <button class="ghost fs-btn" hidden>${t('play.fullscreen')}</button>
-        <button class="ghost menu">${t('play.menu')}</button>
+        <button class="ghost round-btn fs-btn" aria-label="${t('play.fullscreen')}" title="${t('play.fullscreen')}" hidden>${icon.expand}</button>
+        <button class="ghost round-btn menu" aria-label="${t('play.menu')}" title="${t('play.menu')}">${icon.menu}</button>
       </div>
     </div>
+    <img class="corner-logo" src="${brand('logo-white-sm.png')}" alt="">
+    ${isHost ? `<div class="game-dock football-dock phone-dock" hidden><div class="dock-invite"><img class="dock-qr" alt=""><div><span>${t('screen.scanJoin')}</span><b class="room-code">${esc(room)}</b></div></div><button class="primary dock-start"></button></div>` : ''}
     <div class="pad"></div>
     <div class="panel card drawer" hidden></div>
     <div class="join card">
@@ -184,6 +186,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   statusEl.onclick = retryDirect;
   statusEl.onkeydown = (e) => (e.key === 'Enter' || e.key === ' ') && retryDirect();
 
+  const dockStart = app.querySelector<HTMLElement>('.dock-start');
+  if (dockStart) dockStart.onclick = () => send({ t: 'start' });
   const send = (msg: ClientMsg) => {
     if (game) game.command(meId, msg);
     else net?.sendJson(msg);
@@ -360,7 +364,20 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   }
 
   // ---------- 面板（大厅/结算/菜单） ----------
+  /** 手机开房：热身时右上角一张小卡片（二维码、房间码、开始），菜单不再自动弹出，进来就能先踢 */
+  function renderDock() {
+    const dock = app.querySelector<HTMLElement>('.phone-dock');
+    if (!dock) return;
+    const st = roster?.settings;
+    dock.hidden = !st || current().phase !== Phase.Lobby || !joinEl.hidden || meId < 0 || meId !== roster!.hostPid;
+    if (dock.hidden || !st) return;
+    const img = dock.querySelector<HTMLImageElement>('.dock-qr')!;
+    if (qrUrl && img.src !== qrUrl) img.src = qrUrl;
+    dock.querySelector('.dock-start')!.textContent = `${t('play.start')} · ${st.mode === 1 ? t('mode.1') : t('play.minutes', { n: st.duration / 60 })}`;
+  }
+
   function renderPanel() {
+    renderDock();
     const { phase } = current();
     const lobby = phase === Phase.Lobby;
     const ended = phase === Phase.Ended;
@@ -465,8 +482,10 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     const tip = watching ? t('play.watchTip') : lobby ? t(isHost ? 'play.hostTip' : 'play.warmup') : '';
     // 跟随视角是足球独有的操作，放在菜单底栏，顶栏和冒险一样只留「全屏 / 菜单」
     const cam = watching ? '' : `<button class="ghost cam">${t(renderer.follow ? 'play.overview' : 'play.follow')}</button>`;
-    html += `<div class="pmeta">${tip ? `<span>${tip}</span>` : ''}${cam}<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a>${isHost ? `<button class="ghost switch-game">${t('game.switchTo', { game: gameName('adventure') })}</button>` : ''}<button class="ghost leave-room">${t('play.leave')}</button></div></div></div>`;
+    // 底栏两行：设置（语言 / 视角 / 教程），再是房间操作（换游戏、红字退出）
+    html += `${tip ? `<p class="pmeta">${tip}</p>` : ''}<div class="pmeta prefs"><label>${t('lang.label')} ${langSelect()}</label>${cam}<a class="panel-guide" href="#/guide" target="_blank" rel="noopener">${t('play.guide')}</a></div><div class="pmeta pactions">${isHost ? `<button class="ghost switch-game">${t('game.switchTo', { game: gameName('adventure') })}</button>` : ''}<button class="pleave leave-room">${t('play.leave')}</button></div></div></div>`;
     panel.innerHTML = html;
+    bindLangSelect(panel);
     if (local) bindLanAddress(panel, () => {
       QRCode.toDataURL(joinUrl({ room, pin: opts?.pin }), { width: 220, margin: 1 }).then((url) => {
         qrUrl = url;
@@ -611,8 +630,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       renderer.draw(game ? view : separateViewBall(separateViewPlayers(view)), dt);
       if (snap.phase !== lastPhase) {
         lastPhase = snap.phase;
-        // 进入大厅/结算时自动弹出菜单，开赛时自动收起；玩家随时可以手动关闭或打开
-        panelOpen = snap.phase === Phase.Lobby || snap.phase === Phase.Ended;
+        // 结算时自动弹出菜单看战绩；大厅不弹，大家先在场上热身
+        panelOpen = snap.phase === Phase.Ended;
         renderPanel();
       }
     }
