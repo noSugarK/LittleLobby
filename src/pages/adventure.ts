@@ -268,13 +268,15 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     const me = state.players.find((p) => p.id === state!.me), level = LEVELS[shown];
     const nameOf = (id: number) => state!.players.find((p) => p.id === id)?.name ?? '队友';
     if (oldMe && me) {
-      if (me.deaths > oldMe.deaths) { toast('没关系，在休息站重新出发 ♡'); if (sound) sfxAdventure('hurt'); vibrate(25); }
-      else if (me.checkpoint > oldMe.checkpoint) toast('休息站已点亮，下次从这里出发！');
+      // 大厅里只是热身，出发时星星、存档都会清零，不弹进度提示
+      const warmUp = state.phase === 'lobby';
+      if (me.deaths > oldMe.deaths) { if (!warmUp) toast('没关系，在休息站重新出发 ♡'); if (sound) sfxAdventure('hurt'); vibrate(25); }
+      else if (me.checkpoint > oldMe.checkpoint && !warmUp) toast('休息站已点亮，下次从这里出发！');
       else if (me.coins.length > oldMe.coins.length && sound) sfxAdventure('collect');
       if (me.eatenBy >= 0 && oldMe.eatenBy < 0) toast(`你在 ${nameOf(me.eatenBy)} 的肚子里啦，按 A 挣脱`, 3000);
       if (me.eating >= 0 && oldMe.eating < 0) toast(`含住了 ${nameOf(me.eating)}！按 A 把他吐出去`, 3000);
     }
-    if (state.stars.length > (previous?.stars.length ?? 0)) { toast(`找到小星星！${state.stars.length} / 3`); if (sound) sfxAdventure('collect'); }
+    if (state.stars.length > (previous?.stars.length ?? 0)) { if (state.phase !== 'lobby') toast(`找到小星星！${state.stars.length} / 3`); if (sound) sfxAdventure('collect'); }
     const won = state.phase === 'clear' || state.phase === 'complete';
     if (won && previous?.phase === 'playing' && sound) sfxAdventure('clear');
     const time = `${String(Math.floor(state.time / 60)).padStart(2, '0')}:${String(Math.floor(state.time) % 60).padStart(2, '0')}`;

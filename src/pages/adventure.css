@@ -174,7 +174,7 @@
 .adv-play .adv-actions .adv-leave { padding: 8px; border: 0; background: none; color: #d0473f; font-size: 15px; font-weight: 650; }
 .adv-play .status { padding: 0; background: none; border: 0; color: var(--adv-ink); font-size: 15px; font-weight: 750; text-shadow: 0 1px 0 #fff8; }
 .adv-play .round-btn { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; background: var(--adv-cream); border: 1px solid var(--adv-edge); color: var(--adv-ink); box-shadow: 0 4px 12px #5a463a1f; }
-.adv-play .adv-hud { background: #fffaf1d9; color: var(--adv-ink); border: 1px solid var(--adv-edge); }
+.adv-play .adv-hud, .adv-play .toast { background: #fffaf1e6; color: var(--adv-ink); border: 1px solid var(--adv-edge); }
 
 /* ---------- 大厅：右下角一张小卡片（玩法 / 二维码 / 出发），不挡画面中间 ---------- */
 .adv-dock { width: min(380px, 32vw); border-color: var(--adv-edge); background: var(--adv-cream); color: var(--adv-ink); box-shadow: 0 12px 32px #5a463a26; }
