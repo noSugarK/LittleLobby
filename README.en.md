@@ -34,7 +34,7 @@ The web version runs in any browser: <https://nosugark.github.io/LittleLobby/>. 
 
 👉 [Get the latest release](https://github.com/noSugarK/LittleLobby/releases/latest)
 
-> These are beta builds. If macOS says it can't verify the developer the first time you open the app, choose **Open Anyway** in **System Settings → Privacy & Security**.
+> If macOS says it can't verify the developer the first time you open the app, choose **Open Anyway** in **System Settings → Privacy & Security**.
 
 ## How to play
 
@@ -43,6 +43,8 @@ The web version runs in any browser: <https://nosugark.github.io/LittleLobby/>. 
 1. **Host**: open Little Lobby on a computer, TV browser or tablet, pick a game and choose **Host on big screen**. You can also **Host on phone** and play while hosting.
 2. **Join**: friends scan the QR code on the big screen with their phones, or enter the 5-character room code on the home page.
 3. **Play**: everyone picks a team or character, then the host starts. The host can switch games at any time; the room code and players stay.
+
+**Public rooms**: before hosting, turn on **Show in public lobby** under **Room settings**. The room appears in the lobby list on the home page and anyone can join with one tap; you can still set a password. If the list looks stale, tap **Refresh** next to the lobby title.
 
 **Without internet**: host from the desktop or Android app and connect every device to the same Wi-Fi or phone hotspot. The app is the server, so friends join by scanning with their phone browser and nothing goes over the internet.
 
@@ -71,7 +73,7 @@ Pass, shoot and play a match with friends. Up to 4v4, with computer teammates wh
 
 Pick a buddy and hop through levels together. You can also explore on your own.
 
-- Four characters: Yier · Bubu · Xiaobai · Little Golden
+- Ten characters: Yier · Bubu · Xiaobai · Jinmao · Nailong · Naiwa · Niulai · Lulu · Baobao · Doudou, all in the **Characters** gallery. The apps ship with the first four and download the rest from the gallery
 - Three classic stages: Berry Stroll → Cloud Candy Bridge → Starlight Garden
 - Co-op modes: **Rope** (everyone on one rope) · **Gobble** (swallow a teammate and spit them across a gap) · **Stack** (climb tall walls on each other's heads)
 
@@ -83,7 +85,7 @@ Pick a buddy and hop through levels together. You can also explore on your own.
 
 - Move with the left joystick or D-pad; the right buttons jump, shoot or gobble.
 - In the menu's **Controls** tab you can switch to a D-pad, use an arc button layout and change the button size. Settings are saved on the phone.
-- Landscape works best, and fullscreen is supported.
+- Landscape works best. Android and desktop browsers go fullscreen with one tap. Safari on iPhone has no web fullscreen: tap **Share → Add to Home Screen** and open it from the icon to play fullscreen.
 
 <details>
 <summary><b>Development</b></summary>
@@ -116,7 +118,9 @@ npm run app:build  # build installers for the current platform
 ### Networking
 
 - **Web**: signaling through a public MQTT broker, with WebRTC connections between players; needs internet.
-- **Native app**: runs a local HTTP + WebSocket server that serves the web app and assets, and finds rooms on the LAN with UDP broadcast; no internet needed.
+- **Native app**: the home page switches between **Online** and **Local network**. Online works like the web version. Local network runs an HTTP + WebSocket server on the device that serves the web app and assets (including downloaded characters) and finds rooms with UDP broadcast; no internet needed.
+- **Public lobby**: hosts that choose to be public publish their room as a retained MQTT message, refreshed every 30 seconds and cleared when they close or drop; the home page subscribes to these to list rooms.
+- **Character images** load on demand: joining a game waits only for your own character, and other players' characters and the Gobble sheets download when first drawn.
 
 ### Website deployment
 
@@ -127,7 +131,7 @@ Pushing `main` runs `.github/workflows/deploy.yml`, which tests, builds and publ
 The version lives only in `package.json`; the script syncs everything else:
 
 ```bash
-npm run release -- 0.2.0-beta.2
+npm run release -- 0.2.1
 ```
 
 The script checks the branch and working tree, syncs `package-lock.json`, `Cargo.toml`, `Cargo.lock` and the MSI version (`tauri.conf.json` reads `package.json` directly), runs tests and the build, then lists the commands to commit, tag and push. Pushing a `v*` tag makes `.github/workflows/release-app.yml` build installers for all four platforms and publish a Release; manual runs only produce workflow artifacts.
@@ -140,4 +144,4 @@ Production Android signing needs four Secrets: `ANDROID_KEYSTORE_BASE64`, `ANDRO
 
 The code is released under the [MIT License](LICENSE).
 
-The characters in the game (Yier, Bubu, Xiaobai, Little Golden) belong to their original creators. They are not covered by the MIT License and are included only for non-commercial play among friends.
+Characters from other works belong to their original creators: Yier and Bubu (Yier & Bubu), Xiaobai and Jinmao (Line Puppy), Lulu (Capybara Lulu), Nailong (Nailong), Naiwa (a Nailong meme remix) and Niulai (the animated film Niulai). They are not covered by the MIT License and are included only for non-commercial play among friends. Baobao and Doudou are original characters.
