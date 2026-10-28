@@ -60,6 +60,8 @@ export const characterUrl = (id: SkinId, file: CharacterFile) => urls.get(id)?.[
   || (remote.has(id) ? `${catalogUrl}${id}/${file}` : `${import.meta.env.BASE_URL}characters/${id}/${file}`);
 /** 原生应用的联网模式：和网页版一样用完整角色；局域网 / 离线模式只用内置和已下载的。 */
 const onlineApp = () => !!native() && store.get('network') === 'online';
+/** 清单里的内置角色；loadCharacters() 之后才有内容。 */
+export const builtinCharacters = () => localManifest.builtin;
 /** 联网模式下没下载、直接从线上读的角色。 */
 export const isRemote = (id: SkinId) => remote.has(id);
 

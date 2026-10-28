@@ -61,18 +61,51 @@ function parseLobbyInfo(payload: Uint8Array): LobbyInfo | null {
   };
 }
 
-/** 首页：订阅所有公开房间，每次变化回调完整列表（含已失效的，由调用方按 ts 过滤） */
-export async function watchLobby(onChange: (rooms: Map<string, LobbyInfo>) => void): Promise<void> {
+export type LobbyState = 'loading' | 'ready' | 'failed';
+export interface LobbyWatch {
+  /** 断开重连：清空列表，重新订阅，保留消息会马上重新推过来 */
+  refresh(): void;
+  close(): void;
+}
+
+/** 首页：订阅所有公开房间，每次变化回调完整列表（含已失效的，由调用方按 ts 过滤）。
+ *  连不上时自动退避重试，离开首页要 close()。 */
+export function watchLobby(onChange: (rooms: Map<string, LobbyInfo>) => void, onState: (state: LobbyState) => void = () => {}): LobbyWatch {
   const rooms = new Map<string, LobbyInfo>();
-  const sig = new Signal('+'); // 房间名用 '+' 通配
-  sig.onMessage((topic, payload) => {
-    const code = normalizeCode(topic.split('/').at(-2) ?? '');
-    if (!code) return;
-    const info = parseLobbyInfo(payload);
-    if (info) rooms.set(code, info);
-    else rooms.delete(code);
-    onChange(rooms);
-  });
-  await sig.connect();
-  sig.sub(TOPIC);
+  let sig: Signal | null = null, timer = 0, failures = 0, closed = false;
+  const connect = async () => {
+    clearTimeout(timer);
+    sig?.close();
+    rooms.clear(); onChange(rooms); onState('loading');
+    const current = sig = new Signal('+'); // 房间名用 '+' 通配
+    current.onMessage((topic, payload) => {
+      if (current !== sig) return;
+      const code = normalizeCode(topic.split('/').at(-2) ?? '');
+      if (!code) return;
+      const info = parseLobbyInfo(payload);
+      if (info) rooms.set(code, info);
+      else rooms.delete(code);
+      onChange(rooms);
+    });
+    try {
+      await current.connect();
+    } catch {
+      if (current !== sig) return;
+      sig = null;
+      onState('failed');
+      // 5、10、20…最长 60 秒后再试
+      if (!closed) timer = window.setTimeout(connect, Math.min(60_000, 5000 * 2 ** failures++));
+      return;
+    }
+    if (current !== sig) { current.close(); return; }
+    failures = 0;
+    current.sub(TOPIC);
+    // 保留消息在订阅后立即到达，稍等一下再显示「暂无」
+    timer = window.setTimeout(() => onState('ready'), 1500);
+  };
+  void connect();
+  return {
+    refresh() { if (!closed) { failures = 0; void connect(); } },
+    close() { closed = true; clearTimeout(timer); sig?.close(); sig = null; },
+  };
 }

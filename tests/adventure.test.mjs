@@ -143,6 +143,41 @@ test('扫码只透传闯关玩法和有效密码', () => {
   assert.equal(joinHashFromQr('https://example.com/#/join/ABCDE?game=other'), '#/join/ABCDE');
 });
 
+test('冒险公开房间发布玩法、人数和状态，心跳及断网恢复刷新，退出清理；私密房间不发布', async () => {
+  const originalWindow = globalThis.window;
+  const timers = [];
+  globalThis.window = { setInterval: (fn, ms) => { timers.push({ fn, ms }); return 0; } };
+  let host;
+  try {
+    for (const listed of [true, false]) {
+      const sent = [];
+      const signal = { pub: (...args) => sent.push(args) };
+      let cb;
+      host = new AdventureHost('ABCDE', (_room, callbacks) => {
+        cb = callbacks;
+        return { signal, start: async () => {}, sendJson() {}, broadcastFast() {}, close() {} };
+      }, '1234', listed);
+      host.addLocal('房主');
+      if (listed) assert.equal(signal.willClearTopic, 'info', '连接前设置遗嘱，异常掉线自动移除房间');
+      await host.start();
+      if (listed) {
+        const info = () => sent.at(-1)[1];
+        assert.equal(sent.at(-1)[0], 'info'); assert.equal(sent.at(-1)[2], true);
+        assert.deepEqual({ ...info(), ts: 0 }, { host: '房主', n: 1, max: 8, playing: false, lock: true, game: 'adventure', ts: 0 });
+        assert.equal(cb.onHello('peer', { token: 'p', name: '伙伴', pin: '1234' }), null);
+        cb.onPeer('peer'); assert.equal(info().n, 2);
+        host.advance(); assert.equal(info().playing, true);
+        cb.onLeave('peer'); assert.equal(info().n, 1);
+        const count = sent.length;
+        host.publish(); assert.equal(sent.length, count, '状态不变不重复发布');
+        timers.find((timer) => timer.ms === 30000).fn(); assert.equal(sent.length, count + 1);
+        signal.onStatus(true); assert.equal(sent.length, count + 2, '网络恢复重新公告');
+      } else assert.ok(sent.every(([, data]) => data instanceof Uint8Array), '私密房间只清除旧公告');
+      host.close(); assert.ok(sent.at(-1)[1] instanceof Uint8Array); assert.equal(sent.at(-1)[1].length, 0);
+    }
+  } finally { host?.close(); globalThis.window = originalWindow; }
+});
+
 test('足球同款手柄：摇杆过死区才移动，B 或上推到底跳跃，非游戏中不出输入', () => {
   assert.deepEqual(padInput(0.2, 0, false, true), { axis: 0, jump: false, act: false });
   assert.deepEqual(padInput(-0.6, 0.1, true, true, true), { axis: -1, jump: true, act: true });

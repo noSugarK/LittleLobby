@@ -7,9 +7,9 @@ import { isLanPage, isNativeApp, stopLan } from '../net/lan-session';
 import { bindLanLobby, lanLobbyHtml } from '../ui/lan-lobby';
 import { GAMES, gameInfo, gameName, validGame, type GameId } from '../room/catalog';
 import { MODES, type ModeId } from '../game/adventure';
-import { CHARACTERS } from '../game/characters';
+import { CHARACTERS, builtinCharacters, loadCharacters } from '../game/characters';
 import './home.css';
-import { drawBuddyAvatar, drawBuddyImage, loadCharacterSprites, type BuddyAction } from '../game/adventure-sprites';
+import { drawBuddyAvatar, drawBuddyImage, hasSheet, loadCharacterSprites, type BuddyAction } from '../game/adventure-sprites';
 
 const CODE_LEN = 5;
 
@@ -98,13 +98,18 @@ function bindCast(app: HTMLElement) {
       const x = s.path < 0 ? -b : s.path % loop - b;
       // 跑过屏幕正中的那一刻转过来跳一下
       const mid = (w - b) / 2;
-      if (!s.until && before < mid && x >= mid) hop(i);
+      if (!s.until && before < mid && x >= mid && hasSheet(CHARACTERS[i].id)) hop(i);
       place(buddy, x);
     });
     // 精灵帧约 12 帧每秒就够看，省电
     if (time - lastDraw > 80) {
       lastDraw = time;
-      buddies.forEach((buddy, i) => drawBuddyAvatar(buddy.querySelector('canvas')!, CHARACTERS[i].id, state[i].action, (time - state[i].since) / 1000, 1));
+      // 其余角色在后台慢慢下载，到了才入队，不和进游戏抢带宽
+      buddies.forEach((buddy, i) => {
+        const ready = hasSheet(CHARACTERS[i].id);
+        buddy.style.visibility = ready ? '' : 'hidden';
+        if (ready) drawBuddyAvatar(buddy.querySelector('canvas')!, CHARACTERS[i].id, state[i].action, (time - state[i].since) / 1000, 1);
+      });
     }
     requestAnimationFrame(draw);
   };
@@ -181,7 +186,7 @@ export function mountHome(app: HTMLElement) {
       </div>
 
       ${showLobby ? `<section class="lh-section lh-lobby" aria-labelledby="lh-lobby-title">
-        <div class="lh-section-head"><h2 id="lh-lobby-title">${t('tab.lobby')} <span class="count"></span></h2>${lan ? '' : `<p class="lh-lobby-hint">${t('lobby.hint')}</p><div class="lh-lobby-empty"><span class="lh-lobby-pill">${icon.users}<span class="lh-lobby-state">${t('home.lobbyLoading')}</span></span>${showHost ? `<button type="button" class="lh-link lh-open-public">${t('home.openPublic')}${icon.right}</button>` : ''}</div>`}</div>
+        <div class="lh-section-head"><h2 id="lh-lobby-title">${t('tab.lobby')} <span class="count"></span></h2>${lan ? '' : `<button type="button" class="lh-link lh-refresh">${t('lobby.refresh')}</button><p class="lh-lobby-hint">${t('lobby.hint')}</p><div class="lh-lobby-empty"><span class="lh-lobby-pill">${icon.users}<span class="lh-lobby-state">${t('home.lobbyLoading')}</span></span>${showHost ? `<button type="button" class="lh-link lh-open-public">${t('home.openPublic')}${icon.right}</button>` : ''}</div>`}</div>
         ${lan && native ? `<div class="lh-lan">${lanLobbyHtml()}</div>` : ''}
         <div class="lobby-table" role="table" ${lan ? 'hidden' : ''}>
           <div class="lrow lhead" role="row"><span>${t('lobby.room')}</span><span>${t('lobby.host')}</span><span>${t('lobby.players')}</span><span>${t('lobby.state')}</span></div>
@@ -226,11 +231,13 @@ export function mountHome(app: HTMLElement) {
 
   const $ = <T extends HTMLElement>(s: string) => app.querySelector(s) as T | null;
   bindSiteTools(app);
-  void loadCharacterSprites().then(() => {
+  // 先只等内置角色（小图和队伍用得到），其余角色等页面空下来再下载
+  void loadCharacters().then(() => loadCharacterSprites(builtinCharacters())).then(() => {
     if (!app.querySelector('.home')) return;
     app.querySelectorAll<HTMLCanvasElement>('[data-buddy]').forEach((canvas) => drawBuddyAvatar(canvas, canvas.dataset.buddy!));
     app.querySelectorAll<HTMLCanvasElement>('[data-mode-art]').forEach((canvas) => drawModeArt(canvas, canvas.dataset.modeArt as ModeId));
     bindCast(app);
+    setTimeout(() => { if (app.querySelector('.home')) void loadCharacterSprites(CHARACTERS.map((c) => c.id)).catch(() => {}); }, 2000);
   }).catch(() => { /* Decorative characters do not block joining a room. */ });
 
   const pickGame = (game: GameId) => {
@@ -390,20 +397,16 @@ export function mountHome(app: HTMLElement) {
   }
 
   render();
-  watchLobby((next) => {
+  const watch = watchLobby((next) => {
     rooms = next;
     render();
-  })
-    .then(() => {
-      // 保留消息在订阅后立即到达，稍等一下再显示「暂无」
-      setTimeout(() => {
-        state = 'ready';
-        render();
-      }, 1500);
-    })
-    .catch(() => {
-      state = 'failed';
-      render();
-    });
-  setInterval(render, 10_000);
+  }, (next) => {
+    state = next;
+    render();
+  });
+  const refresh = $<HTMLButtonElement>('.lh-refresh');
+  if (refresh) refresh.onclick = () => watch.refresh();
+  const timer = setInterval(render, 10_000);
+  // 离开首页就断开大厅连接，来回切换页面不会越积越多
+  window.addEventListener('hashchange', () => { watch.close(); clearInterval(timer); }, { once: true });
 }

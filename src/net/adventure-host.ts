@@ -1,6 +1,7 @@
 import { AdventureGame, type AdventureInput, type AdventureView } from '../game/adventure';
 import type { HostCallbacks } from './host';
 import type { HostTransport, HostTransportFactory } from './transport';
+import { LOBBY_HEARTBEAT_MS, LobbyPublisher } from './lobby';
 
 const encoder = new TextEncoder();
 export class AdventureHost {
@@ -15,10 +16,12 @@ export class AdventureHost {
   private seq = new Map<string, number>();
   private nextId = 1;
   private timer = 0;
+  private lobbyTimer = 0;
+  private readonly lobby: LobbyPublisher | null;
   private closed = false;
   private pinFails: number[] = [];
 
-  constructor(room: string, factory?: HostTransportFactory, pin?: string) {
+  constructor(room: string, factory?: HostTransportFactory, private readonly pin?: string, private readonly listed = false) {
     const cb: HostCallbacks = {
       onStatus: (ok) => this.onStatus(ok),
       onHello: (cid, hello) => {
@@ -71,10 +74,15 @@ export class AdventureHost {
         const id = this.peers.get(cid);
         this.peers.delete(cid); this.seq.delete(cid);
         if (id !== undefined) this.game.online(id, false);
+        this.publishInfo();
       },
     };
     this.net = factory?.(room, cb) ?? null;
-    if (this.net?.signal) this.net.signal.onStatus = (ok) => this.onStatus(ok);
+    this.lobby = this.net?.signal ? new LobbyPublisher(this.net.signal, listed) : null;
+    if (this.net?.signal) this.net.signal.onStatus = (ok) => {
+      this.onStatus(ok);
+      if (ok && !this.closed) this.publishInfo(true);
+    };
   }
   addLocal(name: string, skin?: string) {
     if (this.localId !== undefined) return;
@@ -94,6 +102,9 @@ export class AdventureHost {
     await this.net?.start();
     if (this.closed) { this.net?.close(); return; }
     this.onStatus(true);
+    if (this.listed) this.publishInfo(true);
+    else this.lobby?.clear();
+    if (this.lobby && this.listed) this.lobbyTimer = window.setInterval(() => this.publishInfo(true), LOBBY_HEARTBEAT_MS);
     let last = performance.now(), accumulator = 0, frames = 0;
     this.timer = window.setInterval(() => {
       const now = performance.now(); accumulator += Math.min(100, now - last) / 1000; last = now;
@@ -107,8 +118,21 @@ export class AdventureHost {
   }
   publish() {
     if (this.closed) return;
+    this.publishInfo();
     this.onView(this.game.view(this.localId));
     if (this.peers.size) this.net?.broadcastFast(encoder.encode(JSON.stringify(this.game.view())));
   }
-  close() { this.closed = true; clearInterval(this.timer); this.net?.close(); }
+  private publishInfo(force = false) {
+    this.lobby?.publish({
+      host: this.localId === undefined ? '' : this.game.players.get(this.localId)?.name ?? '',
+      n: [...this.game.players.values()].filter((p) => p.online).length,
+      max: 8, playing: this.game.phase !== 'lobby', lock: !!this.pin,
+      game: 'adventure',
+    }, force);
+  }
+  close() {
+    if (this.closed) return;
+    this.closed = true; clearInterval(this.timer); clearInterval(this.lobbyTimer);
+    this.lobby?.clear(); this.net?.close();
+  }
 }

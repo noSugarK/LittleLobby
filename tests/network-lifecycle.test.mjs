@@ -263,3 +263,50 @@ test('局域网重连后旧 socket 的 welcome、reject 和快照不影响新连
     Object.assign(globalThis, original);
   }
 });
+
+test('公开大厅连不上时退避重试，刷新清空并重新订阅，离开首页后断开且迟到的连接也关掉', async () => {
+  const { Signal } = await import('../src/net/signal.ts');
+  const { watchLobby } = await import('../src/net/lobby.ts');
+  const proto = { connect: Signal.prototype.connect, sub: Signal.prototype.sub, close: Signal.prototype.close };
+  const originalWindow = globalThis.window, timers = [], signals = [];
+  let connect = async () => { throw new Error('offline'); };
+  globalThis.window = { setTimeout: (fn, ms) => { timers.push({ fn, ms }); return timers.length; } };
+  Signal.prototype.connect = function () { signals.push(this); return connect(); };
+  Signal.prototype.sub = function (topic) { this.subbed = topic; };
+  Signal.prototype.close = function () { this.closed = true; };
+  const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+  try {
+    const states = [], lists = [];
+    const watch = watchLobby((rooms) => lists.push([...rooms.keys()]), (state) => states.push(state));
+    await flush();
+    assert.deepEqual(states, ['loading', 'failed']);
+    assert.deepEqual(timers.map((timer) => timer.ms), [5000]);
+    timers.shift().fn(); await flush();
+    assert.deepEqual(timers.map((timer) => timer.ms), [10000], '连续失败间隔加倍');
+
+    connect = async () => {};
+    timers.shift().fn(); await flush();
+    const live = signals.at(-1);
+    assert.equal(live.subbed, 'info');
+    timers.shift().fn(); assert.equal(states.at(-1), 'ready');
+    const info = { host: 'A', n: 1, max: 8, playing: false, lock: false, ts: Date.now() };
+    live.handler('scanfb/v4/ABCDE/info', new TextEncoder().encode(JSON.stringify(info)));
+    assert.deepEqual(lists.at(-1), ['ABCDE']);
+
+    watch.refresh(); await flush();
+    assert.ok(live.closed, '刷新断开旧连接');
+    assert.deepEqual(lists.at(-1), [], '刷新先清空列表');
+    assert.equal(states.at(-1), 'loading');
+    live.handler('scanfb/v4/OLDXX/info', new TextEncoder().encode(JSON.stringify(info)));
+    assert.deepEqual(lists.at(-1), [], '旧连接的消息被忽略');
+
+    let finish; connect = () => new Promise((resolve) => { finish = resolve; });
+    watch.refresh(); const late = signals.at(-1);
+    watch.close(); finish(); await flush();
+    assert.ok(late.closed, '关闭后才连上的连接也被关掉');
+    assert.equal(late.subbed, undefined);
+  } finally {
+    Object.assign(Signal.prototype, proto);
+    globalThis.window = originalWindow;
+  }
+});

@@ -31,14 +31,19 @@ const logo = () => `<span class="adv-logo-flower" aria-hidden="true">✿</span><
 const nav = `<nav class="adv-nav"><a class="adv-brand" href="#/adventure">${logo()}</a><div><a href="#/">回到小聚场</a><button class="adv-full" aria-label="进入全屏">全屏 ↗</button></div></nav>`;
 // 角色多了以后用下拉：当前角色带小头像，展开后先是搜索框，每一项也有头像预览；角色列表等本机角色读完再填
 const choices = () => `<details class="adv-picker"><summary aria-label="选择角色"><canvas class="adv-picked-avatar" aria-hidden="true"></canvas><span><b class="adv-picked-name"></b><small class="adv-picked-note"></small></span><i aria-hidden="true">▾</i></summary><div class="adv-options"></div></details>`;
-async function avatars(root: HTMLElement) {
-  await loadCharacterSprites();
+/** 只等自己选的角色；列表里其他角色的头像在第一次展开时才下载 */
+async function avatars(root: HTMLElement, skin: SkinId) {
+  await loadCharacterSprites([skin]);
   root.querySelectorAll<HTMLElement>('.adv-options').forEach((options) => {
     options.innerHTML = `<label class="adv-search">${icon.search}<input type="search" placeholder="${t('chars.pick')}" aria-label="${t('chars.search')}" autocomplete="off"></label>${CHARACTERS.map((c) => `<button class="adv-character" data-skin="${c.id}" aria-pressed="false" aria-label="选择${esc(c.name)}，${esc(c.subtitle)}"><canvas aria-hidden="true"></canvas><b>${esc(c.name)}</b><small>${esc(c.subtitle.split(' · ')[1] || c.subtitle)}</small></button>`).join('')}<p class="adv-search-empty" hidden>${t('chars.empty')}</p><a class="adv-more" href="#/characters">${t(isLanPage() ? 'chars.pickAll' : 'chars.pickMore')} →</a>`;
     const input = options.querySelector('input')!;
     input.oninput = () => showMatching(options.querySelectorAll<HTMLElement>('[data-skin]'), (button) => characterMatches(characterOf(button.dataset.skin!), input.value), options.querySelector<HTMLElement>('.adv-search-empty'));
   });
-  root.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => drawAvatar(button.querySelector('canvas')!, button.dataset.skin!));
+  root.querySelectorAll<HTMLDetailsElement>('.adv-picker').forEach((picker) => {
+    picker.addEventListener('toggle', () => {
+      if (picker.open) picker.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => drawAvatar(button.querySelector('canvas')!, button.dataset.skin!));
+    }, { once: true });
+  });
 }
 function selected(root: HTMLElement, skin: SkinId) {
   const c = characterOf(skin);
@@ -56,7 +61,7 @@ export async function mountAdventureMenu(app: HTMLElement) {
   document.title = `${gameName('adventure')} · Little Lobby`;
   let skin = storedSkin();
   app.innerHTML = `<main class="adventure adv-menu">${nav}<section class="adv-hero"><div class="adv-welcome"><span class="adv-eyebrow">A TINY ADVENTURE, TOGETHER</span><h1>今天，和谁<br>一起去<span>冒险？</span></h1><p>踩着软软的草地，捡一点小点心。<br>跳过小水洼，和朋友在终点碰头。</p><div class="adv-menu-actions"><a class="adv-primary" href="#/adventure-host?solo=1">一个人先逛逛 <span>→</span></a><a class="adv-secondary" href="${isLanPage() ? `#/join/${window.__LITTLE_LOBBY_LAN__!.room}?lan=1&game=adventure` : `#/adventure-host${isNativeApp() ? '?lan=1' : ''}`}">${isLanPage() ? '回到朋友的房间' : isNativeApp() ? '和朋友离线出发' : '和朋友一起玩'} <span>↗</span></a></div><small class="adv-network-note">${isNativeApp() || isLanPage() ? '同一个 Wi-Fi / 热点，扫码就能一起玩，无需外网。' : '单人无需联网 · 离线联机请用原生应用开房，朋友手机扫码加入。'}</small></div><div class="adv-preview"><span class="adv-sticker">没有淘汰，只有再试一次 ♡</span><canvas class="adv-preview-canvas" aria-label="可爱角色和平台关卡预览"></canvas><div class="adv-preview-caption"><span>01 / 莓莓散步道</span><span>跳一跳 · 收集 · 一起到终点</span></div></div></section><section class="adv-wardrobe"><div><span class="adv-eyebrow">PICK YOUR LITTLE BUDDY</span><h2>挑一位小伙伴</h2><p>随时换角色，在同一张地图一起冒险。</p><strong class="adv-theme-label"></strong></div>${choices()}</section><section class="adv-trip"><span>✦ 三站小旅行</span>${modeLevels('classic').map((li, i) => `<span><b>0${i + 1}</b>${LEVELS[li].name}</span>`).join('')}<span>多人还有：串一串 · 吃吐吐 · 叠罗汉</span></section><p class="adv-original"><a href="#/characters">打开角色图鉴，看看所有小伙伴 →</a></p></main>`;
-  try { await avatars(app); }
+  try { await avatars(app, skin); }
   catch (error) { app.querySelector('.adv-preview-caption')!.textContent = String(error); return; }
   skin = characterOf(skin).id;
   const renderer = new AdventureRenderer(app.querySelector('canvas.adv-preview-canvas')!);
@@ -175,11 +180,12 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   const joinButton = $<HTMLButtonElement>('.go');
   joinButton.disabled = true; joinButton.textContent = '正在加载角色…';
   $('.return-home').onclick = () => { location.hash = '#/'; };
-  try { await avatars(app); }
+  try { await avatars(app, skin); }
   catch (error) {
     status('角色图片加载失败，请重试', false); toast(String(error), 6000);
     joinButton.disabled = false; joinButton.textContent = '图片加载失败，点击重试';
-    joinButton.onclick = () => location.reload();
+    // 原地重来：已下载好的图片保留，只重新下载失败的
+    joinButton.onclick = () => { void mountAdventure(app, mode); };
     return;
   }
   joinButton.disabled = false; joinButton.textContent = '加入小伙伴';
@@ -386,7 +392,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
         await startLan(room);
         if (closed) { await stopLan(); return; }
       }
-      host = new AdventureHost(room, mode.solo ? undefined : mode.lan ? (_r, cb) => new LanHost(lanSession()!, cb) : (r, cb) => new HostNet(r, cb), roomPin);
+      host = new AdventureHost(room, mode.solo ? undefined : mode.lan ? (_r, cb) => new LanHost(lanSession()!, cb) : (r, cb) => new HostNet(r, cb), roomPin, !mode.solo && roomOpts().listed);
       if (!mode.screen) host.addLocal(store.get('adventure.name') || (mode.solo ? '小伙伴' : '房主'), skin);
       host.onView = receive;
       host.onStatus = (ok) => status(ok ? mode.solo ? '单人小旅行' : `${mode.lan ? '局域网 · ' : ''}房间 ${room}` : mode.lan ? '局域网服务已断开' : '正在恢复连接…', ok);

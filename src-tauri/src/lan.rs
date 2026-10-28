@@ -498,10 +498,17 @@ async fn asset(State(hub): State<Arc<Hub>>, uri: Uri) -> Response {
     } else {
         bytes.to_vec()
     };
+    // The page carries the room and the manifest changes with downloads; everything else
+    // (hashed bundles, character atlases) can be reused so a retry does not download it all again.
+    let cache = if path == "index.html" || path == "characters/index.json" {
+        "no-store"
+    } else {
+        "max-age=3600"
+    };
     (
         [
             (header::CONTENT_TYPE, mime),
-            (header::CACHE_CONTROL, "no-store"),
+            (header::CACHE_CONTROL, cache),
             (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
         ],
         body,
@@ -582,6 +589,7 @@ mod tests {
         let page = http(info.port, "/").await;
         assert!(page.starts_with("HTTP/1.1 200"));
         assert!(page.contains("window.__LITTLE_LOBBY_LAN__={\"room\":\"ABCDE\"}"));
+        assert!(page.to_lowercase().contains("cache-control: no-store"));
         assert!(
             !page.contains(&info.key),
             "Host key must never be served to players"
@@ -591,9 +599,9 @@ mod tests {
             .find(|(name, _)| name.ends_with(".js"))
             .unwrap()
             .0;
-        assert!(http(info.port, &format!("/{asset_path}"))
-            .await
-            .starts_with("HTTP/1.1 200"));
+        let asset = http(info.port, &format!("/{asset_path}")).await;
+        assert!(asset.starts_with("HTTP/1.1 200"));
+        assert!(asset.to_lowercase().contains("cache-control: max-age=3600"));
         assert!(http(info.port, "/missing")
             .await
             .starts_with("HTTP/1.1 404"));

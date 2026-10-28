@@ -17,7 +17,7 @@ registerHooks({
     return { format: 'module', shortCircuit: true, source: ts.transpile(readFileSync(new URL(url), 'utf8').replaceAll('import.meta.env.BASE_URL', '"/LittleLobby/"'), { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }) };
   },
 });
-const { buddyFrame, loadCharacterSprites, drawBuddyImage } = await import('../src/game/adventure-sprites.ts');
+const { buddyFrame, loadCharacterSprites, drawBuddyImage, drawBuddyAvatar } = await import('../src/game/adventure-sprites.ts');
 const { CHARACTERS, parseCharacter } = await import('../src/game/characters.ts');
 const manifest = JSON.parse(readFileSync(new URL('../public/characters/index.json', import.meta.url), 'utf8'));
 // 浏览器里 fetch 站内文件；测试里直接读 public/ 目录
@@ -59,29 +59,52 @@ test('待机和跑动循环，起跳与下落停留在末帧，左右采样各�
   }
 });
 
-test('本地精灵加载失败可重试，成功后复用图片，绘制直接采样 PNG 帧', async () => {
+test('精灵按需加载：只等所选角色和默认角色，其他角色与大肚肚图画到时才下载，失败可重试且不每帧重试', async () => {
   const original = globalThis.Image, urls = [];
   let fail = () => true;
   globalThis.Image = class {
     naturalWidth = 1024; naturalHeight = 1280;
     set src(value) { this.url = value; urls.push(value); queueMicrotask(() => fail(value) ? this.onerror() : this.onload()); }
   };
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+  const file = (url) => url.split('/characters/')[1];
+  const draw = (...args) => { const calls = []; drawBuddyImage({ drawImage: (...c) => calls.push(c) }, 100, 200, ...args); return calls.map((c) => file(c[0].url)); };
   serveLocal();
   try {
-    await assert.rejects(loadCharacterSprites(), /角色图片未能加载/);
+    await assert.rejects(loadCharacterSprites(['bubu']), /角色图片未能加载/);
     assert.deepEqual(CHARACTERS.map((c) => c.id), manifest.characters);
-    fail = (url) => url.endsWith('/yier/atlas.png') || url.endsWith('/bubu/full-atlas.png');
-    await loadCharacterSprites();
-    const fallback = []; drawBuddyImage({ drawImage: (...args) => fallback.push(args) }, 100, 200, 'yier', 'idle', 0);
-    assert.equal(fallback.length, 1, '默认角色图片损坏仍使用可用角色绘制');
-    assert.ok(!fallback[0][0].url.endsWith('/yier/atlas.png'));
-    const normal = []; drawBuddyImage({ drawImage: (...args) => normal.push(args) }, 100, 200, 'bubu', 'idle', 0, 1, true);
-    assert.ok(normal[0][0].url.endsWith('/bubu/atlas.png'), '大肚肚图损坏回退到普通造型');
-    fail = () => false; await loadCharacterSprites(); const count = urls.length; await loadCharacterSprites();
-    assert.equal(urls.length, count);
-    assert.ok(urls.every((url) => url.startsWith('/LittleLobby/characters/')));
-    assert.ok(urls.includes('/LittleLobby/characters/yier/atlas.png'));
-    assert.ok(urls.includes('/LittleLobby/characters/bubu/full-atlas.png'));
+    assert.deepEqual(urls.map(file).sort(), ['bubu/atlas.png', 'yier/atlas.png'], '只请求所选角色和默认角色的普通造型');
+
+    fail = (url) => url.endsWith('/yier/atlas.png');
+    urls.length = 0;
+    await loadCharacterSprites(['bubu']);
+    assert.deepEqual(urls.map(file).sort(), ['bubu/atlas.png', 'yier/atlas.png'], '重试重新下载失败的图片');
+    assert.deepEqual(draw('yier', 'idle', 0), ['bubu/atlas.png'], '默认角色坏了用可用角色顶上');
+
+    urls.length = 0;
+    for (let i = 0; i < 5; i++) draw('yier', 'idle', 0);
+    await settle();
+    assert.deepEqual(urls, [], '刚失败的图片绘制时不会每帧重试');
+
+    fail = () => false;
+    assert.deepEqual(draw('xiaobai', 'idle', 0), ['bubu/atlas.png'], '别人的角色没到时先用已有造型');
+    assert.deepEqual(draw('bubu', 'idle', 0, 1, true), ['bubu/atlas.png'], '大肚肚图没到时用普通造型');
+    await settle();
+    assert.deepEqual(urls.map(file).sort(), ['bubu/full-atlas.png', 'xiaobai/atlas.png']);
+    assert.deepEqual(draw('xiaobai', 'idle', 0), ['xiaobai/atlas.png']);
+    assert.deepEqual(draw('bubu', 'idle', 0, 1, true), ['bubu/full-atlas.png']);
+
+    const avatar = [], canvas = { dataset: {}, getContext: () => ({ drawImage: (...c) => avatar.push(file(c[0].url)) }) };
+    drawBuddyAvatar(canvas, 'jinmao'); drawBuddyAvatar(canvas, 'jinmao');
+    assert.deepEqual(avatar, [], '头像图片没到时先空着');
+    await settle();
+    assert.deepEqual(avatar, ['jinmao/atlas.png'], '下载好只补画一次');
+    assert.equal(urls.filter((url) => url.endsWith('/jinmao/atlas.png')).length, 1);
+
+    let count = urls.length; await loadCharacterSprites(['bubu', 'xiaobai']);
+    assert.deepEqual(urls.slice(count).map(file), ['yier/atlas.png'], '主动加载会重试之前失败的默认角色');
+    count = urls.length; await loadCharacterSprites(['bubu', 'xiaobai']);
+    assert.equal(urls.length, count, '已加载的图片复用');
     const calls = []; drawBuddyImage({ drawImage: (...args) => calls.push(args) }, 100, 200, 'bubu', 'run', .2, -1);
     assert.equal(calls.length, 1); assert.ok(calls[0][0] instanceof Image);
     assert.deepEqual(calls[0].slice(1, 5), [256, 800, 128, 160]);

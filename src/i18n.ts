@@ -130,6 +130,7 @@ const zhCN = {
   'lobby.failed': '大厅连接失败，请检查网络',
   'lobby.hint': '点一行即加入，满员的可以观战；带锁的需要输入密码',
   'lobby.locked': '需要密码',
+  'lobby.refresh': '刷新',
 
   'guide.title': '玩法教程',
   'guide.back': '返回',
@@ -448,6 +449,7 @@ const zhTW: Dict = {
   'lobby.failed': '大廳連線失敗，請檢查網路',
   'lobby.hint': '點一列即加入，滿員的可以觀戰；有鎖的需要輸入密碼',
   'lobby.locked': '需要密碼',
+  'lobby.refresh': '重新整理',
 
   'guide.title': '玩法教學',
   'guide.back': '返回',
@@ -764,6 +766,7 @@ const en: Dict = {
   'lobby.failed': "Couldn't reach the lobby. Check your network.",
   'lobby.hint': 'Tap a row to join, or to watch if it is full. Locked rooms ask for a password.',
   'lobby.locked': 'Password required',
+  'lobby.refresh': 'Refresh',
 
   'guide.title': 'How to play',
   'guide.back': 'Back',
