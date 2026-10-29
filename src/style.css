@@ -2413,8 +2413,10 @@ li.open .row-actions {
 .pmeta.prefs label { display: inline-flex; align-items: center; gap: 6px; }
 .pmeta .lang-select { padding: 4px 6px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--fg); font: inherit; font-size: 12px; }
 .pmeta .lang-select option { color: #10302f; }
-.pmeta.pactions { align-items: center; }
-.pmeta .pleave { padding: 4px 10px; border: 0; background: none; color: #ff6b6b; font-size: 12px; font-weight: 650; }
+/* 房间操作和冒险菜单一样：整行大按钮，手机上好点中 */
+.pmeta.pactions { display: grid; justify-content: stretch; gap: 8px; margin-top: 4px; }
+.pmeta.pactions .ghost { width: 100%; padding: 10px; font-size: 15px; }
+.pmeta .pleave { padding: 8px; border: 0; background: none; color: #ff6b6b; font-size: 15px; font-weight: 650; }
 
 /* ---------- 所有游戏共用的画面框架 ----------
    左上：连接状态（纯文字 + 小圆点）；右上：全屏、菜单两个圆按钮；左下：小聚场 logo；
