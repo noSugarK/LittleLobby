@@ -18,7 +18,8 @@ registerHooks({
   },
 });
 const { buddyFrame, loadCharacterSprites, drawBuddyImage, drawBuddyAvatar } = await import('../src/game/adventure-sprites.ts');
-const { CHARACTERS, parseCharacter } = await import('../src/game/characters.ts');
+const { CHARACTERS, characterOf, parseCharacter } = await import('../src/game/characters.ts');
+const { t } = await import('../src/i18n.ts');
 const manifest = JSON.parse(readFileSync(new URL('../public/characters/index.json', import.meta.url), 'utf8'));
 // 浏览器里 fetch 站内文件；测试里直接读 public/ 目录
 const serveLocal = () => { globalThis.fetch = async (url) => {
@@ -44,8 +45,8 @@ test('每个角色文件夹都符合规范：中英文案齐全、两张带透�
       assert.ok(png[25] === 6 || (png[25] === 3 && png.includes('tRNS')), `${id}/${file} 需要带透明通道的 PNG`);
     }
   }
-  assert.throws(() => parseCharacter({ id: 'x', accent: '#ffffff', name: '只有中文' }, 'x'), /不符合规范/);
-  assert.throws(() => parseCharacter({ ...JSON.parse(readFileSync(new URL('../public/characters/yier/character.json', import.meta.url), 'utf8')) }, 'bubu'), /不符合规范/);
+  assert.throws(() => parseCharacter({ id: 'x', accent: '#ffffff', name: '只有中文' }, 'x'), { message: t('adv.err.badMeta', { id: 'x' }) });
+  assert.throws(() => parseCharacter({ ...JSON.parse(readFileSync(new URL('../public/characters/yier/character.json', import.meta.url), 'utf8')) }, 'bubu'), { message: t('adv.err.badMeta', { id: 'bubu' }) });
 });
 
 test('待机和跑动循环，起跳与下落停留在末帧，左右采样各自的动作行', () => {
@@ -72,7 +73,7 @@ test('精灵按需加载：只等所选角色和默认角色，其他角色与�
   const draw = (...args) => { const calls = []; drawBuddyImage({ drawImage: (...c) => calls.push(c) }, 100, 200, ...args); return calls.map((c) => file(c[0].url)); };
   serveLocal();
   try {
-    await assert.rejects(loadCharacterSprites(['bubu']), /角色图片未能加载/);
+    await assert.rejects(loadCharacterSprites(['bubu']), (e) => e.message === t('adv.err.spriteFailed', { name: characterOf('bubu').name }));
     assert.deepEqual(CHARACTERS.map((c) => c.id), manifest.characters);
     assert.deepEqual(urls.map(file).sort(), ['bubu/atlas.png', 'yier/atlas.png'], '只请求所选角色和默认角色的普通造型');
 

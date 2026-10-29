@@ -1,16 +1,17 @@
 import { DEFAULT_SKIN, validSkin, type SkinId } from './characters';
+import { t } from '../i18n';
 /** Shared map art is independent of each player's chosen character. */
 export const MAP_THEMES = [
-  { sky: '#fff3e9', grass: '#aad5aa', accent: '#f5a8b8', item: '草莓', treat: 0 },
-  { sky: '#edf6fc', grass: '#b7d6cc', accent: '#eeb76b', item: '蜂蜜', treat: 1 },
-  { sky: '#eee9f8', grass: '#b9c4d9', accent: '#bfacd9', item: '星光点心', treat: 0 },
+  { sky: '#fff3e9', grass: '#aad5aa', accent: '#f5a8b8', item: t('adv.theme.0'), treat: 0 },
+  { sky: '#edf6fc', grass: '#b7d6cc', accent: '#eeb76b', item: t('adv.theme.1'), treat: 1 },
+  { sky: '#eee9f8', grass: '#b9c4d9', accent: '#bfacd9', item: t('adv.theme.2'), treat: 0 },
 ] as const;
 /** 四种玩法互不叠加：经典单独闯关，其余三种是需要至少两人的合作机制。 */
 export const MODES = [
-  { id: 'classic', name: '经典闯关', desc: '跳一跳、收星星，一个人也能玩', coop: false },
-  { id: 'rope', name: '串一串', desc: '全员一根绳子，掉坑会被队友吊住', coop: true },
-  { id: 'eat', name: '吃吐吐', desc: '吃掉队友，再把他吐过长长的缺口', coop: true },
-  { id: 'stack', name: '叠罗汉', desc: '踩着队友的头，爬上高高的墙', coop: true },
+  { id: 'classic', name: t('adv.mode.classic'), desc: t('adv.mode.classic.desc'), coop: false },
+  { id: 'rope', name: t('adv.mode.rope'), desc: t('adv.mode.rope.desc'), coop: true },
+  { id: 'eat', name: t('adv.mode.eat'), desc: t('adv.mode.eat.desc'), coop: true },
+  { id: 'stack', name: t('adv.mode.stack'), desc: t('adv.mode.stack.desc'), coop: true },
 ] as const;
 export type ModeId = typeof MODES[number]['id'];
 export const validMode = (mode: unknown): mode is ModeId => MODES.some((m) => m.id === mode);
@@ -31,21 +32,21 @@ const block = (x: number, y: number, w: number): Rect => ({ x, y, w, h: 500 - y 
 const plate = (x: number, y = 500, w = 110): Rect => ({ x, y: y - 8, w, h: 8 });
 export const LEVELS: Level[] = [
   {
-    name: '莓莓散步道', caption: '沿着小点心前进，收集三颗星星，去野餐小屋集合。', mode: 'classic', theme: 0, width: 3100,
+    name: t('adv.level.0'), caption: t('adv.level.0.caption'), mode: 'classic', theme: 0, width: 3100,
     platforms: [ground(0, 760), ground(870, 740), ground(1740, 1360), ledge(330, 410), ledge(540, 345), ledge(1060, 415), ledge(1260, 340), ledge(1920, 415), ledge(2130, 340), ledge(2340, 410)],
     coins: [{ x: 210, y: 462 }, { x: 290, y: 462 }, { x: 375, y: 375 }, { x: 585, y: 310 }, { x: 710, y: 457 }, { x: 820, y: 390 }, { x: 990, y: 462 }, { x: 1120, y: 380 }, { x: 1330, y: 305 }, { x: 1540, y: 462 }, { x: 1670, y: 380 }, { x: 1830, y: 462 }, { x: 1990, y: 380 }, { x: 2200, y: 305 }, { x: 2410, y: 375 }, { x: 2600, y: 460 }, { x: 2720, y: 460 }],
     stars: [{ x: 595, y: 300 }, { x: 1340, y: 295 }, { x: 2200, y: 295 }],
     checkpoints: [{ x: 980, y: 500 }, { x: 1830, y: 500 }], enemies: [{ x: 1160, y: 500, range: 75 }, { x: 2540, y: 500, range: 100 }], goal: 2890,
   },
   {
-    name: '云朵奶糖桥', caption: '慢一点也没关系。抬头找找云桥上的星星。', mode: 'classic', theme: 1, width: 3300,
+    name: t('adv.level.1'), caption: t('adv.level.1.caption'), mode: 'classic', theme: 1, width: 3300,
     platforms: [ground(0, 610), ground(760, 590), ground(1500, 600), ground(2230, 1070), ledge(280, 415), ledge(460, 335), ledge(620, 405, 100), ledge(980, 415), ledge(1170, 335), ledge(1380, 405, 90), ledge(1700, 415), ledge(1900, 335), ledge(2130, 405, 90), ledge(2410, 410), ledge(2600, 340)],
     coins: [{ x: 180, y: 460 }, { x: 340, y: 380 }, { x: 520, y: 300 }, { x: 670, y: 370 }, { x: 860, y: 460 }, { x: 1040, y: 380 }, { x: 1230, y: 300 }, { x: 1420, y: 370 }, { x: 1580, y: 460 }, { x: 1770, y: 380 }, { x: 1970, y: 300 }, { x: 2170, y: 370 }, { x: 2330, y: 460 }, { x: 2480, y: 375 }, { x: 2670, y: 305 }, { x: 2820, y: 460 }, { x: 2960, y: 460 }],
     stars: [{ x: 520, y: 290 }, { x: 1230, y: 290 }, { x: 1970, y: 290 }],
     checkpoints: [{ x: 850, y: 500 }, { x: 1580, y: 500 }, { x: 2320, y: 500 }], enemies: [{ x: 1010, y: 500, range: 100 }, { x: 1810, y: 500, range: 110 }, { x: 2780, y: 500, range: 90 }], goal: 3100,
   },
   {
-    name: '晚安星光园', caption: '最后一站！带上星星，和朋友一起赴约。', mode: 'classic', theme: 2, width: 3500,
+    name: t('adv.level.2'), caption: t('adv.level.2.caption'), mode: 'classic', theme: 2, width: 3500,
     platforms: [ground(0, 700), ground(840, 660), ground(1640, 700), ground(2480, 1020), ledge(320, 415), ledge(510, 335), ledge(720, 400, 90), ledge(1050, 415), ledge(1250, 335), ledge(1520, 400, 90), ledge(1830, 415), ledge(2030, 335), ledge(2360, 400, 90), ledge(2650, 410), ledge(2840, 335)],
     coins: [{ x: 200, y: 460 }, { x: 380, y: 380 }, { x: 570, y: 300 }, { x: 760, y: 365 }, { x: 950, y: 460 }, { x: 1110, y: 380 }, { x: 1310, y: 300 }, { x: 1560, y: 365 }, { x: 1740, y: 460 }, { x: 1900, y: 380 }, { x: 2090, y: 300 }, { x: 2400, y: 365 }, { x: 2570, y: 460 }, { x: 2710, y: 375 }, { x: 2900, y: 300 }, { x: 3070, y: 460 }, { x: 3180, y: 460 }],
     stars: [{ x: 570, y: 290 }, { x: 1310, y: 290 }, { x: 2900, y: 290 }],
@@ -53,7 +54,7 @@ export const LEVELS: Level[] = [
   },
   {
     // 坑都跳得过去，但绳子只有四个身位：大家得一起起跳，掉下去的人靠站稳的队友吊住再爬上来
-    name: '手拉手山谷', caption: '一根绳子连着大家。有人站稳，掉坑的人就能荡回来。', mode: 'rope', theme: 1, width: 3200,
+    name: t('adv.level.3'), caption: t('adv.level.3.caption'), mode: 'rope', theme: 1, width: 3200,
     platforms: [ground(0, 520), ground(690, 300), ground(1160, 260), ledge(1500, 430, 110), ledge(1680, 380, 110), ledge(1840, 430, 70), ground(1960, 330), ground(2470, 730), ledge(820, 400, 120), ledge(2620, 400, 120), ledge(2800, 330, 120)],
     coins: [{ x: 200, y: 462 }, { x: 420, y: 462 }, { x: 600, y: 420 }, { x: 760, y: 462 }, { x: 880, y: 365 }, { x: 1075, y: 420 }, { x: 1250, y: 462 }, { x: 1555, y: 395 }, { x: 1735, y: 345 }, { x: 1875, y: 395 }, { x: 2050, y: 462 }, { x: 2380, y: 420 }, { x: 2560, y: 462 }, { x: 2680, y: 365 }, { x: 3000, y: 462 }],
     stars: [{ x: 880, y: 360 }, { x: 1735, y: 335 }, { x: 2860, y: 290 }],
@@ -62,7 +63,7 @@ export const LEVELS: Level[] = [
   },
   {
     // 长缺口自己跳不过去：把队友吐到对岸，他踩下按钮放下吊桥；高台要边跳边吐才够得着
-    name: '吐吐大峡谷', caption: '缺口太长？吃掉队友，把他吐到对岸去按开关吧。', mode: 'eat', theme: 0, width: 3300,
+    name: t('adv.level.4'), caption: t('adv.level.4.caption'), mode: 'eat', theme: 0, width: 3300,
     platforms: [ground(0, 700), ground(1060, 500), ground(1940, 1360), ledge(2150, 300, 150)],
     devices: [
       { plate: plate(1090), need: 1, latch: true, solid: [{ x: 700, y: 500, w: 360, h: 22 }] },
@@ -76,7 +77,7 @@ export const LEVELS: Level[] = [
   },
   {
     // 墙比一个人跳得高：踩着队友的头爬上去，墙顶的按钮放下台阶给其他人；最后两人一起踩开大门
-    name: '叠罗汉城堡', caption: '墙太高？站到队友头上，一起爬上去。', mode: 'stack', theme: 2, width: 3300,
+    name: t('adv.level.5'), caption: t('adv.level.5.caption'), mode: 'stack', theme: 2, width: 3300,
     platforms: [ground(0, 3300), block(700, 330, 200), block(1500, 330, 240), ledge(2560, 330, 130)],
     devices: [
       { plate: plate(760, 330, 90), need: 1, latch: true, solid: [{ x: 600, y: 420, w: 90, h: 22 }] },
