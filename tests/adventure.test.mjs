@@ -295,7 +295,9 @@ test('房主中途回大厅：放出被吃的人，可以换玩法重新出发',
   const g = coop('eat'), [a, b] = g.players.values();
   a.eating = b.id; b.eatenBy = a.id;
   assert.equal(g.setMode('stack'), false, '游戏中不能直接换玩法');
+  const epoch = g.epoch;
   assert.equal(g.toLobby(), true); assert.equal(g.phase, 'lobby');
+  assert.ok(g.epoch > epoch, '回大厅时间清零，要换新 epoch，页面才不会当成过期快照丢掉');
   assert.deepEqual([a.eating, b.eatenBy], [-1, -1]);
   assert.equal(g.setMode('stack'), true); assert.equal(g.start(), true); assert.equal(LEVELS[g.level].mode, 'stack');
 });

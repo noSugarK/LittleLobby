@@ -171,6 +171,8 @@ export class AdventureGame {
   /** 大厅里大家可以在所选玩法的第一关里先走走跳跳，出发时再统一回到起点。 */
   private warmUp() {
     this.level = modeLevels(this.mode)[0];
+    // 时间从头计：换新 epoch，否则页面会把回到大厅的状态当成过期快照丢掉
+    this.epoch++;
     this.time = 0; this.stars.clear(); this.defeated.clear(); this.active.clear();
     for (const p of this.players.values()) { p.checkpoint = -1; p.coins = []; p.hearts = 3; this.respawn(p, false); }
   }
