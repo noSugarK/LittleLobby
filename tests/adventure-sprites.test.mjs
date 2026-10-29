@@ -40,7 +40,8 @@ test('每个角色文件夹都符合规范：中英文案齐全、两张带透�
       const png = readFileSync(new URL(`../public/characters/${id}/${file}`, import.meta.url));
       assert.equal(png.subarray(1, 4).toString(), 'PNG');
       assert.equal(png.readUInt32BE(16), 1024); assert.equal(png.readUInt32BE(20), 1280);
-      assert.equal(png[25], 6, `${id}/${file} 需要 RGBA PNG`);
+      // RGBA，或压缩过的带透明（tRNS）调色板 PNG
+      assert.ok(png[25] === 6 || (png[25] === 3 && png.includes('tRNS')), `${id}/${file} 需要带透明通道的 PNG`);
     }
   }
   assert.throws(() => parseCharacter({ id: 'x', accent: '#ffffff', name: '只有中文' }, 'x'), /不符合规范/);

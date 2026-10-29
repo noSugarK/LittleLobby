@@ -50,7 +50,7 @@ All text fields are language maps: `zh-CN` and `en` are required, `zh-TW` falls 
 
 ## 精灵表 / Sprite atlas
 
-两张图规格相同：**1024 × 1280 的 RGBA PNG，透明背景**，切成 8 列 × 8 行、每格 128 × 160。
+两张图规格相同：**1024 × 1280 的 RGBA PNG，透明背景**，切成 8 列 × 8 行、每格 128 × 160。提交前压成带透明的 256 色调色板 PNG（如 `pngquant --quality 80-95`），每张约 150–200 KB，联网时其他玩家的角色才出得快。
 
 | 行 | 动作 | 帧数 | 朝向 |
 | --- | --- | --- | --- |
