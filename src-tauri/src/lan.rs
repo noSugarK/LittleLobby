@@ -47,9 +47,14 @@ struct Advertisement {
 
 async fn advertise(hub: Arc<Hub>, port: u16) {
     // Discovery is optional: direct address joins still work if UDP is unavailable.
-    let socket = match UdpSocket::bind(("0.0.0.0", DISCOVERY_PORT)).await {
-        Ok(socket) => socket,
-        Err(error) => { eprintln!("LAN discovery unavailable: {error}"); return; }
+    // A room reopened after switching games waits briefly for the previous server to release the port.
+    let mut tries = 0;
+    let socket = loop {
+        match UdpSocket::bind(("0.0.0.0", DISCOVERY_PORT)).await {
+            Ok(socket) => break socket,
+            Err(_) if tries < 20 => { tries += 1; tokio::time::sleep(Duration::from_millis(100)).await; }
+            Err(error) => { eprintln!("LAN discovery unavailable: {error}"); return; }
+        }
     };
     respond_to_discovery(socket, hub, port).await;
 }
@@ -159,15 +164,17 @@ async fn wait_for_stop(stop: &mut watch::Receiver<bool>) {
 pub async fn start_lan(
     app: tauri::AppHandle,
     room: String,
+    port: Option<u16>,
     state: tauri::State<'_, LanServer>,
 ) -> Result<ServerInfo, String> {
-    start_server(room, &state, crate::characters::dir(&app).ok()).await
+    start_server(room, &state, crate::characters::dir(&app).ok(), port.unwrap_or(0)).await
 }
 
 async fn start_server(
     room: String,
     state: &LanServer,
     characters: Option<std::path::PathBuf>,
+    port: u16,
 ) -> Result<ServerInfo, String> {
     let mut current = state.0.lock().await;
     if !(4..=8).contains(&room.len())
@@ -177,9 +184,10 @@ async fn start_server(
     {
         return Err("Invalid room code".into());
     }
-    let listener = TcpListener::bind("0.0.0.0:0")
-        .await
-        .map_err(|e| e.to_string())?;
+    if let Some(previous) = current.take() {
+        let _ = previous.stop.send(true);
+    }
+    let listener = bind(port).await.map_err(|e| e.to_string())?;
     let port = listener.local_addr().map_err(|e| e.to_string())?.port();
     let mut addresses: Vec<_> = if_addrs::get_if_addrs()
         .map_err(|e| e.to_string())?
@@ -224,9 +232,6 @@ async fn start_server(
         .route("/ws", get(player_upgrade))
         .fallback(get(asset))
         .with_state(hub.clone());
-    if let Some(previous) = current.take() {
-        let _ = previous.stop.send(true);
-    }
     *current = Some(Running {
         key: key.clone(),
         stop: stop.clone(),
@@ -253,6 +258,19 @@ async fn start_server(
         key,
         addresses,
     })
+}
+
+/// Switching games reloads the host page and restarts the server: reuse the old port so
+/// players' saved addresses and LAN pages keep working, or fall back to any free port.
+async fn bind(port: u16) -> std::io::Result<TcpListener> {
+    for _ in 0..20 {
+        if port == 0 { break; }
+        match TcpListener::bind(("0.0.0.0", port)).await {
+            Ok(listener) => return Ok(listener),
+            Err(_) => tokio::time::sleep(Duration::from_millis(100)).await,
+        }
+    }
+    TcpListener::bind("0.0.0.0:0").await
 }
 
 #[tauri::command]
@@ -553,7 +571,7 @@ mod tests {
     #[ignore]
     async fn browser_smoke() {
         let state = LanServer::default();
-        let info = start_server("ABCDE".into(), &state, None).await.unwrap();
+        let info = start_server("ABCDE".into(), &state, None, 0).await.unwrap();
         let target = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("target");
         let json = serde_json::to_string(&info).unwrap();
         std::fs::write(target.join("lan-smoke.json"), &json).unwrap();
@@ -572,7 +590,7 @@ mod tests {
         let png = crate::characters::test_atlas();
         crate::characters::save(&root, "zz-test", &crate::characters::test_meta("zz-test"), &png, &png).unwrap();
         let state = LanServer::default();
-        let info = start_server("ABCDE".into(), &state, Some(root.clone())).await.unwrap();
+        let info = start_server("ABCDE".into(), &state, Some(root.clone()), 0).await.unwrap();
         let index = http(info.port, "/characters/index.json").await;
         assert!(index.starts_with("HTTP/1.1 200") && index.contains("\"zz-test\""));
         assert!(http(info.port, "/characters/zz-test/atlas.png").await.starts_with("HTTP/1.1 200"));
@@ -582,10 +600,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn reopening_a_room_keeps_its_port() {
+        let state = LanServer::default();
+        let first = start_server("ABCDE".into(), &state, None, 0).await.unwrap();
+        let second = start_server("ABCDE".into(), &state, None, first.port).await.unwrap();
+        assert_eq!(second.port, first.port, "Players reconnect to the same address after a game switch");
+        assert!(http(second.port, "/").await.starts_with("HTTP/1.1 200"));
+        state.shutdown().await;
+    }
+
+    #[tokio::test]
     async fn serves_offline_assets_routes_messages_and_stops_with_host() {
         let state = LanServer::default();
-        assert!(start_server("../../bad".into(), &state, None).await.is_err());
-        let info = start_server("ABCDE".into(), &state, None).await.unwrap();
+        assert!(start_server("../../bad".into(), &state, None, 0).await.is_err());
+        let info = start_server("ABCDE".into(), &state, None, 0).await.unwrap();
         let page = http(info.port, "/").await;
         assert!(page.starts_with("HTTP/1.1 200"));
         assert!(page.contains("window.__LITTLE_LOBBY_LAN__={\"room\":\"ABCDE\"}"));
@@ -779,7 +807,7 @@ mod tests {
     #[tokio::test]
     async fn local_round_trip_with_snapshots() {
         let state = LanServer::default();
-        let info = start_server("ABCDE".into(), &state, None).await.unwrap();
+        let info = start_server("ABCDE".into(), &state, None, 0).await.unwrap();
         let host_url = format!("ws://127.0.0.1:{}/host?key={}", info.port, info.key);
         let player_url = format!("ws://127.0.0.1:{}/ws?room=ABCDE", info.port);
         let (mut host, _) = connect_async_with_config(host_url, None, true).await.unwrap();

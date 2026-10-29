@@ -26,8 +26,11 @@ export function lanSession(): LanSession | null {
 
 export async function startLan(room: string) {
   if (!window.__TAURI__) throw new Error('LAN hosting requires the Little Lobby app');
-  const info = await window.__TAURI__.core.invoke<Omit<LanSession, 'room' | 'baseUrl'>>('start_lan', { room });
+  // 切换玩法会整页重开、重启服务：沿用这个房间上次的端口，伙伴的地址和局域网页面才不会失效
+  const portKey = `lanport.${room}`;
+  const info = await window.__TAURI__.core.invoke<Omit<LanSession, 'room' | 'baseUrl'>>('start_lan', { room, port: Number(store.get(portKey, false)) || null });
   const session: LanSession = { ...info, room, baseUrl: info.addresses[0]?.url || `http://127.0.0.1:${info.port}` };
+  store.set(portKey, String(info.port), false);
   store.set('lan', JSON.stringify(session), false);
   return session;
 }
