@@ -47,14 +47,9 @@ struct Advertisement {
 
 async fn advertise(hub: Arc<Hub>, port: u16) {
     // Discovery is optional: direct address joins still work if UDP is unavailable.
-    // A room reopened after switching games waits briefly for the previous server to release the port.
-    let mut tries = 0;
-    let socket = loop {
-        match UdpSocket::bind(("0.0.0.0", DISCOVERY_PORT)).await {
-            Ok(socket) => break socket,
-            Err(_) if tries < 20 => { tries += 1; tokio::time::sleep(Duration::from_millis(100)).await; }
-            Err(error) => { eprintln!("LAN discovery unavailable: {error}"); return; }
-        }
+    let socket = match retry_until_released(|| UdpSocket::bind(("0.0.0.0", DISCOVERY_PORT))).await {
+        Ok(socket) => socket,
+        Err(error) => { eprintln!("LAN discovery unavailable: {error}"); return; }
     };
     respond_to_discovery(socket, hub, port).await;
 }
@@ -184,13 +179,14 @@ async fn start_server(
     {
         return Err("Invalid room code".into());
     }
+    // Everything that can fail runs before the previous room is stopped, so a failed restart keeps it.
+    let interfaces = if_addrs::get_if_addrs().map_err(|e| e.to_string())?;
     if let Some(previous) = current.take() {
         let _ = previous.stop.send(true);
     }
-    let listener = bind(port).await.map_err(|e| e.to_string())?;
+    let listener = bind_reusing_port(port).await.map_err(|e| e.to_string())?;
     let port = listener.local_addr().map_err(|e| e.to_string())?.port();
-    let mut addresses: Vec<_> = if_addrs::get_if_addrs()
-        .map_err(|e| e.to_string())?
+    let mut addresses: Vec<_> = interfaces
         .into_iter()
         .filter_map(|iface| match iface.ip() {
             std::net::IpAddr::V4(ip)
@@ -262,15 +258,33 @@ async fn start_server(
 
 /// Switching games reloads the host page and restarts the server: reuse the old port so
 /// players' saved addresses and LAN pages keep working, or fall back to any free port.
-async fn bind(port: u16) -> std::io::Result<TcpListener> {
-    for _ in 0..20 {
-        if port == 0 { break; }
-        match TcpListener::bind(("0.0.0.0", port)).await {
+async fn bind_reusing_port(port: u16) -> std::io::Result<TcpListener> {
+    if port != 0 {
+        match retry_until_released(|| TcpListener::bind(("0.0.0.0", port))).await {
             Ok(listener) => return Ok(listener),
-            Err(_) => tokio::time::sleep(Duration::from_millis(100)).await,
+            Err(error) => eprintln!("LAN port {port} is still taken ({error}); players must rejoin at the new address"),
         }
     }
     TcpListener::bind("0.0.0.0:0").await
+}
+
+/// A room reopened after a game switch binds the same ports as the server it replaces;
+/// give that server up to two seconds to let go of them.
+async fn retry_until_released<T, F, Fut>(mut bind: F) -> std::io::Result<T>
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = std::io::Result<T>>,
+{
+    let mut tries = 0;
+    loop {
+        match bind().await {
+            Err(_) if tries < 20 => {
+                tries += 1;
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+            result => return result,
+        }
+    }
 }
 
 #[tauri::command]
