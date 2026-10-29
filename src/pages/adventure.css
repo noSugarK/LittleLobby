@@ -124,11 +124,11 @@
 .adv-picker > summary > i { font-style: normal; transition: transform .15s; }
 .adv-picker[open] > summary > i { transform: rotate(180deg); }
 .adv-picked-avatar { width: 44px; height: 44px; flex: none; }
-.adv-options { position: absolute; z-index: 8; left: 0; right: 0; top: calc(100% + 6px); display: grid; gap: 4px; padding: 6px; max-height: 240px; overflow-y: auto; border: 1px solid #e2d9c9; border-radius: 14px; background: #fffcf7; box-shadow: 0 10px 30px #70594f26; }
+.adv-options { overflow-x: hidden; position: absolute; z-index: 8; left: 0; right: 0; top: calc(100% + 6px); display: grid; gap: 4px; padding: 6px; max-height: 240px; overflow-y: auto; border: 1px solid #e2d9c9; border-radius: 14px; background: #fffcf7; box-shadow: 0 10px 30px #70594f26; }
 .adventure .adv-options .adv-character, .adv-play .adv-options .adv-character { display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 4px 10px 4px 4px; border-radius: 10px; text-align: left; }
 .adv-options .adv-character canvas { width: 40px; height: 40px; flex: none; }
-.adv-options .adv-character b { font-size: 13px; margin: 0; }
-.adv-options .adv-character small { display: inline; margin: 0 0 0 auto; font-size: 11px; color: var(--adv-muted); }
+.adv-options .adv-character b { flex: none; font-size: 13px; margin: 0; }
+.adv-options .adv-character small { display: inline; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 0 0 auto; font-size: 11px; color: var(--adv-muted); }
 .adv-options .adv-character[aria-pressed='true']::after { display: none; }
 /* 下拉顶部的搜索框滚动时一直钉在上面；搜不到时提示，并引导去角色图鉴 */
 .adv-search { position: sticky; top: -6px; z-index: 1; display: flex; align-items: center; gap: 6px; margin: -6px -6px 2px; padding: 8px 12px; border-bottom: 1px solid #ece3d4; background: inherit; color: var(--adv-muted); }
@@ -167,7 +167,10 @@
 .adv-settings { display: grid; border-top: 1px solid var(--line); }
 .adv-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
 .adv-row > span { flex: none; color: var(--muted); }
-.adv-row .adv-picker { flex: 1; max-width: 260px; }
+.adv-row .adv-picker { flex: 1; min-width: 0; max-width: 260px; }
+/* 展开的角色列表把这一行撑高时，「角色」二字仍和收起的下拉框（高 58px）对齐 */
+.adv-row-picker { align-items: flex-start; }
+.adv-row-picker > span { line-height: 58px; }
 .adv-row .lang-select { min-width: 120px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--fg); font: inherit; font-size: 14px; }
 .adv-actions { display: grid; gap: 8px; margin-top: 4px; }
 .adv-actions .ghost { width: 100%; padding: 10px; font-size: 15px; }

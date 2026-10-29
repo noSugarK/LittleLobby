@@ -39,7 +39,10 @@ async function avatars(root: HTMLElement, skin: SkinId) {
     const input = options.querySelector('input')!;
     input.oninput = () => showMatching(options.querySelectorAll<HTMLElement>('[data-skin]'), (button) => characterMatches(characterOf(button.dataset.skin!), input.value), options.querySelector<HTMLElement>('.adv-search-empty'));
   });
+  // 像普通下拉框一样：点别处就收起；在菜单里展开时把列表滚进视野
+  document.addEventListener('pointerdown', (e) => root.querySelectorAll<HTMLDetailsElement>('.adv-picker[open]').forEach((picker) => { if (!picker.contains(e.target as Node)) picker.open = false; }));
   root.querySelectorAll<HTMLDetailsElement>('.adv-picker').forEach((picker) => {
+    picker.addEventListener('toggle', () => { if (picker.open && picker.closest('.adv-panel')) picker.scrollIntoView({ block: 'nearest' }); });
     picker.addEventListener('toggle', () => {
       if (picker.open) picker.querySelectorAll<HTMLButtonElement>('[data-skin]').forEach((button) => drawAvatar(button.querySelector('canvas')!, button.dataset.skin!));
     }, { once: true });
@@ -127,7 +130,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       <p class="muted small adv-hint">${HINTS.classic}</p>
       <div class="adv-roster"></div>
       <div class="adv-settings">
-        ${mode.screen ? '' : `<div class="adv-row"><span>角色</span>${choices()}</div>`}
+        ${mode.screen ? '' : `<div class="adv-row adv-row-picker"><span>角色</span>${choices()}</div>`}
         <label class="adv-row"><span>音效</span><input type="checkbox" class="switch adv-audio" checked></label>
         <label class="adv-row"><span>${t('lang.label')}</span>${langSelect()}</label>
       </div>
