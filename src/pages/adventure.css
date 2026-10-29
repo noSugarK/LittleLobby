@@ -102,7 +102,6 @@
 .adv-play .adv-character[aria-pressed='true'] { border-color: var(--adv-accent, #f5a8b8); box-shadow: 0 0 0 2px var(--adv-accent, #f5a8b8); }
 .adv-address .lan-info { font-size: 11px; }
 .adv-address select { width: 100%; font-size: 11px; }
-.adv-play .join h1 { margin: 0; font-size: 24px; }
 .adv-overlay { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow-y: auto; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; z-index: 6; }
 .adv-overlay[hidden] { display: none; }
 .adv-overlay > span { font-size: 36px; color: #a5bc91; line-height: 1; }
@@ -160,7 +159,7 @@
 /* 菜单、加入卡片、结算卡片都换成和地图一样的奶油色 */
 .adv-play { --fg: var(--adv-ink); --muted: #8a7769; --card: #fffaf1f5; --line: #e6dccb; --green: var(--adv-green); color: var(--fg); }
 .adv-play .card { box-shadow: 0 12px 32px #5a463a26; }
-.adv-play .card button:not(.primary, .adv-mode, .adv-start, .adv-leave) { background: #fff; border-color: var(--line); }
+.adv-play .card button:not(.primary, .adv-mode, .adv-start, .adv-leave, .join-link) { background: #fff; border-color: var(--line); }
 /* 菜单：一列设置（左名称右控件），房间操作放最下面，退出用红字 */
 .adv-panel .adv-progress, .adv-hint { text-align: left; }
 .adv-panel .adv-roster { justify-content: flex-start; }
@@ -168,6 +167,11 @@
 .adv-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
 .adv-row > span { flex: none; color: var(--muted); }
 .adv-row .adv-picker { flex: 1; min-width: 0; max-width: 260px; }
+/* 加入卡片里的选角色：和菜单同一个下拉，高度和输入框一样 */
+.join-pick .adv-picker { min-width: 0; }
+.join-pick .adv-picker > summary { min-height: 44px; padding: 2px 12px 2px 2px; border-radius: 12px; }
+.join-pick .adv-picked-avatar { width: 38px; height: 38px; }
+.adv-play .join-field input { background: #fff; border-color: #e2d6c3; }
 /* 展开的角色列表把这一行撑高时，「角色」二字仍和收起的下拉框（高 58px）对齐 */
 .adv-row-picker { align-items: flex-start; }
 .adv-row-picker > span { line-height: 58px; }

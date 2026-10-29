@@ -25,7 +25,7 @@ import { SnapBuffer, separateViewBall, separateViewPlayers } from '../net/interp
 import { decodeSnapshot, encodeInput } from '../net/protocol';
 import { CONFIG } from '../config';
 import { gameName, switchHostGame } from '../room/catalog';
-import { askConfirm } from '../ui/confirm';
+import { confirmEndMatch, confirmLeave } from '../ui/confirm';
 import { t, type Key } from '../i18n';
 import { Gamepad } from '../ui/gamepad';
 import { bindControlsPane, controlsPaneHtml } from '../ui/controls-pane';
@@ -33,6 +33,7 @@ import { bindDrawer } from '../ui/drawer';
 import { saveQrCard } from '../ui/qrcard';
 import { bindLobby, pinLineHtml, settingsHtml, settingsSummary, teamCardHtml } from '../ui/settings-ui';
 import { bindLangSelect, icon, langSelect } from '../ui/site';
+import { joinCardHtml, showField } from '../ui/join-card';
 import { unlockAudio } from '../ui/sound';
 import type { Team } from '../game/types';
 import { brand, canFullscreen, enterFullscreen, esc, isFullscreen, joinUrl, keepAwake, randomCode, roomOpts, store, vibrate } from '../ui/util';
@@ -91,23 +92,21 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     ${isHost ? `<div class="game-dock football-dock phone-dock" hidden><div class="dock-invite"><img class="dock-qr" alt=""><div><span>${t('screen.scanJoin')}</span><b class="room-code">${esc(room)}</b></div></div><button class="primary dock-start"></button></div>` : ''}
     <div class="pad"></div>
     <div class="panel card drawer" hidden></div>
-    <div class="join card">
-      <img class="join-logo" src="${brand('logo-white.png')}" alt="${t('app.name')}">
-      ${isHost ? `<h1>${t('play.noScreen')}</h1>` : ''}
-      <p class="muted">${isHost ? t('play.noScreenDesc') : t('play.room', { room: `<b>${esc(room)}</b>` })}</p>
-      <input class="name" maxlength="12" value="${esc(savedName)}" placeholder="${t('play.name')}" aria-label="${t('play.name')}">
-      <input class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="${t('play.pin')}" aria-label="${t('play.pin')}"
-        value="${esc(store.get(pinKey, false) ?? '')}" ${askPin ? '' : 'hidden'}>
-      <div class="seg">
-        <button data-team="0" style="--c:${TEAM_COLOR[0]}">${TEAM_NAME[0]}</button>
-        <button data-team="auto" class="on">${t('team.auto')}</button>
-        <button data-team="1" style="--c:${TEAM_COLOR[1]}">${TEAM_NAME[1]}</button>
-      </div>
-      <button class="primary go">${t(isHost ? 'play.create' : 'play.enter')}</button>
-      ${isHost ? '' : `<button class="ghost watch-go">${t('play.watch')}</button>`}
-      <button class="ghost return-home">${t('play.home')}</button>
-      <p class="muted small">${t('play.tip')}</p>
-    </div>
+    ${joinCardHtml({
+      title: gameName('football'),
+      room: isHost ? undefined : room,
+      note: isHost ? t('play.noScreenDesc') : undefined,
+      name: savedName,
+      pin: store.get(pinKey, false) ?? '',
+      askPin,
+      pick: { label: t('join.team'), html: `<div class="seg join-team" role="radiogroup">
+        <button type="button" data-team="0" style="--c:${TEAM_COLOR[0]}"><i></i>${TEAM_NAME[0]}</button>
+        <button type="button" data-team="auto" class="on">${t('team.auto')}</button>
+        <button type="button" data-team="1" style="--c:${TEAM_COLOR[1]}"><i></i>${TEAM_NAME[1]}</button>
+      </div>` },
+      go: t(isHost ? 'play.create' : 'play.enter'),
+      links: isHost ? [['return-home', t('play.home')]] : [['watch-go', t('play.watch')], ['return-home', t('play.home')]],
+    })}
     <div class="toast" hidden></div>
     <div class="rotate"><span>${t('play.rotate')}</span><button class="ghost leave-room">${t('play.leave')}</button></div>
   </div>`;
@@ -151,7 +150,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   let lastPhase: Phase | -1 = -1;
 
   const leave = async () => {
-    if ((game || net) && !(await askConfirm(t(game ? 'play.confirmCloseRoom' : 'play.confirmLeave')))) return;
+    if ((game || net) && !(await confirmLeave(!!game))) return;
     autoFs = false;
     game?.close();
     net?.close();
@@ -245,6 +244,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     buf.delay = mode.kind === 'client' && mode.lan ? 35 : 60;
     const showJoin = () => {
       connection.close();
+      net = null; // 被拒后回到加入卡片，返回首页不用再确认
       pad.reset();
       buf.reset();
       pred.ok = false;
@@ -268,7 +268,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       showJoin();
       toast(t(`reject.${r}`, { n: CONFIG.maxPerTeam * 2 }), 5000);
       if (r.startsWith('pin')) {
-        pinEl.hidden = false;
+        showField(pinEl, true);
         pinEl.value = '';
         pinEl.focus();
       }
@@ -314,7 +314,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
           if (token) store.set(`adventure.token.${room}`, token);
           // 房主换成冒险：带着昵称自动进入，不用重新填写
           store.set(`adventure.joined.${room}`, '1', false);
-          if (!store.get('adventure.name')) store.set('adventure.name', store.get('name') || t('player.default'));
+          // 用刚在加入卡片上填的昵称，不沿用上次冒险的旧名字
+          store.set('adventure.name', store.get('name') || store.get('adventure.name') || t('player.default'));
           const [path, query] = location.hash.split('?');
           const params = new URLSearchParams(query);
           params.set('game', 'adventure');
@@ -520,7 +521,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     on('.to-watch', () => send({ t: 'watch' }));
     on('.save-qr', () => saveQrCard({ room, pin: opts?.pin }));
     on('.surrender', () => send({ t: 'surrender' }));
-    on('.end', () => { void askConfirm(t('play.confirmEnd')).then((ok) => ok && game?.endMatch()); });
+    on('.end', () => { void confirmEndMatch().then((ok) => ok && game?.endMatch()); });
     on('.back', () => game?.toLobby());
     on('.leave-room', leave);
     on('.switch-game', () => { void switchHostGame('adventure'); });

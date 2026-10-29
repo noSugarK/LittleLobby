@@ -131,14 +131,14 @@ export function bindLobby(root: HTMLElement, players: PlayerInfo[], act: LobbyAc
   root.querySelectorAll<HTMLButtonElement>('.act-host').forEach((b) => {
     b.onclick = () => {
       const p = find(b);
-      if (p) void askConfirm(t('play.confirmOwner', { name: p.name })).then((ok) => ok && act.owner(p.id));
+      if (p) void askConfirm({ title: t('confirm.owner', { name: p.name }), body: t('confirm.ownerBody', { name: p.name }), ok: t('confirm.ownerOk') }).then((ok) => ok && act.owner(p.id));
     };
   });
   root.querySelectorAll<HTMLButtonElement>('.act-kick').forEach((b) => {
     b.onclick = () => {
       const p = find(b);
       // 删 AI 随时能加回来，不用确认；移出真人要确认
-      if (p) void (p.bot ? Promise.resolve(true) : askConfirm(t('play.confirmKick', { name: p.name }))).then((ok) => ok && act.kick(p.id));
+      if (p) void (p.bot ? Promise.resolve(true) : askConfirm({ title: t('confirm.kick', { name: p.name }), body: t('confirm.kickBody'), ok: t('confirm.kickOk'), danger: true })).then((ok) => ok && act.kick(p.id));
     };
   });
 }

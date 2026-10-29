@@ -10,8 +10,8 @@ export const gameInfo = (id: GameId) => ({ id, name: gameName(id), caption: t(`g
 
 /** 房主切换玩法：保留房间码整页重开；已加入的伙伴自动重连，按主机 welcome 里的玩法跳到对应页面。 */
 export async function switchHostGame(game: GameId) {
-  if (!(await askConfirm(t('game.switchConfirm', { game: gameName(game) })))) return;
+  if (!(await askConfirm({ title: t('confirm.switch', { game: gameName(game) }), body: t('confirm.switchBody'), ok: t('confirm.switchOk') }))) return;
   store.set('game', game);
-  store.set('hosting', '1', false); // 足球手机房主重开后自动进房
+  if (location.hash.startsWith('#/host')) store.set('hosting', '1', false); // 足球手机房主重开后自动进房；大屏不需要
   location.reload();
 }

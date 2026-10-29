@@ -1,0 +1,68 @@
+/* ---------- 玩法教程：沿用首页的颜色变量、头部和细线风格；按玩法切换按键和规则 ---------- */
+.g-head { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.g-crumb { display: flex; align-items: center; gap: 6px; color: var(--h-mu); font-size: 15px; font-weight: 700; white-space: nowrap; }
+.g-crumb .ico { width: 16px; height: 16px; opacity: .7; }
+.g-page .lh-title { margin-bottom: 24px; }
+.g-page h3 { margin: 36px 0 8px; font-size: 22px; letter-spacing: -.01em; }
+
+/* 三步开玩 */
+.g-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0 0 40px; padding: 0; list-style: none; border: 1px solid var(--h-line); border-radius: 18px; background: var(--h-panel); }
+.g-steps li { display: grid; gap: 6px; align-content: start; padding: 20px 22px; }
+.g-steps li + li { border-left: 1px solid var(--h-line); }
+.g-steps .ico { width: 26px; height: 26px; color: var(--h-brand); }
+.g-steps b { font-size: 17px; }
+.g-steps span { font-size: 14px; line-height: 1.65; color: var(--h-mu); }
+
+/* 玩法切换 */
+.g-tabs { display: inline-flex; gap: 2px; padding: 4px; margin-bottom: 24px; border: 1px solid var(--h-line); border-radius: 14px; background: var(--h-panel); }
+.g-tabs button { min-height: 40px; padding: 8px 20px; border: 0; border-radius: 10px; background: none; color: var(--h-mu); font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+.g-tabs button[aria-selected='true'] { background: var(--h-ink); color: var(--h-bg); }
+
+/* 手柄图：和游戏里一样左摇杆、右侧 Y 上 X 左 B 右 A 下；用不到的键画成虚线空位 */
+.g-controls { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 40px; align-items: start; }
+.g-pad { position: relative; height: 220px; border-radius: 20px; background: #10302f; }
+.g-pad-adventure { background: #fdf3e6; box-shadow: inset 0 0 0 1px #eadfcd; }
+.g-stick { position: absolute; left: 34px; top: 64px; width: 92px; height: 92px; border-radius: 50%; border: 2px solid #ffffff40; }
+.g-stick::after { content: ''; position: absolute; inset: 25px; border-radius: 50%; background: #ffffff38; }
+.g-pad-adventure .g-stick { border-color: #6e594d40; }
+.g-pad-adventure .g-stick::after { background: #6e594d30; }
+.g-key { position: absolute; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; color: #fff; font-size: 18px; font-weight: 850; }
+.g-key.y { right: 74px; top: 30px; background: #c8961c; }
+.g-key.x { right: 126px; top: 87px; background: #3e7bfa; }
+.g-key.b { right: 22px; top: 87px; background: #e5484d; }
+.g-key.a { right: 74px; top: 144px; background: #2fbf71; }
+.g-pad-adventure .g-key.b { background: #e88a95; }
+.g-pad-adventure .g-key.a { background: #7fb08a; }
+.g-key.is-slot { background: none !important; border: 2px dashed #6e594d55; color: #6e594d70; }
+
+.g-keys { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--h-line); }
+.g-keys li { display: grid; grid-template-columns: 28px 88px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--h-line); font-size: 15px; line-height: 1.6; }
+.g-keys b { font-weight: 750; }
+.g-keys li > span:last-child { color: var(--h-mu); }
+.g-mark { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #fff; font-size: 13px; font-weight: 800; align-self: center; }
+.g-mark .ico { width: 16px; height: 16px; }
+.g-mark.stick { background: var(--h-mu); }
+.g-mark.y { background: #c8961c; } .g-mark.x { background: #3e7bfa; } .g-mark.b { background: #e5484d; } .g-mark.a { background: #2fbf71; }
+#g-pane-adventure .g-mark.b { background: #e88a95; } #g-pane-adventure .g-mark.a { background: #7fb08a; }
+.g-hint { margin: 14px 0 0; font-size: 14px; line-height: 1.7; color: var(--h-mu); }
+
+/* 规则：两列细线条目，名称加粗在前 */
+.g-rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; border-top: 1px solid var(--h-line); }
+.g-rules p { margin: 0; padding: 12px 0; border-bottom: 1px solid var(--h-line); font-size: 15px; line-height: 1.7; color: var(--h-mu); }
+.g-rules b { margin-right: 8px; color: var(--h-ink); }
+
+.g-tips-title { margin: 48px 0 8px; font-size: 22px; }
+.g-tips { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--h-line); }
+.g-tips li { padding: 12px 0; border-bottom: 1px solid var(--h-line); font-size: 15px; line-height: 1.7; color: var(--h-mu); }
+
+@media (max-width: 860px) {
+  .g-steps { grid-template-columns: minmax(0, 1fr); }
+  .g-steps li + li { border-left: 0; border-top: 1px solid var(--h-line); }
+  .g-controls { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .g-pad { max-width: 360px; }
+  .g-rules { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .g-crumb { display: none; }
+  .g-keys li { grid-template-columns: 28px 72px minmax(0, 1fr); gap: 10px; }
+}

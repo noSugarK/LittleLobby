@@ -572,27 +572,148 @@ h1 {
   font-size: 13px;
   color: var(--muted);
 }
+/* 加入卡片（src/ui/join-card.ts）：每个游戏同一个结构，配色跟随游戏；横屏手机一屏放下 */
 .join {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: min(360px, calc(100% - 32px));
+  width: min(352px, calc(100% - 32px));
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  text-align: center;
+  gap: 10px;
+  padding: 18px 20px 12px;
+  border-radius: 22px;
   z-index: 10;
-  max-height: calc(100% - 32px);
+  max-height: calc(100% - 24px);
   overflow-y: auto;
   touch-action: pan-y;
 }
-.join p {
+.join-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.join-head h1 {
   margin: 0;
+  font-size: 22px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+.join-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+.join-code .ico {
+  width: 13px;
+  height: 13px;
+}
+.join-note {
+  margin: -4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.join-field {
+  display: grid;
+  gap: 4px;
+}
+.join-field[hidden],
+.join-pick[hidden] {
+  display: none;
+}
+.join-field > span,
+.join-pick > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+/* 选择控件展开变高时，标签仍和收起时的控件对齐 */
+.join-pick > span {
+  line-height: 44px;
+}
+.join-field input {
+  height: 44px;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 650;
+}
+.join-field .pin {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  letter-spacing: 0.3em;
+}
+.join-pick {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 10px;
+}
+.join-team {
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.join-team button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 650;
+}
+.join-team button i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c);
+}
+.join-team button.on {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  color: var(--fg);
 }
 .join .go {
-  padding: 13px;
-  font-size: 17px;
+  min-height: 46px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 800;
+}
+.join-links {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+.join-link {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* 横屏手机（高约 375px）：上锁房间多一行密码也要一屏放下 */
+@media (max-height: 420px) {
+  .join { gap: 8px; padding: 14px 18px 8px; }
+  .join-field { gap: 2px; }
+  .join-field input { height: 40px; }
+  .join .go { min-height: 42px; }
+  .join-link { min-height: 32px; }
 }
 .toast {
   position: absolute;
@@ -605,7 +726,8 @@ h1 {
   font-size: 14px;
   z-index: 20;
 }
-/* 应用内确认框（替代系统 confirm）：盖住整个画面，游戏里和大屏都能用 */
+/* 应用内确认框（替代系统 confirm）：放在当前游戏页面里，沿用它的配色（开踢墨绿、冒险奶油）；
+   粗体短标题 + 一行灰字后果，两个等大的按钮，确认按钮写动作，危险操作用红色 */
 .confirm-pop {
   position: fixed;
   inset: 0;
@@ -613,25 +735,70 @@ h1 {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.5);
+  animation: confirm-fade 0.14s ease-out;
+}
+.adv-play .confirm-pop {
+  background: rgba(93, 75, 64, 0.32);
 }
 .confirm-card {
-  width: min(360px, 100%);
-  display: grid;
-  gap: 16px;
-  text-align: center;
-  color: var(--fg, #fff);
-  background: var(--card, #1d2a22);
+  width: min(340px, 100%);
+  padding: 20px 20px 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+  animation: confirm-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.adv-play .confirm-card {
+  background: var(--adv-cream);
+  box-shadow: 0 18px 44px rgba(110, 89, 77, 0.22);
+}
+.confirm-card h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.35;
 }
 .confirm-card p {
-  margin: 0;
-  font-size: 16px;
+  margin: 6px 0 0;
+  font-size: 14px;
   line-height: 1.6;
+  color: var(--muted);
 }
-.confirm-card .row {
+.confirm-acts {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+  margin-top: 18px;
+}
+.confirm-acts button {
+  min-height: 44px;
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.adv-play .confirm-acts .confirm-no {
+  background: #fff;
+}
+.confirm-acts .confirm-yes {
+  background: var(--green);
+  border-color: transparent;
+  color: #fff;
+}
+.confirm-acts .confirm-yes.is-danger {
+  background: var(--red);
+}
+@keyframes confirm-fade {
+  from { opacity: 0; }
+}
+@keyframes confirm-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confirm-pop, .confirm-card { animation: none; }
 }
 .rotate {
   display: none;
@@ -1259,176 +1426,6 @@ h1 {
   height: 22px;
 }
 
-/* 教程 */
-.guide-bar {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: calc(10px + var(--safe-top, env(safe-area-inset-top, 0px))) 12px 10px;
-  background: var(--s-bg);
-  border-bottom: 1px solid var(--s-line);
-}
-.guide-bar h1 {
-  flex: 1;
-  margin: 0;
-  font-size: 18px;
-}
-.site .guide-main {
-  width: min(640px, 100%);
-  padding-top: 8px;
-}
-.guide-sec {
-  padding: 14px 0;
-  border-bottom: 1px solid var(--s-line);
-}
-.guide-sec:last-child {
-  border-bottom: 0;
-}
-.guide-sec h2 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 4px 0 10px;
-  font-size: 17px;
-}
-.guide-sec .num {
-  display: inline-grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--s-soft);
-  color: var(--s-softfg);
-  font-size: 13px;
-}
-.guide-sec p {
-  margin: 8px 0;
-  line-height: 1.65;
-  font-size: 14px;
-}
-.flow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--s-mu);
-}
-.flow span {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 12px 6px;
-  border: 1px solid var(--s-line);
-  border-radius: 10px;
-  color: var(--s-fg);
-  font-size: 13px;
-  text-align: center;
-}
-.site .flow span .ico {
-  color: var(--s-ac);
-  width: 24px;
-  height: 24px;
-}
-.pad-demo {
-  position: relative;
-  height: 120px;
-  border-radius: 12px;
-  background: var(--s-card);
-  border: 1px solid var(--s-line);
-}
-.pad-demo .stick {
-  position: absolute;
-  left: 22px;
-  top: 24px;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 2px dashed var(--s-mu);
-}
-.pad-demo .stick i {
-  position: absolute;
-  left: 22px;
-  top: 22px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--s-mu);
-}
-.pad-demo .abxy {
-  position: absolute;
-  right: 22px;
-  top: 12px;
-  width: 96px;
-  height: 96px;
-}
-.pad-demo .abxy .pad-key {
-  position: absolute;
-}
-.pad-demo .y {
-  left: 34px;
-  top: 0;
-}
-.pad-demo .x {
-  left: 0;
-  top: 34px;
-}
-.pad-demo .b {
-  right: 0;
-  top: 34px;
-}
-.pad-demo .a {
-  left: 34px;
-  bottom: 0;
-}
-.pad-key {
-  display: inline-grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 13px;
-  flex: none;
-}
-.pad-key.a {
-  background: var(--green);
-}
-.pad-key.b {
-  background: var(--red);
-}
-.pad-key.x {
-  background: var(--blue);
-}
-.pad-key.y {
-  background: var(--yellow);
-  color: #3a2a00;
-}
-.pad-key.stick-key {
-  background: var(--s-soft);
-  color: var(--s-softfg);
-}
-.site .pad-key .ico {
-  width: 16px;
-  height: 16px;
-}
-.keys {
-  list-style: none;
-  padding: 0;
-  margin: 12px 0 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 14px;
-}
-.keys li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 .panel-guide {
   display: block;
   text-align: center;
@@ -1449,11 +1446,6 @@ h1 {
 }
 [data-theme='dark'] .brand .logo-dark {
   display: block;
-}
-.join-logo {
-  height: 44px;
-  width: auto;
-  align-self: center;
 }
 .lobby-logo {
   display: block;
@@ -1998,12 +1990,10 @@ li.open .row-actions {
   flex-basis: 100%;
 }
 
-/* 观战：没有手柄 */
+/* 观战、还没加入：没有手柄 */
+.play:not(.joined) .pad,
 .play.watching .pad {
   display: none;
-}
-.join .watch-go {
-  padding: 10px;
 }
 
 /* 大屏大厅面板：右上角收起；收起后右上角有按钮重新打开 */

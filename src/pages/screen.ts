@@ -5,7 +5,7 @@ import { Renderer, TEAM_COLOR } from '../game/render';
 import { Phase, type RosterMsg, type Team } from '../game/types';
 import { t } from '../i18n';
 import { saveQrCard } from '../ui/qrcard';
-import { askConfirm } from '../ui/confirm';
+import { confirmEndMatch, confirmLeave } from '../ui/confirm';
 import { mvpLineHtml, statsTableHtml } from '../ui/stats-ui';
 import { bindLobby, modeChipsHtml, pinLineHtml, settingsHtml, teamCardHtml } from '../ui/settings-ui';
 import { bindDrawer } from '../ui/drawer';
@@ -148,13 +148,13 @@ export function mountScreen(app: HTMLElement) {
   fsBtn.onclick = () => enterFullscreen();
   $('.switch-game').onclick = () => { void switchHostGame('adventure'); };
   $('.leave-room').onclick = async () => {
-    if (!(await askConfirm(t('play.confirmCloseRoom')))) return;
+    if (!(await confirmLeave(true))) return;
     game.close();
     store.set('room', '', false);
     location.hash = '#/';
   };
   endBtn.onclick = async () => {
-    if (await askConfirm(t('screen.confirmEnd'))) game.endMatch();
+    if (await confirmEndMatch()) game.endMatch();
   };
   cornerEl.onclick = () => cornerEl.classList.toggle('mini');
   window.addEventListener('keydown', (e) => {
@@ -165,7 +165,7 @@ export function mountScreen(app: HTMLElement) {
     if (e.code === 'Escape') {
       if (!menuEl.hidden || phase === Phase.Lobby) setMenu(menuEl.hidden);
       else if (phase === Phase.Ended) game.toLobby();
-      else void askConfirm(t('play.confirmEnd')).then((ok) => ok && game.endMatch());
+      else void confirmEndMatch().then((ok) => ok && game.endMatch());
     }
   });
 

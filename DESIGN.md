@@ -1,6 +1,6 @@
 # Design
 
-Scope: the home page (`src/pages/home.ts`, `src/pages/home.css`) and the characters page, which reuses it (`src/pages/characters.ts`, `src/pages/characters.css`). Game pages keep their own fullscreen language (`src/style.css`, `.play`).
+Scope: the home page (`src/pages/home.ts`, `src/pages/home.css`) and the characters and guide pages, which reuse it (`src/pages/characters.ts`, `src/pages/characters.css`, `src/pages/guide.ts`, `src/pages/guide.css`). Game pages keep their own fullscreen language (`src/style.css`, `.play`).
 
 ## Direction
 
@@ -48,6 +48,16 @@ Same tokens, header and footer as the home page; the header adds a `›` crumb w
 - **Status footer**: web and LAN pages show "可直接使用". The native app shows 内置 (outline pill), 已下载 with a check icon plus a 移除 text link, "联网可直接用" plus a 下载离线用 text link in online mode, or a coral 下载 button that turns into a thin coral progress bar while downloading.
 - **Entry points**: the home guide row, the adventure page's "打开角色图鉴" line, and the link at the bottom of every character picker.
 
+## Guide page (`#/guide`)
+
+Same tokens, header (with the `›` crumb) and footer as the characters page; Read mode, hairline lists, no section numbers.
+
+- **Three steps**: one bordered panel split into 开房 / 加入 / 横屏开玩, each an icon, a bold label and one muted sentence.
+- **Game tabs**: a segmented control 开踢 / 软乎乎冒险 (ink fill when selected) switches the pane below; it opens on `?game=` or the last game picked on the home page.
+- **Controls**: a pad drawing in the game's own palette (stick left; Y top, X left, B right, A bottom; unused keys as dashed slots) beside a hairline list of key → name → what it does, then the desktop keys as a muted line.
+- **Rules**: two-column hairline entries, bold name first (football: rules, match modes, party rules; adventure: the four modes and the co-op note).
+- **Tips**: a hairline list last, including that a backgrounded host pauses the game.
+
 ## Rules
 
 No eyebrow labels, no section numbers, no emoji as icons (icons come from `src/ui/site.ts`), no gradient text, no hard offset shadows. Layout collapses to one column at 860px; phone gutters 16px.
@@ -61,5 +71,6 @@ Every game uses one layout; only its palette and game-specific content change (f
 - **Controls**: joystick or d-pad on the left; on the right the same Y (top) / X (left) / B (right) / A (bottom) diamond in every game. Buttons a game does not use right now stay in place as faint dashed empty slots (adventure: X and Y always, A outside 吃吐吐).
 - **Menu drawer**: same left rail in every game; the first tab is always 房间, the last 按键设置. Every menu has a 语言 select (reloads the page) and puts leaving last as red text. Adventure's drawer is one column: progress, mode hint, roster, then a settings list with hairlines (角色 picker, 音效 switch, 语言 select), then full-width 回到大厅选玩法 / 换游戏 and red 退出房间; it never opens by itself. Football's footer is two rows: 语言 / 视角 / 教程, then 换游戏 and red 退出房间.
 - **TV menu**: the same right-hand drawer as phones. Football: all match settings (mode, party rules, duration, AI level, auto-fill), 语言, 保存二维码, 结束比赛 (in a match), 换游戏 and red 退出房间. In play, a small QR code and room code stay in the bottom-right corner for late joiners.
-- **Confirmations**: always the in-app dialog (`src/ui/confirm.ts`), never `window.confirm`, which the native app's webview may silently cancel.
+- **Join card** (`src/ui/join-card.ts`): one structure for every game and every entry path (QR, lobby row, typed code), only the palette changes. Header row: game name (display weight) left, room code in mono right with a lock when the room has a PIN. Then labelled fields: 昵称, 房间密码 (only for locked rooms), and the game's own row (football: team segmented control with team-colour dots; adventure: the character picker). One primary button; 只观战 / 回首页 are underlined text links. Fits a 375px-tall landscape phone without scrolling; no gamepad shows behind it.
+- **Confirmations**: always the in-app dialog (`src/ui/confirm.ts`), never `window.confirm`, which the native app's webview may silently cancel. It mounts inside the current game page and takes its palette. Bold short question as the title, one muted line with the consequence, two equal buttons: the cancel side (留下 when leaving) and a confirm button that names the action (关闭房间, 离开, 结束比赛, 换游戏, 移出); destructive actions are red, others use the game's primary colour.
 
