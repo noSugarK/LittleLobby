@@ -36,8 +36,7 @@ async function route() {
         store.set('game', 'adventure');
         // 和首页开房一样换新房间码、清掉旧密码，旧房间的玩家不能绕过新设置连回来
         store.set('hostroom', '', false);
-        store.set('roomopts', JSON.stringify({ listed: false }), false);
-        if (q.has('lan')) store.set('roomopts', JSON.stringify({ listed: false, mode: 'lan' }), false);
+        store.set('roomopts', JSON.stringify({ listed: false, mode: q.has('lan') ? 'lan' : undefined }), false);
         location.hash = '#/host';
       }
       return;

@@ -151,7 +151,7 @@ test('扫码玩家开局显示按键，延迟身份和主机重开后仍能加�
     const failedHost = new Element();
     await mountAdventure(failedHost, { host: true, solo: true });
     assert.equal(failedHost.querySelector('.join').hidden, false, '房主加载失败也能看到重试按钮');
-    assert.equal(failedHost.querySelector('.join .name').hidden, true);
+    assert.equal(failedHost.querySelector('.join').querySelector('.name').hidden, true, '只留重试和回首页');
     assert.equal(failedHost.querySelector('.go').textContent, t('adv.join.retry'));
   } finally {
     for (const id of intervals) clearInterval(id);

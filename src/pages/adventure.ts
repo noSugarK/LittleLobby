@@ -14,7 +14,7 @@ import { Gamepad } from '../ui/gamepad';
 import { bindControlsPane, controlsPaneHtml } from '../ui/controls-pane';
 import { bindDrawer } from '../ui/drawer';
 import { bindLangSelect, icon, langSelect } from '../ui/site';
-import { joinCardHtml, showField } from '../ui/join-card';
+import { joinCardHtml, retryOnly, showField } from '../ui/join-card';
 import { BTN_A, BTN_B, BTN_X, BTN_Y } from '../game/types';
 import { t, type Key } from '../i18n';
 import { gameName, switchHostGame } from '../room/catalog';
@@ -33,15 +33,16 @@ const nav = `<nav class="adv-nav"><a class="adv-brand" href="#/adventure">${logo
 // 角色多了以后用下拉：当前角色带小头像，展开后先是搜索框，每一项也有头像预览；角色列表等本机角色读完再填
 const choices = () => `<details class="adv-picker"><summary aria-label="${t('adv.pick')}"><canvas class="adv-picked-avatar" aria-hidden="true"></canvas><span><b class="adv-picked-name"></b><small class="adv-picked-note"></small></span><i aria-hidden="true">▾</i></summary><div class="adv-options"></div></details>`;
 /** 只等自己选的角色；列表里其他角色的头像在第一次展开时才下载 */
-async function avatars(root: HTMLElement, skin: SkinId) {
+async function avatars(root: HTMLElement, skin: SkinId, signal?: AbortSignal) {
   await loadCharacterSprites([skin]);
   root.querySelectorAll<HTMLElement>('.adv-options').forEach((options) => {
-    options.innerHTML = `<label class="adv-search">${icon.search}<input type="search" placeholder="${t('chars.pick')}" aria-label="${t('chars.search')}" autocomplete="off"></label>${CHARACTERS.map((c) => `<button class="adv-character" data-skin="${c.id}" aria-pressed="false" aria-label="${t('adv.pickOne', { name: esc(c.name), note: esc(c.subtitle) })}"><canvas aria-hidden="true"></canvas><b>${esc(c.name)}</b><small>${esc(c.subtitle.split(' · ')[1] || c.subtitle)}</small></button>`).join('')}<p class="adv-search-empty" hidden>${t('chars.empty')}</p><a class="adv-more" href="#/characters"${options.closest('.adv-play') ? ' target="_blank" rel="noopener"' : ''}>${t(isLanPage() ? 'chars.pickAll' : 'chars.pickMore')} →</a>`;
+    // 游戏里不放「去角色图鉴」：跳页会关掉房间，应用的 WebView 里也开不了新标签页
+    options.innerHTML = `<label class="adv-search">${icon.search}<input type="search" placeholder="${t('chars.pick')}" aria-label="${t('chars.search')}" autocomplete="off"></label>${CHARACTERS.map((c) => `<button class="adv-character" data-skin="${c.id}" aria-pressed="false" aria-label="${t('adv.pickOne', { name: esc(c.name), note: esc(c.subtitle) })}"><canvas aria-hidden="true"></canvas><b>${esc(c.name)}</b><small>${esc(c.subtitle.split(' · ')[1] || c.subtitle)}</small></button>`).join('')}<p class="adv-search-empty" hidden>${t('chars.empty')}</p>${options.closest('.adv-play') ? '' : `<a class="adv-more" href="#/characters">${t(isLanPage() ? 'chars.pickAll' : 'chars.pickMore')} →</a>`}`;
     const input = options.querySelector('input')!;
     input.oninput = () => showMatching(options.querySelectorAll<HTMLElement>('[data-skin]'), (button) => characterMatches(characterOf(button.dataset.skin!), input.value), options.querySelector<HTMLElement>('.adv-search-empty'));
   });
   // 像普通下拉框一样：点别处就收起；在菜单里展开时把列表滚进视野
-  document.addEventListener('pointerdown', (e) => root.querySelectorAll<HTMLDetailsElement>('.adv-picker[open]').forEach((picker) => { if (!picker.contains(e.target as Node)) picker.open = false; }));
+  document.addEventListener('pointerdown', (e) => root.querySelectorAll<HTMLDetailsElement>('.adv-picker[open]').forEach((picker) => { if (!picker.contains(e.target as Node)) picker.open = false; }), { signal });
   root.querySelectorAll<HTMLDetailsElement>('.adv-picker').forEach((picker) => {
     picker.addEventListener('toggle', () => { if (picker.open && picker.closest('.adv-panel, .join')) picker.scrollIntoView({ block: 'nearest' }); });
     picker.addEventListener('toggle', () => {
@@ -144,8 +145,8 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       title: gameName('adventure'),
       room,
       name: store.get('adventure.name') || store.get('name') || '',
-      pin: mode.pin || store.get(pinKey, false) || '',
-      askPin: !!mode.lock,
+      locked: !!mode.lock || !!mode.pin,
+      pin: { value: mode.pin || store.get(pinKey, false) || '', show: !!mode.lock },
       pick: mode.screen ? undefined : { label: t('join.character'), html: choices() },
       go: t('adv.join.go'),
       links: [['return-home', t('play.home')]],
@@ -170,14 +171,14 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   const joinButton = $<HTMLButtonElement>('.go');
   joinButton.disabled = true; joinButton.textContent = t('adv.join.loading');
   $('.return-home').onclick = () => { location.hash = '#/'; };
-  try { await avatars(app, skin); }
+  try { await avatars(app, skin, abort.signal); }
   catch (error) {
     status(t('adv.status.spritesFailed'), false); toast(String(error), 6000);
     joinButton.disabled = false; joinButton.textContent = t('adv.join.retry');
     // 房主平时看不到加入卡片，失败时露出来，只留重试和回首页
-    if (mode.host) { joinEl.hidden = false; showField($<HTMLInputElement>('.join .name'), false); joinEl.querySelector<HTMLElement>('.join-pick')?.setAttribute('hidden', ''); }
+    if (mode.host) { joinEl.hidden = false; retryOnly(joinEl); }
     // 原地重来：已下载好的图片保留，只重新下载失败的
-    joinButton.onclick = () => { void mountAdventure(app, mode); };
+    joinButton.onclick = () => { abort.abort(); void mountAdventure(app, mode); };
     return;
   }
   joinButton.disabled = false; joinButton.textContent = t('adv.join.go');

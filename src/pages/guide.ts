@@ -12,7 +12,9 @@ const padArt = (game: GameId, keys: PadKey[]) => `<div class="g-pad g-pad-${game
   `<b class="g-key ${k.key}${k.slot ? ' is-slot' : ''}">${k.key.toUpperCase()}</b>`).join('')}</div>`;
 const row = (mark: string, cls: string, name: string, body: string) =>
   `<li><span class="g-mark ${cls}">${mark}</span><b>${name}</b><span>${body}</span></li>`;
-const rules = (items: [Key, Key][]) => `<div class="g-rules">${items.map(([name, body]) => `<p><b>${t(name)}</b>${t(body)}</p>`).join('')}</div>`;
+/** 规则条目：[名称, 说明]，都是已经翻译好的文字 */
+const rules = (items: [string, string][]) => `<div class="g-rules">${items.map(([name, body]) => `<p><b>${name}</b>${body}</p>`).join('')}</div>`;
+const keyed = (items: [Key, Key][]) => rules(items.map(([name, body]) => [t(name), t(body)]));
 
 /** 玩法教程：三步开玩，然后按玩法切换（按键图 + 说明 + 规则），最后是小提示。默认停在最近玩过的玩法。 */
 export function mountGuide(app: HTMLElement) {
@@ -32,12 +34,12 @@ export function mountGuide(app: HTMLElement) {
     </div>
     <p class="g-hint">${t('guide.fb.keys')}</p>
     <h3>${t('guide.fb.rules')}</h3>
-    ${rules([['guide.fb.fill', 'guide.fb.fillBody'], ['guide.fb.host', 'guide.fb.hostBody'], ['guide.fb.surrender', 'guide.fb.surrenderBody'], ['guide.fb.end', 'guide.fb.endBody']])}
+    ${keyed([['guide.fb.fill', 'guide.fb.fillBody'], ['guide.fb.host', 'guide.fb.hostBody'], ['guide.fb.surrender', 'guide.fb.surrenderBody'], ['guide.fb.end', 'guide.fb.endBody']])}
     <h3>${t('cfg.mode')}</h3>
-    <div class="g-rules">${MATCH_MODES.map((mode) => `<p><b>${t(`mode.${mode}`)}</b>${t(`mode.hint.${mode}`)}</p>`).join('')}</div>
+    ${rules(MATCH_MODES.map((mode) => [t(`mode.${mode}`), t(`mode.hint.${mode}`)]))}
     <h3>${t('cfg.party')}</h3>
     <p class="g-hint">${t('party.hint.0')}</p>
-    <div class="g-rules">${PARTY_RULES.filter((rule) => rule !== 0).map((rule) => `<p><b>${t(`party.${rule}`)}</b>${t(`party.hint.${rule}`)}</p>`).join('')}</div>`;
+    ${rules(PARTY_RULES.filter((rule) => rule !== 0).map((rule) => [t(`party.${rule}`), t(`party.hint.${rule}`)]))}`;
   const adventure = `
     <div class="g-controls">
       ${padArt('adventure', [{ key: 'y', slot: true }, { key: 'x', slot: true }, { key: 'b' }, { key: 'a' }])}
@@ -49,7 +51,7 @@ export function mountGuide(app: HTMLElement) {
     </div>
     <p class="g-hint">${t('guide.av.slots')} ${t('guide.av.keys')}</p>
     <h3>${t('guide.av.modes')}</h3>
-    ${rules([['guide.av.classic', 'guide.av.classicBody'], ['guide.av.rope', 'guide.av.ropeBody'], ['guide.av.eat', 'guide.av.eatBody'], ['guide.av.stack', 'guide.av.stackBody']])}
+    ${keyed([['guide.av.classic', 'guide.av.classicBody'], ['guide.av.rope', 'guide.av.ropeBody'], ['guide.av.eat', 'guide.av.eatBody'], ['guide.av.stack', 'guide.av.stackBody']])}
     <p class="g-hint">${t('guide.av.coop')}</p>`;
   const panes: Record<GameId, string> = { football, adventure };
   app.innerHTML = `

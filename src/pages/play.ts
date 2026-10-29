@@ -97,8 +97,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       room: isHost ? undefined : room,
       note: isHost ? t('play.noScreenDesc') : undefined,
       name: savedName,
-      pin: store.get(pinKey, false) ?? '',
-      askPin,
+      locked: mode.kind === 'client' && (mode.lock || !!urlPin),
+      pin: { value: store.get(pinKey, false) ?? '', show: askPin },
       pick: { label: t('join.team'), html: `<div class="seg join-team" role="radiogroup">
         <button type="button" data-team="0" style="--c:${TEAM_COLOR[0]}"><i></i>${TEAM_NAME[0]}</button>
         <button type="button" data-team="auto" class="on">${t('team.auto')}</button>

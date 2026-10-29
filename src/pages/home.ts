@@ -159,6 +159,17 @@ export function mountHome(app: HTMLElement) {
     $('.host')!.onclick = () => create('#/host');
   }
 
+  // 公开大厅里的房间（下面订阅后才有内容）；进房链接和扫码一样带上玩法与上锁，
+  // 手输房间码时也能按它直接进对应玩法的加入页、提前显示密码框
+  let rooms = new Map<string, LobbyInfo>();
+  const joinHash = (code: string) => {
+    const room = rooms.get(code), query = new URLSearchParams();
+    if (lan) query.set('lan', '1');
+    if (room?.lock) query.set('lock', '');
+    if (room?.game === 'adventure') query.set('game', 'adventure');
+    return `#/join/${code}${query.size ? `?${query}` : ''}`;
+  };
+
   // ---------- 加入：房间码格子 ----------
   const codeEl = $<HTMLInputElement>('.code');
   if (codeEl) {
@@ -175,7 +186,7 @@ export function mountHome(app: HTMLElement) {
     };
     const go = () => {
       const code = normalizeCode(codeEl.value);
-      if (code.length === CODE_LEN) location.hash = `#/join/${code}${lan ? '?lan=1' : ''}`;
+      if (code.length === CODE_LEN) location.hash = joinHash(code);
       else codeEl.focus();
     };
     codeEl.oninput = () => {
@@ -199,7 +210,6 @@ export function mountHome(app: HTMLElement) {
   }
 
   // ---------- 公开大厅：订阅所有房间的保留消息 ----------
-  let rooms = new Map<string, LobbyInfo>();
   const body = $('.lbody')!;
   const countEls = app.querySelectorAll<HTMLElement>('.count');
   const lobby = $('.lh-lobby');
@@ -224,7 +234,7 @@ export function mountHome(app: HTMLElement) {
       .map(([code, r]) => {
         const full = r.n >= r.max;
         const st = full ? ['full', t('lobby.full')] : r.playing ? ['live', t('lobby.live')] : ['open', t('lobby.open')];
-        return `<button class="lrow ${full ? 'is-full' : ''}" role="row" data-code="${code}" data-lock="${r.lock ? 1 : ''}" data-game="${r.game === 'adventure' ? 'adventure' : ''}">
+        return `<button class="lrow ${full ? 'is-full' : ''}" role="row" data-code="${code}">
           <span class="mono code">${code}</span>
           <span class="who">${r.host ? esc(r.host) : t('lobby.screen')} · ${gameName(r.game === 'adventure' ? 'adventure' : 'football')}${r.lock ? `<i title="${t('lobby.locked')}">${icon.lock}</i>` : ''}</span>
           <span class="mono">${r.n}/${r.max}</span>
@@ -233,13 +243,7 @@ export function mountHome(app: HTMLElement) {
       })
       .join('');
     body.querySelectorAll<HTMLButtonElement>('.lrow').forEach((b) => {
-      // 和扫码链接一样带上玩法，冒险房间直接进冒险的加入页
-      b.onclick = () => {
-        const query = new URLSearchParams();
-        if (b.dataset.lock) query.set('lock', '');
-        if (b.dataset.game) query.set('game', b.dataset.game);
-        location.hash = `#/join/${b.dataset.code}${query.size ? `?${query}` : ''}`;
-      };
+      b.onclick = () => (location.hash = joinHash(b.dataset.code!));
     });
   }
 
