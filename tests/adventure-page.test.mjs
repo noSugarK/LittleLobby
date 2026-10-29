@@ -105,6 +105,7 @@ test('扫码玩家开局显示按键，延迟身份和主机重开后仍能加�
   try {
     const { mountAdventure } = await import('../src/pages/adventure.ts');
     const { AdventureGame } = await import('../src/game/adventure.ts');
+    const { t } = await import('../src/i18n.ts');
     for (const lan of [false, true]) {
       const app = new Element();
       app.querySelector('.join .name').value = '扫码伙伴';
@@ -144,14 +145,14 @@ test('扫码玩家开局显示按键，延迟身份和主机重开后仍能加�
     const failed = new Element();
     await mountAdventure(failed, { room: 'ABCDE' });
     assert.equal(failed.querySelector('.go').disabled, false);
-    assert.match(failed.querySelector('.go').textContent, /重试/);
+    assert.equal(failed.querySelector('.go').textContent, t('adv.join.retry'));
     assert.equal(typeof failed.querySelector('.go').onclick, 'function');
     assert.equal(typeof failed.querySelector('.return-home').onclick, 'function');
     const failedHost = new Element();
     await mountAdventure(failedHost, { host: true, solo: true });
     assert.equal(failedHost.querySelector('.join').hidden, false, '房主加载失败也能看到重试按钮');
     assert.equal(failedHost.querySelector('.join .name').hidden, true);
-    assert.match(failedHost.querySelector('.go').textContent, /重试/);
+    assert.equal(failedHost.querySelector('.go').textContent, t('adv.join.retry'));
   } finally {
     for (const id of intervals) clearInterval(id);
     for (const k of keys) globalThis[k] = originals[k];

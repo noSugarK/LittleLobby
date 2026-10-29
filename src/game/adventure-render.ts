@@ -1,5 +1,6 @@
 import { drawBuddyImage, type BuddyAction } from './adventure-sprites';
 import { MAP_THEMES, LEVELS, ROPE, enemyX, type AdventureView, type Rect } from './adventure';
+import { t } from '../i18n';
 
 const INK = '#70594f';
 function round(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number, fill: string, stroke = '') {
@@ -107,7 +108,7 @@ export class AdventureRenderer {
       const active = (me?.checkpoint ?? -1) >= i;
       round(ctx, cp.x - 3, cp.y - 83, 6, 83, 3, '#b4997b');
       ctx.fillStyle = active ? theme.accent : '#e9ddca'; ctx.beginPath(); ctx.moveTo(cp.x + 3, cp.y - 80); ctx.quadraticCurveTo(cp.x + 20, cp.y - 86, cp.x + 40, cp.y - 70); ctx.lineTo(cp.x + 37, cp.y - 45); ctx.quadraticCurveTo(cp.x + 16, cp.y - 60, cp.x + 3, cp.y - 50); ctx.fill(); ctx.strokeStyle = INK; ctx.stroke();
-      ctx.fillStyle = INK; ctx.font = '11px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(active ? '已存档' : '休息站', cp.x + 10, cp.y - 94);
+      ctx.fillStyle = INK; ctx.font = '11px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(t(active ? 'adv.cp.saved' : 'adv.cp.rest'), cp.x + 10, cp.y - 94);
     });
     level.enemies.forEach((e, i) => {
       if (s.defeated.includes(i)) return;
@@ -122,7 +123,7 @@ export class AdventureRenderer {
     ctx.beginPath(); ctx.moveTo(gx - 40, 382); ctx.quadraticCurveTo(gx + 45, 285, gx + 130, 382); ctx.closePath(); ctx.fillStyle = theme.accent; ctx.fill(); ctx.strokeStyle = INK; ctx.stroke();
     round(ctx, gx + 24, 424, 43, 76, 20, s.stars.length === 3 ? '#a8cdb0' : '#dfc9b4', INK);
     oval(ctx, gx + 56, 466, 3, 3, '#fff6d6'); round(ctx, gx - 4, 410, 19, 23, 5, '#d7eeeb', '#bda28c'); round(ctx, gx + 78, 410, 19, 23, 5, '#d7eeeb', '#bda28c');
-    ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.font = 'bold 14px sans-serif'; ctx.fillText(s.stars.length === 3 ? '来野餐吧！' : `还差 ${3 - s.stars.length} 颗星星`, gx + 45, 350);
+    ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.font = 'bold 14px sans-serif'; ctx.fillText(s.stars.length === 3 ? t('adv.goal.open') : t('adv.goal.need', { n: 3 - s.stars.length }), gx + 45, 350);
     if (s.mode === 'rope') this.rope(s);
     for (const p of s.players) {
       // 被吃掉的队友藏在肚子里，不单独画
@@ -135,7 +136,7 @@ export class AdventureRenderer {
       }
       drawBuddyImage(ctx, p.x + 17, p.y + 44, p.skin, action, (now - animation.since) / 1000, p.facing, p.eating >= 0);
       ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
-      const name = `${p.name}${p.id === s.me ? ' · 你' : ''}`;
+      const name = `${p.name}${p.id === s.me ? ` · ${t('adv.you')}` : ''}`;
       const width = ctx.measureText(name).width + 16;
       round(ctx, p.x + 17 - width / 2, p.y - 45, width, 20, 9, '#fffdf3dc');
       ctx.fillStyle = INK; ctx.fillText(name, p.x + 17, p.y - 31);
@@ -155,7 +156,7 @@ export class AdventureRenderer {
       const on = s.active.includes(i), p = d.plate;
       round(ctx, p.x - 4, p.y + p.h - 4, p.w + 8, 6, 3, '#d8c1a6', '#baa388');
       round(ctx, p.x + 6, on ? p.y + 3 : p.y - 4, p.w - 12, on ? 6 : 12, 6, on ? '#a8cdb0' : accent, INK);
-      if (d.need > 1 && !on) { ctx.fillStyle = INK; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`${d.need} 人一起踩`, p.x + p.w / 2, p.y - 12); }
+      if (d.need > 1 && !on) { ctx.fillStyle = INK; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(t('adv.plate.need', { n: d.need }), p.x + p.w / 2, p.y - 12); }
       if (on) for (const r of d.solid ?? []) plank(ctx, r);
       else for (const r of d.gate ?? []) gate(ctx, r, now);
       if (!on) for (const r of d.solid ?? []) { ctx.setLineDash([6, 8]); ctx.strokeStyle = '#baa38899'; ctx.strokeRect(r.x, r.y, r.w, r.h); ctx.setLineDash([]); }
@@ -177,10 +178,10 @@ export class AdventureRenderer {
   }
 }
 const TIPS = {
-  classic: ['← → 散步   ·   按住跳得更高', '跳到台阶上，找齐三颗小星星'],
-  rope: ['大家用一根绳子连着', '一起起跳；掉下去的人会被站稳的队友吊住'],
-  eat: ['靠近队友按 A 吃掉，再按 A 吐出去', '把队友吐到对岸，踩下按钮放吊桥'],
-  stack: ['可以站在队友的头上', '叠起来爬上高墙，踩按钮放下台阶'],
+  classic: [t('adv.intro.classic'), t('adv.intro.classic.2')],
+  rope: [t('adv.intro.rope'), t('adv.intro.rope.2')],
+  eat: [t('adv.intro.eat'), t('adv.intro.eat.2')],
+  stack: [t('adv.intro.stack'), t('adv.intro.stack.2')],
 } as const;
 function plank(ctx: CanvasRenderingContext2D, r: Rect) {
   round(ctx, r.x, r.y, r.w, r.h, 6, '#e8c48f', '#b08a5e');

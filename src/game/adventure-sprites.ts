@@ -1,4 +1,5 @@
 import { DEFAULT_SKIN, characterOf, characterUrl, loadCharacters, type SkinId } from './characters';
+import { t } from '../i18n';
 
 export type BuddyAction = 'idle' | 'run' | 'jump' | 'fall';
 export const SPRITE_CELL = { width: 128, height: 160, baseline: 146, columns: 8, rows: 8 };
@@ -30,15 +31,15 @@ const STALL_MS = 60000;
 export function loadSheet(url: string, name: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
-    const timer = setTimeout(() => reject(new Error(`${name}的角色图片加载超时，请重试`)), STALL_MS);
+    const timer = setTimeout(() => reject(new Error(t('adv.err.spriteTimeout', { name }))), STALL_MS);
     image.onload = () => {
       clearTimeout(timer);
       if (image.naturalWidth !== SPRITE_CELL.width * SPRITE_CELL.columns || image.naturalHeight !== SPRITE_CELL.height * SPRITE_CELL.rows) {
-        reject(new Error(`${name}的精灵表尺寸不正确`)); return;
+        reject(new Error(t('adv.err.spriteSize', { name }))); return;
       }
       resolve(image);
     };
-    image.onerror = () => { clearTimeout(timer); reject(new Error(`${name}的角色图片未能加载，请重试`)); };
+    image.onerror = () => { clearTimeout(timer); reject(new Error(t('adv.err.spriteFailed', { name }))); };
     image.src = url;
   });
 }
@@ -49,7 +50,7 @@ function requestSheet(id: SkinId, full = false, retry = false): Promise<HTMLImag
   let request = pending.get(key);
   if (request) return request;
   const name = characterOf(id)?.name ?? id;
-  if (!retry && Date.now() - (failedAt.get(key) ?? -Infinity) < RETRY_MS) return Promise.reject(new Error(`${name}的角色图片未能加载，请重试`));
+  if (!retry && Date.now() - (failedAt.get(key) ?? -Infinity) < RETRY_MS) return Promise.reject(new Error(t('adv.err.spriteFailed', { name })));
   request = loadSheet(characterUrl(id, full ? 'full-atlas.png' : 'atlas.png'), name)
     .then((image) => { sheets.set(key, image); failedAt.delete(key); return image; }, (error) => { failedAt.set(key, Date.now()); throw error; })
     .finally(() => pending.delete(key));
@@ -65,7 +66,7 @@ export async function loadCharacterSprites(ids: SkinId[] = []): Promise<void> {
   const results = await Promise.allSettled(wanted.map((id) => requestSheet(id, false, true)));
   if (![...sheets.keys()].some((key) => !key.endsWith(':full'))) {
     const failed = results.find((result) => result.status === 'rejected');
-    throw failed?.status === 'rejected' ? failed.reason : new Error('没有可用的角色图片，请重试');
+    throw failed?.status === 'rejected' ? failed.reason : new Error(t('adv.err.noSprites'));
   }
 }
 

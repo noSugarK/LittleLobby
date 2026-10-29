@@ -1,7 +1,7 @@
 /** 角色以 public/characters/<id>/ 文件夹分发：character.json + atlas.png + full-atlas.png，清单在 characters/index.json。
  *  网页版和局域网页面直接按路径读取（局域网主机会把自己下载过的角色一起提供）；原生应用只内置 builtin 里的几位，
  *  其余从角色图鉴下载到应用数据目录，通过 Rust 命令读写；联网模式下直接用网页版的完整角色。规范见 public/characters/README.md。 */
-import { lang } from '../i18n';
+import { lang, t } from '../i18n';
 import { store } from '../ui/util';
 /** character.json 里的文案都按语言写：zh-CN 和 en 必填，zh-TW 可省略（回退到 zh-CN）。 */
 export type LocalText = { 'zh-CN': string; 'zh-TW'?: string; en: string };
@@ -32,7 +32,7 @@ function catalogManifest(): Promise<Manifest> {
       try { const manifest = await json<Manifest>(`${url}index.json`); catalogUrl = url; return manifest; }
       catch { /* 换下一个地址 */ }
     }
-    throw new Error('角色目录连不上');
+    throw new Error(t('adv.err.catalog'));
   })().catch((error) => { catalogPick = undefined; throw error; });
   return catalogPick;
 }
@@ -81,7 +81,7 @@ export function parseCharacter(data: unknown, id: string): Character {
   const c = (data || {}) as Record<string, unknown>;
   const texts = FIELDS.map((f) => localText(c[f]));
   if (c.id !== id || !validSkin(id) || typeof c.accent !== 'string' || !/^#[0-9a-f]{6}$/i.test(c.accent) || texts.some((x) => !x) || !texts[0]!['zh-CN'] || !texts[0]!.en) {
-    throw new Error(`角色 ${id} 的 character.json 不符合规范`);
+    throw new Error(t('adv.err.badMeta', { id }));
   }
   const [name, subtitle, description, origin] = texts.map((x) => pick(x!));
   const search = [id, ...texts.flatMap((x) => Object.values(x!))].join(' ').toLowerCase();
@@ -119,7 +119,7 @@ export function loadCharacters(): Promise<Character[]> {
       catch { return null; } // 坏掉的下载不拖累其他角色
     }));
     CHARACTERS.splice(0, CHARACTERS.length, ...list.filter((c): c is Character => !!c));
-    if (!CHARACTERS.length) throw new Error('没有可用的角色');
+    if (!CHARACTERS.length) throw new Error(t('adv.err.noCharacters'));
     return CHARACTERS;
   })().catch((error) => { loading = undefined; throw error; });
   return loading;
@@ -145,12 +145,12 @@ export async function loadCatalog(): Promise<{ list: Character[]; builtin: SkinI
 /** 原生应用：从线上目录下载一个角色存到本机。 */
 export async function downloadCharacter(id: SkinId, onProgress?: (done: number) => void) {
   const invoke = native()?.invoke;
-  if (!invoke || !validSkin(id)) throw new Error('只有应用里需要下载角色');
+  if (!invoke || !validSkin(id)) throw new Error(t('adv.err.appOnly'));
   await catalogManifest();
   let done = 0;
   const get = async (file: CharacterFile) => {
     const response = await fetch(`${catalogUrl}${id}/${file}`);
-    if (!response.ok) throw new Error(`下载 ${file} 失败`);
+    if (!response.ok) throw new Error(t('adv.err.download', { file }));
     const bytes = new Uint8Array(await response.arrayBuffer());
     onProgress?.(++done / CHARACTER_FILES.length);
     return bytes;

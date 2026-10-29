@@ -2,6 +2,7 @@ import { AdventureGame, type AdventureInput, type AdventureView } from '../game/
 import type { HostCallbacks } from './host';
 import type { HostTransport, HostTransportFactory } from './transport';
 import { LOBBY_HEARTBEAT_MS, LobbyPublisher } from './lobby';
+import { t } from '../i18n';
 
 const encoder = new TextEncoder();
 export class AdventureHost {
@@ -44,7 +45,7 @@ export class AdventureHost {
             }
           }
           id = this.nextId++;
-          if (!this.game.add(id, typeof hello.name === 'string' ? hello.name.trim() || '小伙伴' : '小伙伴')) return 'full';
+          if (!this.game.add(id, typeof hello.name === 'string' ? hello.name.trim() || t('adv.defaultName') : t('adv.defaultName'))) return 'full';
           this.tokens.set(hello.token, id);
         }
         for (const [old, pid] of this.peers) if (pid === id && old !== cid) this.net?.drop(old);
