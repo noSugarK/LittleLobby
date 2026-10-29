@@ -224,7 +224,7 @@ export function mountHome(app: HTMLElement) {
       .map(([code, r]) => {
         const full = r.n >= r.max;
         const st = full ? ['full', t('lobby.full')] : r.playing ? ['live', t('lobby.live')] : ['open', t('lobby.open')];
-        return `<button class="lrow ${full ? 'is-full' : ''}" role="row" data-code="${code}" data-lock="${r.lock ? 1 : ''}">
+        return `<button class="lrow ${full ? 'is-full' : ''}" role="row" data-code="${code}" data-lock="${r.lock ? 1 : ''}" data-game="${r.game === 'adventure' ? 'adventure' : ''}">
           <span class="mono code">${code}</span>
           <span class="who">${r.host ? esc(r.host) : t('lobby.screen')} · ${gameName(r.game === 'adventure' ? 'adventure' : 'football')}${r.lock ? `<i title="${t('lobby.locked')}">${icon.lock}</i>` : ''}</span>
           <span class="mono">${r.n}/${r.max}</span>
@@ -233,7 +233,13 @@ export function mountHome(app: HTMLElement) {
       })
       .join('');
     body.querySelectorAll<HTMLButtonElement>('.lrow').forEach((b) => {
-      b.onclick = () => (location.hash = `#/join/${b.dataset.code}${b.dataset.lock ? '?lock' : ''}`);
+      // 和扫码链接一样带上玩法，冒险房间直接进冒险的加入页
+      b.onclick = () => {
+        const query = new URLSearchParams();
+        if (b.dataset.lock) query.set('lock', '');
+        if (b.dataset.game) query.set('game', b.dataset.game);
+        location.hash = `#/join/${b.dataset.code}${query.size ? `?${query}` : ''}`;
+      };
     });
   }
 

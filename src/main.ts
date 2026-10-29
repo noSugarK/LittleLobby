@@ -34,6 +34,9 @@ async function route() {
       if (isLanPage()) location.hash = `#/join/${window.__LITTLE_LOBBY_LAN__!.room}?lan=1`;
       else {
         store.set('game', 'adventure');
+        // 和首页开房一样换新房间码、清掉旧密码，旧房间的玩家不能绕过新设置连回来
+        store.set('hostroom', '', false);
+        store.set('roomopts', JSON.stringify({ listed: false }), false);
         if (q.has('lan')) store.set('roomopts', JSON.stringify({ listed: false, mode: 'lan' }), false);
         location.hash = '#/host';
       }
@@ -80,7 +83,7 @@ async function route() {
     }
     if (q.get('game') === 'adventure' || q.get('game') === 'carry') {
       const { mountAdventure } = await import('./pages/adventure');
-      await mountAdventure(app, { room: normalizeCode(arg), lan: isLanPage() || !!server, server, pin: q.get('pin') ?? '' });
+      await mountAdventure(app, { room: normalizeCode(arg), lan: isLanPage() || !!server, server, pin: q.get('pin') ?? '', lock: q.has('lock') });
     } else mountPlay(app, { kind: 'client', room: normalizeCode(arg), forceRelay: q.has('relay'), pin: q.get('pin') ?? '', lock: q.has('lock'), lan: isLanPage() || !!server, server });
   } else mountHome(app);
 }
