@@ -12,6 +12,8 @@ export const MODES = [
   { id: 'rope', name: t('adv.mode.rope'), desc: t('adv.mode.rope.desc'), coop: true },
   { id: 'eat', name: t('adv.mode.eat'), desc: t('adv.mode.eat.desc'), coop: true },
   { id: 'stack', name: t('adv.mode.stack'), desc: t('adv.mode.stack.desc'), coop: true },
+  // 竞速借用经典关卡：不用集星星、不用打 Boss，谁先到小屋谁赢
+  { id: 'race', name: t('adv.mode.race'), desc: t('adv.mode.race.desc'), coop: true },
 ] as const;
 export type ModeId = typeof MODES[number]['id'];
 export const validMode = (mode: unknown): mode is ModeId => MODES.some((m) => m.id === mode);
@@ -19,11 +21,18 @@ export const modeInfo = (mode: ModeId) => MODES.find((m) => m.id === mode)!;
 export interface Rect { x: number; y: number; w: number; h: number; }
 /** 机关：踩板上的重量（含着队友的人算 2）达到 need 时激活；solid 激活时出现（吊桥、台阶），gate 激活时消失（闸门）。latch 激活后保持。 */
 export interface Device { plate: Rect; need: number; latch?: boolean; solid?: Rect[]; gate?: Rect[] }
+/** 移动平台：在 (x, y) 和 (x+dx, y+dy) 之间来回缓动，站在上面会被带着走。 */
+export interface Mover { x: number; y: number; w: number; dx?: number; dy?: number; speed?: number }
+/** 小怪：hop 会原地蹦跳（趁它跳起时能从下面钻过去）；hp > 1 的是 Boss，要踩好几下，打败前小屋不开门。 */
+export interface Enemy { x: number; y: number; range: number; hop?: boolean; hp?: number }
 export interface Level {
   name: string; caption: string; mode: ModeId; theme: number; width: number; platforms: Rect[];
   coins: { x: number; y: number }[]; stars: { x: number; y: number }[];
-  checkpoints: { x: number; y: number }[]; enemies: { x: number; y: number; range: number }[];
+  checkpoints: { x: number; y: number }[]; enemies: Enemy[];
   devices?: Device[];
+  /** 弹簧垫：(x, y) 是它所在的地面，落上去会被高高弹起。 */
+  springs?: { x: number; y: number }[];
+  movers?: Mover[];
   goal: number;
 }
 const ground = (x: number, w: number): Rect => ({ x, y: 500, w, h: 140 });
@@ -89,9 +98,60 @@ export const LEVELS: Level[] = [
     checkpoints: [{ x: 1000, y: 500 }, { x: 1800, y: 500 }, { x: 2400, y: 500 }],
     enemies: [{ x: 1200, y: 500, range: 70 }], goal: 3100,
   },
+  {
+    // 经典第四站：弹簧垫弹上高台、坐移动平台和电梯过大坑，最后踩三下大果冻 Boss 才能开门
+    name: t('adv.level.6'), caption: t('adv.level.6.caption'), mode: 'classic', theme: 1, width: 3600,
+    platforms: [ground(0, 640), ground(900, 700), ground(2000, 1600), ledge(620, 230, 160), ledge(1270, 390), ledge(1430, 290, 120), ledge(1760, 320, 200)],
+    springs: [{ x: 500, y: 500 }, { x: 2200, y: 500 }],
+    movers: [{ x: 660, y: 480, w: 110, dx: 120, speed: 0.9 }, { x: 1620, y: 480, w: 100, dy: -160, speed: 0.8 }],
+    coins: [{ x: 200, y: 462 }, { x: 360, y: 462 }, { x: 528, y: 300 }, { x: 700, y: 195 }, { x: 760, y: 440 }, { x: 1050, y: 462 }, { x: 1330, y: 355 }, { x: 1670, y: 380 }, { x: 1670, y: 300 }, { x: 1900, y: 285 }, { x: 2228, y: 300 }, { x: 2228, y: 220 }, { x: 2450, y: 462 }, { x: 3150, y: 462 }, { x: 3250, y: 462 }],
+    stars: [{ x: 740, y: 190 }, { x: 1490, y: 255 }, { x: 1860, y: 280 }],
+    checkpoints: [{ x: 960, y: 500 }, { x: 2060, y: 500 }, { x: 2560, y: 500 }],
+    enemies: [{ x: 1150, y: 500, range: 60, hop: true }, { x: 2400, y: 500, range: 40, hop: true }, { x: 2850, y: 500, range: 160, hp: 3 }], goal: 3350,
+  },
+  {
+    // 串一串第二关：绳子连着大家一起坐移动平台过坑，坐不下的人就挂在绳子上
+    name: t('adv.level.7'), caption: t('adv.level.7.caption'), mode: 'rope', theme: 2, width: 3200,
+    platforms: [ground(0, 600), ground(1000, 400), ground(1750, 350), ground(2450, 750), ledge(1470, 440, 100), ledge(2180, 430, 90), ledge(2330, 400, 90)],
+    movers: [{ x: 610, y: 480, w: 160, dx: 220, speed: 0.7 }, { x: 1590, y: 440, w: 100, dx: 60, speed: 1.2 }],
+    coins: [{ x: 200, y: 462 }, { x: 420, y: 462 }, { x: 700, y: 440 }, { x: 900, y: 440 }, { x: 1100, y: 462 }, { x: 1300, y: 462 }, { x: 1520, y: 405 }, { x: 1650, y: 400 }, { x: 1900, y: 462 }, { x: 2220, y: 395 }, { x: 2370, y: 365 }, { x: 2600, y: 462 }, { x: 2850, y: 462 }],
+    stars: [{ x: 800, y: 380 }, { x: 1520, y: 395 }, { x: 2375, y: 355 }],
+    checkpoints: [{ x: 1060, y: 500 }, { x: 1800, y: 500 }, { x: 2500, y: 500 }],
+    enemies: [{ x: 2700, y: 500, range: 60, hop: true }], goal: 3000,
+  },
+  {
+    // 吃吐吐第二关：先把队友吐过湖按开吊桥；再含着队友踩弹簧，弹到最高处把他吐上云台按开第二座桥
+    name: t('adv.level.8'), caption: t('adv.level.8.caption'), mode: 'eat', theme: 0, width: 3300,
+    platforms: [ground(0, 700), ground(1100, 500), ground(2000, 1300), ledge(1650, 150, 300)],
+    springs: [{ x: 1320, y: 500 }],
+    devices: [
+      { plate: plate(1130), need: 1, latch: true, solid: [{ x: 700, y: 500, w: 400, h: 22 }] },
+      { plate: plate(1760, 150, 100), need: 1, latch: true, solid: [{ x: 1600, y: 500, w: 400, h: 22 }] },
+      { plate: plate(2300, 500, 140), need: 2, latch: true, gate: [{ x: 2600, y: 250, w: 30, h: 250 }] },
+    ],
+    coins: [{ x: 220, y: 462 }, { x: 420, y: 462 }, { x: 620, y: 462 }, { x: 900, y: 400 }, { x: 1200, y: 462 }, { x: 1348, y: 330 }, { x: 1348, y: 250 }, { x: 1700, y: 420 }, { x: 2100, y: 462 }, { x: 2450, y: 462 }, { x: 2750, y: 462 }, { x: 2950, y: 462 }],
+    stars: [{ x: 900, y: 360 }, { x: 1900, y: 120 }, { x: 2480, y: 430 }],
+    checkpoints: [{ x: 1150, y: 500 }, { x: 2050, y: 500 }, { x: 2680, y: 500 }],
+    enemies: [{ x: 2850, y: 500, range: 70, hop: true }], goal: 3050,
+  },
+  {
+    // 叠罗汉第二关：叠高才够得着的空中平台——上去的人坐到对岸按开吊桥，最后再叠一次摘星星
+    name: t('adv.level.9'), caption: t('adv.level.9.caption'), mode: 'stack', theme: 1, width: 3400,
+    platforms: [ground(0, 1400), ground(1800, 1600), block(700, 330, 200), ledge(2600, 330, 130)],
+    movers: [{ x: 1400, y: 350, w: 120, dx: 280, speed: 0.7 }],
+    devices: [
+      { plate: plate(760, 330, 90), need: 1, latch: true, solid: [{ x: 600, y: 420, w: 90, h: 22 }] },
+      { plate: plate(1830, 500, 110), need: 1, latch: true, solid: [{ x: 1400, y: 500, w: 400, h: 22 }] },
+      { plate: plate(2250, 500, 140), need: 2, latch: true, gate: [{ x: 2500, y: 250, w: 30, h: 250 }] },
+    ],
+    coins: [{ x: 250, y: 462 }, { x: 450, y: 462 }, { x: 640, y: 380 }, { x: 800, y: 290 }, { x: 1100, y: 462 }, { x: 1300, y: 462 }, { x: 1500, y: 310 }, { x: 1700, y: 310 }, { x: 1950, y: 462 }, { x: 2150, y: 462 }, { x: 2400, y: 462 }, { x: 2900, y: 462 }],
+    stars: [{ x: 860, y: 280 }, { x: 1600, y: 290 }, { x: 2665, y: 285 }],
+    checkpoints: [{ x: 1000, y: 500 }, { x: 1850, y: 500 }, { x: 2550, y: 500 }],
+    enemies: [{ x: 1150, y: 500, range: 60, hop: true }], goal: 3200,
+  },
 ];
 /** 某玩法的关卡下标（同一玩法的关卡连续排列）。 */
-export const modeLevels = (mode: ModeId) => LEVELS.flatMap((level, i) => level.mode === mode ? [i] : []);
+export const modeLevels = (mode: ModeId) => LEVELS.flatMap((level, i) => level.mode === (mode === 'race' ? 'classic' : mode) ? [i] : []);
 export interface AdventureInput { axis: number; jump: boolean; act?: boolean; }
 /** 足球同款手柄映射到冒险：摇杆横向推过三成才移动；B 键或摇杆 / 方向键明显往上（含键盘斜向 ↗ ≈ -0.71）都算跳；A 键吃 / 吐。 */
 export const padInput = (jx: number, jy: number, b: boolean, enabled: boolean, a = false): AdventureInput =>
@@ -107,19 +167,46 @@ interface Controls extends AdventureInput { seen: number; buffer: number; coyote
 export interface AdventureView {
   t: 'adventure-state'; phase: 'lobby' | 'playing' | 'clear' | 'complete'; level: number; mode: ModeId;
   epoch: number; time: number; stars: number[]; defeated: number[]; active: number[]; players: Adventurer[]; paused: boolean; me: number;
+  /** 每只小怪被踩了几下（Boss 血条用）；finish 是到达小屋的先后（竞速排名）。 */
+  hits: number[]; finish: number[];
 }
 const W = 34, H = 44;
 export const ROPE = 150;
 const near = (p: Adventurer, x: number, y: number, radius = 32) => Math.hypot(p.x + W / 2 - x, p.y + H / 2 - y) < radius;
 const overlaps = (p: { x: number; y: number }, r: Rect) => p.x < r.x + r.w && p.x + W > r.x && p.y < r.y + r.h - 0.1 && p.y + H > r.y + 0.1;
+/** 点心全队共享：谁先吃到算谁的（记在他的 coins 里），吃掉后所有人眼前都消失 */
+export const eatenTreats = (players: Iterable<{ coins: number[] }>) => new Set([...players].flatMap((p) => p.coins));
 export function enemyX(level: Level, enemy: number, time: number) {
   const e = level.enemies[enemy];
   return e.x + Math.sin(time * 1.1 + enemy) * e.range;
 }
-/** 当前实际挡路的平台：地图平台 + 已激活机关放出的台阶 / 吊桥 + 尚未打开的闸门。 */
-export function solids(level: Level, active: Iterable<number>) {
+export function enemyY(level: Level, enemy: number, time: number) {
+  const e = level.enemies[enemy];
+  return e.hop ? e.y - Math.abs(Math.sin(time * 2.6 + enemy)) * 70 : e.y;
+}
+/** Boss 画得大、判定也大。 */
+export const enemySize = (e: Enemy) => (e.hp ?? 1) > 1 ? 1.8 : 1;
+export const SPRING = { w: 56, h: 14 };
+export function moverRect(m: Mover, time: number): Rect {
+  const k = (1 - Math.cos(time * (m.speed ?? 1))) / 2;
+  return { x: m.x + (m.dx ?? 0) * k, y: m.y + (m.dy ?? 0) * k, w: m.w, h: 20 };
+}
+/** 挡路的方块；移动平台带着这一帧的位移 mx / my，弹簧垫带 spring 标记。 */
+export interface Block extends Rect { mx?: number; my?: number; spring?: boolean }
+/** 当前实际挡路的平台：地图平台 + 已激活机关放出的台阶 / 吊桥 + 尚未打开的闸门 + 弹簧垫 + time 时刻的移动平台（dt 用来算本帧位移）。 */
+export function solids(level: Level, active: Iterable<number>, time = 0, dt = 0): Block[] {
   const on = new Set(active);
-  return [...level.platforms, ...(level.devices ?? []).flatMap((d, i) => on.has(i) ? d.solid ?? [] : d.gate ?? [])];
+  return [
+    ...level.platforms, ...(level.devices ?? []).flatMap((d, i) => on.has(i) ? d.solid ?? [] : d.gate ?? []),
+    ...(level.springs ?? []).map((sp) => ({ x: sp.x, y: sp.y - SPRING.h, ...SPRING, spring: true })),
+    ...(level.movers ?? []).map((m) => { const r = moverRect(m, time), was = moverRect(m, time - dt); return { ...r, mx: r.x - was.x, my: r.y - was.y }; }),
+  ];
+}
+/** 小屋开门：竞速直接开；其他玩法要集齐星星并打败所有 Boss。 */
+export function goalOpen(level: Level, mode: ModeId, stars: number, defeated: Iterable<number>) {
+  if (mode === 'race') return true;
+  const down = new Set(defeated);
+  return stars === level.stars.length && level.enemies.every((e, i) => (e.hp ?? 1) <= 1 || down.has(i));
 }
 
 export class AdventureGame {
@@ -134,6 +221,10 @@ export class AdventureGame {
   stars = new Set<number>();
   defeated = new Set<number>();
   active = new Set<number>();
+  hits = new Map<number, number>();
+  finish: number[] = [];
+  /** 被踩后短暂眩晕的 Boss：到这个时刻前不再受伤也不伤人。 */
+  private stun = new Map<number, number>();
   private clock = 0;
 
   add(id: number, name: string, skin: SkinId = DEFAULT_SKIN) {
@@ -166,6 +257,7 @@ export class AdventureGame {
   toLobby() {
     if (this.phase === 'lobby') return false;
     for (const p of this.players.values()) { p.eating = p.eatenBy = -1; p.reached = false; }
+    this.finish = [];
     this.phase = 'lobby'; this.warmUp();
     return true;
   }
@@ -174,7 +266,7 @@ export class AdventureGame {
     this.level = modeLevels(this.mode)[0];
     // 时间从头计：换新 epoch，否则页面会把回到大厅的状态当成过期快照丢掉
     this.epoch++;
-    this.time = 0; this.stars.clear(); this.defeated.clear(); this.active.clear();
+    this.reset();
     for (const p of this.players.values()) { p.checkpoint = -1; p.coins = []; p.hearts = 3; this.respawn(p, false); }
   }
   canStart(mode = this.mode) {
@@ -197,10 +289,10 @@ export class AdventureGame {
     const levels = modeLevels(this.mode);
     const next = this.phase === 'clear' ? levels[levels.indexOf(this.level) + 1] : levels[0];
     const level = selectedLevel ?? next;
-    if (!Number.isInteger(level) || !LEVELS[level] || LEVELS[level].mode !== this.mode || !this.canStart()) return false;
+    if (!Number.isInteger(level) || !levels.includes(level) || !this.canStart()) return false;
     this.level = level;
     this.epoch++;
-    this.time = 0; this.stars.clear(); this.defeated.clear(); this.active.clear();
+    this.reset();
     for (const p of this.players.values()) {
       p.checkpoint = -1; p.coins = []; p.deaths = 0; p.reached = false; p.hearts = 3; p.eating = p.eatenBy = -1;
       this.respawn(p, false);
@@ -208,6 +300,9 @@ export class AdventureGame {
     }
     this.phase = 'playing';
     return true;
+  }
+  private reset() {
+    this.time = 0; this.stars.clear(); this.defeated.clear(); this.active.clear(); this.hits.clear(); this.stun.clear(); this.finish = [];
   }
   /** 放出被含着的队友（或从别人肚子里出来），落在吃的人身边。 */
   private release(id: number, vx = 0, vy = 0) {
@@ -267,7 +362,7 @@ export class AdventureGame {
     if (!visible) return;
     this.time += dt;
     const level = LEVELS[this.level];
-    const blocks = solids(level, this.active);
+    const blocks = solids(level, this.active, this.time, dt);
     const all = [...this.players.values()];
     const prev = new Map(all.map((p) => [p.id, p.x]));
     const riders = new Map<number, number>();
@@ -307,17 +402,27 @@ export class AdventureGame {
       if (!c.jump && c.rise <= 0 && p.vy < -380) p.vy = -380;
       p.vy = Math.min(900, p.vy + 1600 * dt);
       p.x = Math.max(0, Math.min(level.width - W, p.x + p.vx * dt));
-      for (const r of blocks) if (overlaps(p, r)) {
+      // 往上走的平台顶到脚底不算撞墙，下面的落地判定会把人托上去
+      for (const r of blocks) if (!r.spring && overlaps(p, r) && !(r.my && p.y + H <= r.y - r.my + 1)) {
         if (p.vx > 0) p.x = r.x - W;
         else if (p.vx < 0) p.x = r.x + r.w;
         p.vx = 0;
       }
       const oldBottom = p.y + H;
       p.y += p.vy * dt; p.grounded = false;
-      for (const r of blocks) if (p.x + W > r.x + 0.1 && p.x < r.x + r.w - 0.1 && p.y + H >= r.y && p.y < r.y + r.h) {
-        if (p.vy >= 0 && oldBottom <= r.y + 1) { p.y = r.y - H; p.vy = 0; p.grounded = true; c.launch = 0; }
-        else if (p.vy < 0) { p.y = r.y + r.h; p.vy = 0; }
+      let carry = 0;
+      // 往下走的平台：上一帧站在上面的人这一帧还没追上它，也算踩着
+      for (const r of blocks) if (p.x + W > r.x + 0.1 && p.x < r.x + r.w - 0.1 && p.y + H >= r.y - Math.max(0, r.my ?? 0) - 1 && p.y < r.y + r.h) {
+        if (p.vy >= 0 && oldBottom <= r.y - (r.my ?? 0) + 1 + (r.spring ? r.h : 0)) {
+          p.y = r.y - H; c.launch = 0;
+          // 弹簧垫：弹得比跳跃高一倍多，松开跳跃键也不会被截短
+          if (r.spring) { p.vy = -980; p.grounded = false; c.rise = 0.5; c.coyote = 0; break; }
+          else { p.vy = 0; p.grounded = true; carry = r.mx ?? 0; }
+        }
+        else if (p.vy < 0 && p.y + H > r.y) { p.y = r.y + r.h; p.vy = 0; }
       }
+      // ponytail: 被平台带着走时不再做侧面碰撞，关卡里的移动平台不贴着墙走
+      if (carry) p.x = Math.max(0, Math.min(level.width - W, p.x + carry));
       // 叠罗汉：队友的头顶是一块只能从上方落上去的平台，站上去会被他带着走
       if (this.mode === 'stack' && !p.grounded && p.vy >= 0) {
         for (const q of all) {
@@ -337,7 +442,8 @@ export class AdventureGame {
     }
     this.press(level);
     const online = all.filter((p) => p.online);
-    if (this.phase === 'playing' && online.length && online.every((p) => p.reached)) {
+    // 竞速第一个人到就结束，不用等最后一名
+    if (this.phase === 'playing' && online.length && (online.every((p) => p.reached) || (this.mode === 'race' && this.finish.length))) {
       const levels = modeLevels(this.mode);
       this.phase = this.level === levels[levels.length - 1] ? 'complete' : 'clear';
     }
@@ -356,18 +462,23 @@ export class AdventureGame {
       // 串一串的检查点全队共享
       if (this.mode === 'rope') for (const q of this.players.values()) q.checkpoint = Math.max(q.checkpoint, i);
     });
-    level.coins.forEach((coin, i) => { if (!p.coins.includes(i) && near(p, coin.x, coin.y)) p.coins.push(i); });
+    const eaten = eatenTreats(this.players.values());
+    level.coins.forEach((coin, i) => { if (!eaten.has(i) && near(p, coin.x, coin.y)) p.coins.push(i); });
     level.stars.forEach((star, i) => { if (near(p, star.x, star.y, 35)) this.stars.add(i); });
     level.enemies.forEach((e, i) => {
-      if (this.defeated.has(i)) return;
-      const x = enemyX(level, i, this.time);
-      if (p.x + W < x - 20 || p.x > x + 20 || p.y + H < e.y - 30 || p.y > e.y) return;
-      if (p.vy > 50 && oldBottom < e.y - 15) { this.defeated.add(i); p.vy = -430; }
+      if (this.defeated.has(i) || (this.stun.get(i) ?? 0) > this.time) return;
+      const x = enemyX(level, i, this.time), y = enemyY(level, i, this.time), s = enemySize(e);
+      if (p.x + W < x - 20 * s || p.x > x + 20 * s || p.y + H < y - 30 * s || p.y > y) return;
+      if (p.vy > 50 && oldBottom < y - 15 * s) {
+        const hits = (this.hits.get(i) ?? 0) + 1;
+        this.hits.set(i, hits); p.vy = -430;
+        if (hits >= (e.hp ?? 1)) this.defeated.add(i); else this.stun.set(i, this.time + 0.8);
+      }
       else if (p.invulnerable === 0) this.respawn(p);
     });
-    if (this.phase === 'playing' && this.stars.size === level.stars.length && near(p, level.goal + 20, 460, 64)) {
+    if (this.phase === 'playing' && goalOpen(level, this.mode, this.stars.size, this.defeated) && near(p, level.goal + 20, 460, 64)) {
       if (p.eating >= 0) this.release(p.id);
-      p.reached = true; p.vx = p.vy = 0;
+      p.reached = true; p.vx = p.vy = 0; this.finish.push(p.id);
     }
   }
   /** 机关踩板：站在板上的人的重量（含着队友算 2）。 */
@@ -381,6 +492,6 @@ export class AdventureGame {
     });
   }
   view(me = -1): AdventureView {
-    return { t: 'adventure-state', phase: this.phase, level: this.level, mode: this.mode, epoch: this.epoch, time: this.time, stars: [...this.stars], defeated: [...this.defeated], active: [...this.active], paused: this.paused, me, players: [...this.players.values()].map((p) => ({ ...p, coins: [...p.coins] })) };
+    return { t: 'adventure-state', phase: this.phase, level: this.level, mode: this.mode, epoch: this.epoch, time: this.time, stars: [...this.stars], defeated: [...this.defeated], active: [...this.active], paused: this.paused, me, hits: LEVELS[this.level].enemies.map((_, i) => this.hits.get(i) ?? 0), finish: [...this.finish], players: [...this.players.values()].map((p) => ({ ...p, coins: [...p.coins] })) };
   }
 }

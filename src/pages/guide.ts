@@ -51,7 +51,7 @@ export function mountGuide(app: HTMLElement) {
     </div>
     <p class="g-hint">${t('guide.av.slots')} ${t('guide.av.keys')}</p>
     <h3>${t('guide.av.modes')}</h3>
-    ${keyed([['guide.av.classic', 'guide.av.classicBody'], ['guide.av.rope', 'guide.av.ropeBody'], ['guide.av.eat', 'guide.av.eatBody'], ['guide.av.stack', 'guide.av.stackBody']])}
+    ${keyed([['guide.av.classic', 'guide.av.classicBody'], ['guide.av.rope', 'guide.av.ropeBody'], ['guide.av.eat', 'guide.av.eatBody'], ['guide.av.stack', 'guide.av.stackBody'], ['guide.av.race', 'guide.av.raceBody']])}
     <p class="g-hint">${t('guide.av.coop')}</p>`;
   const panes: Record<GameId, string> = { football, adventure };
   app.innerHTML = `

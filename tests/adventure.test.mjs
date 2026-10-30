@@ -17,7 +17,7 @@ registerHooks({
     return { format: 'module', shortCircuit: true, source: ts.transpile(readFileSync(new URL(url), 'utf8'), { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }) };
   },
 });
-const { AdventureGame, LEVELS, enemyX, modeLevels, padInput, solids } = await import('../src/game/adventure.ts');
+const { AdventureGame, LEVELS, enemyX, enemyY, modeLevels, moverRect, padInput, solids } = await import('../src/game/adventure.ts');
 const { AdventureHost } = await import('../src/net/adventure-host.ts');
 const { joinHashFromQr } = await import('../src/ui/scan.ts');
 const tick = (g, frames, input = { axis: 0, jump: false }) => { for (let i = 0; i < frames; i++) { g.input(1, input); g.step(1 / 60); } };
@@ -85,32 +85,48 @@ test('从上方踩怪会弹起并消灭小怪，侧碰受伤后有无敌保护',
 });
 
 // 真正使用左右/跳跃输入走完每张地图，不传送到星星或终点。
+// 第三项是“现在可以走了吗”：在台边等移动平台过来，等的时候不原地起跳；WALK 表示直接走上弹簧垫。
+const WALK = () => true;
+const mover = (g, i) => solids(LEVELS[g.level], g.active, g.time).filter((r) => r.mx !== undefined)[i];
 const paths = [
   [[400, 410], [595, 345], [980, 500], [1130, 415], [1340, 340], [1830, 500], [1990, 415], [2200, 340], [2895, 500]],
   [[340, 415], [520, 335], [850, 500], [1040, 415], [1230, 335], [1580, 500], [1770, 415], [1970, 335], [3100, 500]],
   [[380, 415], [570, 335], [930, 500], [1110, 415], [1310, 335], [1730, 500], [2560, 500], [2710, 410], [2900, 335], [3300, 500]],
+  [[460, 500], [720, 230, WALK], [595, 500], [630, 500], [720, 480, (g) => mover(g, 0).x < 670], [960, 500], [1340, 390], [1490, 290], [1580, 500],
+    [1670, 480, (g) => mover(g, 1).y > 470], [1670, 320, WALK], [1860, 320, (g) => mover(g, 1).y < 330], [2060, 500], [3400, 500]],
 ];
-test('仅通过正常移动和跳跃可依次完成三关、收齐星星并重新开始', () => {
-  const g = game();
-  for (let level = 0; level < paths.length; level++) {
-    for (const [x, y] of paths[level]) {
-      let arrived = false;
-      for (let frame = 0; frame < 1800; frame++) {
-        const p = g.players.get(1), dx = x - 17 - p.x;
-        if ((Math.abs(dx) < 9 && Math.abs(p.y + 44 - y) < 2 && p.grounded) || p.reached) { arrived = true; break; }
-        const axis = Math.abs(dx) < 5 ? 0 : Math.sign(dx);
-        const floor = LEVELS[level].platforms.find((r) => Math.abs(p.y + 44 - r.y) < 2 && p.x + 34 > r.x && p.x < r.x + r.w);
+/** 每个在场的人都用同一套左右/跳跃策略走到 (x, y)；全员站稳在那里（或进了小屋）才算到。 */
+function walk(g, path, label) {
+  for (const [x, y, ready] of path) {
+    const at = (p) => (Math.abs(x - 17 - p.x) < 9 && Math.abs(p.y + 44 - y) < 3 && p.grounded) || p.reached;
+    let arrived = false;
+    for (let frame = 0; frame < 1800 && !arrived; frame++) {
+      for (const p of g.players.values()) {
+        const dx = x - 17 - p.x;
+        let axis = at(p) || Math.abs(dx) < 5 ? 0 : Math.sign(dx);
+        const floor = solids(LEVELS[g.level], g.active, g.time).find((r) => Math.abs(p.y + 44 - r.y) < 3 && p.x + 34 > r.x && p.x < r.x + r.w);
         const edge = floor && axis > 0 && x > floor.x + floor.w && p.x + 34 > floor.x + floor.w - 25;
-        const up = p.grounded && y < p.y + 44 - 8 && Math.abs(dx) < 185;
-        g.input(1, { axis, jump: p.grounded ? !!(edge || up) : p.vy < 0 });
-        g.step(1 / 60);
+        if (edge && ready && !ready(g)) axis = 0;
+        const up = !ready && p.grounded && y < p.y + 44 - 8 && Math.abs(dx) < 185;
+        g.input(p.id, { axis, jump: p.grounded ? !!((edge && axis) || up) : p.vy < 0 });
       }
-      assert.ok(arrived, `level ${level + 1}, waypoint ${x}/${y}: ${JSON.stringify(g.players.get(1))}`);
+      g.step(1 / 60);
+      arrived = [...g.players.values()].every(at);
     }
-    tick(g, 3);
-    assert.equal(g.stars.size, 3, `level ${level + 1} stars`);
-    assert.equal(g.phase, level === 2 ? 'complete' : 'clear');
-    if (level < 2) assert.equal(g.start(), true);
+    assert.ok(arrived, `${label}, waypoint ${x}/${y}: ${JSON.stringify([...g.players.values()])}`);
+    settle(g, 10); // 松开按键，别把上一段的跳跃缓冲带到下一段
+  }
+}
+test('仅通过正常移动、跳跃、弹簧和移动平台可依次完成经典四关、收齐星星并重新开始', () => {
+  const g = game(), levels = modeLevels('classic');
+  assert.equal(levels.length, paths.length);
+  for (const [k, level] of levels.entries()) {
+    // Boss 另有测试，这里只验证地形走得通
+    level === levels[3] && LEVELS[level].enemies.forEach((e, i) => e.hp && g.defeated.add(i));
+    walk(g, paths[k], `level ${k + 1}`);
+    assert.equal(g.stars.size, 3, `level ${k + 1} stars`);
+    assert.equal(g.phase, k === levels.length - 1 ? 'complete' : 'clear');
+    if (k < levels.length - 1) assert.equal(g.start(), true);
   }
   assert.equal(g.start(), true); assert.equal(g.level, 0); assert.equal(g.phase, 'playing');
 });
@@ -211,9 +227,13 @@ test('合作玩法至少两人才能开始，只打本玩法的关卡，打完�
   assert.equal(solo.setMode('nope'), false);
   const g = coop('rope');
   assert.equal(g.level, modeLevels('rope')[0]); assert.equal(LEVELS[g.level].mode, 'rope');
-  g.stars = new Set([0, 1, 2]);
-  for (const p of g.players.values()) place(p, LEVELS[g.level].goal, 456);
-  g.step(1 / 60); assert.equal(g.phase, 'complete');
+  for (const [i, level] of modeLevels('rope').entries()) {
+    assert.equal(g.level, level);
+    g.stars = new Set([0, 1, 2]);
+    for (const p of g.players.values()) place(p, LEVELS[g.level].goal, 456);
+    g.step(1 / 60); assert.equal(g.phase, i === modeLevels('rope').length - 1 ? 'complete' : 'clear');
+    if (g.phase === 'clear') assert.equal(g.start(), true);
+  }
   assert.equal(g.setMode('classic'), true); assert.equal(g.start(), true); assert.equal(g.level, 0);
 });
 
@@ -315,4 +335,110 @@ test('开局前在大厅里就能走动跳跃；到终点也不会结束，出�
   assert.equal(g.setMode('rope'), true); assert.equal(g.level, modeLevels('rope')[0], '换玩法后在新玩法的第一关里走');
   assert.equal(g.setMode('classic'), true); assert.equal(g.start(), true);
   assert.equal(p.x, 90 + 42); assert.equal(g.stars.size, 0);
+});
+
+test('弹簧垫：走上去或落上去都会弹得比跳跃高一倍多；不挡路', () => {
+  const g = game(), p = g.players.get(1), level = modeLevels('classic')[3];
+  g.phase = 'lobby'; assert.equal(g.start(level), true);
+  const spring = LEVELS[level].springs[0];
+  place(p, spring.x - 60, 456); settle(g, 2);
+  let top = p.y;
+  for (let i = 0; i < 60; i++) { g.input(1, { axis: i < 15 ? 1 : 0, jump: false }); g.step(1 / 60); top = Math.min(top, p.y); }
+  assert.ok(456 - top > 250, `弹起 ${456 - top} 像素`);
+});
+
+test('移动平台：站在上面被带着走，升降台往上走时不会把人挤下去', () => {
+  const g = game(), p = g.players.get(1), level = modeLevels('classic')[3], [side, lift] = LEVELS[modeLevels('classic')[3]].movers;
+  g.phase = 'lobby'; assert.equal(g.start(level), true);
+  place(p, side.x + 30, side.y - 44); settle(g, 60); // 刚开局 time = 0，平台在起点
+  assert.equal(p.grounded, true); assert.ok(p.x > side.x + 45, `被带着往右走：${p.x}`);
+  const now = moverRect(lift, g.time); place(p, now.x + 30, now.y - 44); settle(g, 150);
+  assert.equal(p.deaths, 0); assert.equal(p.grounded, true);
+  assert.ok(p.y + 44 < lift.y - 120, `被电梯托上去：${p.y}`);
+});
+
+test('跳跳怪会离地，可以从下面钻过；Boss 要踩三下，打败前小屋不开门', () => {
+  const g = game(), p = g.players.get(1), li = modeLevels('classic')[3], level = LEVELS[li];
+  g.phase = 'lobby'; assert.equal(g.start(li), true);
+  const hop = level.enemies.findIndex((e) => e.hop), boss = level.enemies.findIndex((e) => e.hp === 3);
+  assert.ok([...Array(60).keys()].some((i) => enemyY(level, hop, i / 20) < level.enemies[hop].y - 50), '跳跳怪会跳高');
+  g.stars = new Set([0, 1, 2]);
+  place(p, level.goal, 456); g.step(1 / 60);
+  assert.equal(p.reached, false, 'Boss 还在，小屋不开门');
+  for (let n = 1; n <= 3; n++) {
+    g.time += 1;
+    place(p, enemyX(level, boss, g.time) - 17, 500 - 54 - 44 - 4); p.vy = 300; g.step(1 / 60);
+    assert.equal(g.hits.get(boss), n); assert.ok(p.vy < 0, '踩中会弹起');
+    assert.equal(g.defeated.has(boss), n === 3);
+    assert.equal(p.deaths, 0);
+  }
+  assert.equal(g.view(1).hits[boss], 3);
+  place(p, level.goal, 456); g.step(1 / 60);
+  assert.equal(p.reached, true);
+});
+
+test('竞速：用经典关卡，不集星星也能进小屋，第一个到的人一到就结束', () => {
+  const g = coop('race'), [a, b] = g.players.values();
+  assert.deepEqual(modeLevels('race'), modeLevels('classic')); assert.equal(g.level, 0);
+  place(b, LEVELS[0].goal, 456); g.step(1 / 60);
+  assert.equal(b.reached, true); assert.equal(a.reached, false);
+  assert.deepEqual(g.view().finish, [2]); assert.equal(g.phase, 'clear');
+  assert.equal(g.start(), true); assert.deepEqual(g.finish, []); assert.equal(g.level, 1);
+});
+
+test('串一串第二关：两人连着绳子只靠左右和跳跃走完，坐移动平台过坑、收齐星星', () => {
+  const g = coop('rope');
+  g.phase = 'lobby'; assert.equal(g.start(modeLevels('rope')[1]), true);
+  LEVELS[g.level].enemies.forEach((_, i) => g.defeated.add(i)); // 小怪另有测试，这里只验证地形走得通
+  walk(g, [[560, 500], [700, 480, (g) => mover(g, 0).x < 640], [800, 480]], 'rope 2');
+  for (let i = 0; i < 40; i++) { for (const id of g.players.keys()) g.input(id, { axis: 0, jump: i < 20 }); g.step(1 / 60); } // 在云上跳一下摘星星
+  walk(g, [[920, 480], [1060, 500, (g) => mover(g, 0).x > 800], [1350, 500], [1520, 440], [1640, 440, (g) => mover(g, 1).x < 1600],
+    [1850, 500, (g) => mover(g, 1).x > 1640], [2050, 500], [2225, 430], [2375, 400], [2600, 500], [3050, 500]], 'rope 2');
+  assert.equal(g.stars.size, 3); assert.equal(g.phase, 'complete');
+  assert.deepEqual([...g.players.values()].map((p) => p.deaths), [0, 0]);
+});
+
+test('吃吐吐第二关：含着队友踩弹簧，在最高处把他吐上一个人够不着的云台，按开第二座吊桥', () => {
+  const g = coop('eat'), eater = g.players.get(1), mate = g.players.get(2);
+  g.phase = 'lobby'; assert.equal(g.start(modeLevels('eat')[1]), true);
+  const level = LEVELS[g.level], spring = level.springs[0], high = level.platforms.find((r) => r.y === 150);
+  const press = (id) => { g.input(id, { axis: 0, jump: false, act: true }); g.step(1 / 60); g.input(id, { axis: 0, jump: false, act: false }); g.step(1 / 60); };
+  // 一个人踩弹簧够不着
+  place(eater, spring.x - 40, 456); settle(g, 2);
+  let top = 999;
+  for (let i = 0; i < 80; i++) { g.input(1, { axis: i < 10 ? 1 : 0, jump: false }); g.step(1 / 60); top = Math.min(top, eater.y + 44); }
+  assert.ok(top > high.y, `单人弹不上云台：${top}`);
+  place(eater, spring.x - 60, 456); place(mate, spring.x - 40, 456); settle(g);
+  eater.facing = 1; press(1); assert.equal(eater.eating, 2);
+  let spat = false;
+  for (let i = 0; i < 240 && !(spat && mate.grounded); i++) {
+    if (!spat && eater.vy > -40 && eater.y < 300) { press(1); spat = true; continue; }
+    g.input(1, { axis: spat || eater.x > spring.x ? 0 : 1, jump: false }); g.input(2, { axis: 0, jump: false }); g.step(1 / 60);
+  }
+  assert.ok(spat, '弹到高处吐出去'); assert.equal(mate.deaths, 0);
+  assert.equal(mate.y + 44, high.y, `落在云台上：${JSON.stringify(mate)}`);
+  for (let i = 0; i < 120 && !g.active.has(1); i++) { g.input(2, { axis: mate.x < level.devices[1].plate.x ? 1 : 0, jump: false }); g.step(1 / 60); }
+  assert.ok(g.active.has(1), '云台按钮放下吊桥');
+});
+
+test('叠罗汉第二关：踩着队友的头才能跳上空中移动平台', () => {
+  const g = coop('stack'), base = g.players.get(1), top = g.players.get(2);
+  g.phase = 'lobby'; assert.equal(g.start(modeLevels('stack')[1]), true);
+  const level = LEVELS[g.level], m = level.movers[0];
+  const ride = (p, id) => {
+    for (let i = 0; i < 600; i++) {
+      const r = solids(level, g.active, g.time).find((b) => b.mx !== undefined);
+      g.input(id, { axis: r.x < m.x + 20 ? 1 : 0, jump: r.x < m.x + 20 && i % 40 < 30 }); g.input(id === 1 ? 2 : 1, { axis: 0, jump: false }); g.step(1 / 60);
+      if (p.grounded && Math.abs(p.y + 44 - r.y) < 1) return true;
+    }
+    return false;
+  };
+  place(base, m.x - 80, 456); place(top, 100, 456); settle(g);
+  assert.equal(ride(base, 1), false, '一个人跳不上去');
+  place(base, m.x - 80, 456); place(top, m.x - 80, 380); settle(g);
+  assert.equal(top.grounded, true);
+  assert.equal(ride(top, 2), true, '从队友头上跳上去');
+  const plate = level.devices[1].plate;
+  for (let i = 0; i < 600 && !g.active.has(1); i++) { g.input(2, { axis: top.x > plate.x + 20 ? 0 : top.x > m.x + m.dx - 30 ? 1 : 0, jump: false }); g.input(1, { axis: 0, jump: false }); g.step(1 / 60); }
+  assert.equal(top.deaths, 0); assert.ok(g.active.has(1), '坐到对岸按开吊桥');
 });

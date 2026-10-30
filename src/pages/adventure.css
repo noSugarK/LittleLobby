@@ -186,8 +186,8 @@
 /* ---------- 大厅：右下角一张小卡片（玩法 / 二维码 / 出发），不挡画面中间 ---------- */
 .adv-dock { width: min(380px, 32vw); border-color: var(--adv-edge); background: var(--adv-cream); color: var(--adv-ink); box-shadow: 0 12px 32px #5a463a26; }
 .adv-dock[hidden] { display: none; }
-.adv-modes { display: flex; padding: 3px; border-radius: 999px; background: #f2e9da; }
-.adv-play .adv-mode { flex: 1; min-width: 0; padding: 7px 4px; border: 0; border-radius: 999px; background: none; color: var(--adv-ink); font-size: 14px; font-weight: 650; white-space: nowrap; }
+.adv-modes { display: flex; flex-wrap: wrap; padding: 3px; border-radius: 18px; background: #f2e9da; }
+.adv-play .adv-mode { flex: 1 0 auto; padding: 7px 4px; border: 0; border-radius: 999px; background: none; color: var(--adv-ink); font-size: 14px; font-weight: 650; white-space: nowrap; }
 .adv-play .adv-mode[aria-checked='true'] { background: var(--adv-green); color: #fff; }
 .adv-play .adv-mode:disabled { opacity: .4; }
 .adv-invite { display: flex; align-items: center; gap: 14px; }

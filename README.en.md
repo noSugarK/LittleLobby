@@ -74,8 +74,9 @@ Pass, shoot and play a match with friends. Up to 4v4, with computer teammates wh
 Pick a buddy and hop through levels together. You can also explore on your own.
 
 - Ten characters: Yier · Bubu · Xiaobai · Jinmao · Nailong · Naiwa · Niulai · Lulu · Baobao · Doudou, all in the **Characters** gallery. The apps ship with the first four and download the rest from the gallery
-- Three classic stages: Berry Stroll → Cloud Candy Bridge → Starlight Garden
-- Co-op modes: **Rope** (everyone on one rope) · **Gobble** (swallow a teammate and spit them across a gap) · **Stack** (climb tall walls on each other's heads)
+- Four classic stages: Berry Stroll → Cloud Candy Bridge → Starlight Garden → Bouncy Jelly Town (springs, moving clouds and a big jelly boss)
+- Co-op modes: **Rope** (everyone on one rope) · **Gobble** (swallow a teammate and spit them across a gap) · **Stack** (climb tall walls on each other's heads), two stages each
+- Versus mode: **Race** (first one into the cottage on the classic stages wins)
 
 </td>
 </tr>

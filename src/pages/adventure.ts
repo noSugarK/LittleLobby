@@ -1,5 +1,5 @@
 import './adventure.css';
-import { AdventureGame, LEVELS, MAP_THEMES, MODES, modeInfo, modeLevels, padInput, validMode, type AdventureInput, type AdventureView, type ModeId } from '../game/adventure';
+import { AdventureGame, LEVELS, MAP_THEMES, MODES, goalOpen, modeInfo, modeLevels, padInput, validMode, type AdventureInput, type AdventureView, type ModeId } from '../game/adventure';
 import { AdventureRenderer, drawAvatar, loadCharacterSprites } from '../game/adventure-render';
 import { CHARACTERS, DEFAULT_SKIN, characterMatches, characterOf, legacySkin, validSkin, type SkinId } from '../game/characters';
 import { AdventureHost } from '../net/adventure-host';
@@ -26,6 +26,7 @@ const HINTS: Record<ModeId, string> = {
   rope: t('adv.hint.rope'),
   eat: t('adv.hint.eat'),
   stack: t('adv.hint.stack'),
+  race: t('adv.hint.race'),
 };
 const storedSkin = () => { const value = legacySkin(store.get('adventure.skin')); return validSkin(value) ? value : DEFAULT_SKIN; };
 const logo = () => `<span class="adv-logo-flower" aria-hidden="true">✿</span><span>${gameName('adventure')}<small>little picnic club</small></span>`;
@@ -303,13 +304,16 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     const modeLine = app.querySelector('.adv-mode-line');
     if (modeLine) modeLine.textContent = t('adv.modeLine', { name: modeInfo(state.mode).name, desc: modeInfo(state.mode).desc });
     pad.slot(BTN_A, state.mode !== 'eat');
-    $('.adv-progress').textContent = state.paused ? t('adv.progress.paused') : state.phase === 'lobby' ? t(mode.host ? 'adv.progress.hostLobby' : 'adv.progress.lobby') : me && me.eatenBy >= 0 ? t('adv.progress.eaten', { name: nameOf(me.eatenBy) }) : me?.reached ? t('adv.progress.reached') : state.stars.length === 3 ? t('adv.progress.open') : t('adv.progress.stars');
+    $('.adv-progress').textContent = state.paused ? t('adv.progress.paused') : state.phase === 'lobby' ? t(mode.host ? 'adv.progress.hostLobby' : 'adv.progress.lobby') : me && me.eatenBy >= 0 ? t('adv.progress.eaten', { name: nameOf(me.eatenBy) }) : me?.reached ? t('adv.progress.reached') : state.mode === 'race' ? t('adv.progress.race') : goalOpen(level, state.mode, state.stars.length, state.defeated) ? t('adv.progress.open') : state.stars.length === 3 ? t('adv.progress.boss') : t('adv.progress.stars');
     $('.adv-overlay').hidden = !won;
     if (won) {
-      const coop = modeInfo(state.mode).coop;
-      $('.adv-overlay h2').textContent = state.phase === 'complete' ? (coop ? t('adv.over.modeDone', { mode: modeInfo(state.mode).name }) : t('adv.over.tripDone')) : t('adv.over.stage');
-      $('.adv-overlay p').textContent = state.phase === 'complete' ? t(coop ? 'adv.over.coop' : 'adv.over.trip') : t(mode.host ? 'adv.over.rest' : 'adv.over.wait');
-      $('.adv-results').innerHTML = state.players.filter((p) => p.online).map((p) => `<span>${esc(p.name)} <b>${t('adv.over.treats', { n: p.coins.length })}</b></span>`).join('');
+      const coop = modeInfo(state.mode).coop, race = state.mode === 'race', finish = state.finish ?? [];
+      $('.adv-overlay h2').textContent = race && finish.length ? t('adv.over.raceWin', { name: nameOf(finish[0]) }) : state.phase === 'complete' ? (coop ? t('adv.over.modeDone', { mode: modeInfo(state.mode).name }) : t('adv.over.tripDone')) : t('adv.over.stage');
+      $('.adv-overlay p').textContent = state.phase === 'complete' ? t(race ? 'adv.over.raceDone' : coop ? 'adv.over.coop' : 'adv.over.trip') : t(mode.host ? 'adv.over.rest' : 'adv.over.wait');
+      // 竞速按到达先后排名，其他玩法按加入顺序
+      const rank = (id: number) => finish.includes(id) ? finish.indexOf(id) : finish.length;
+      const shownPlayers = state.players.filter((p) => p.online).sort((a, b) => race ? rank(a.id) - rank(b.id) : 0);
+      $('.adv-results').innerHTML = shownPlayers.map((p) => `<span>${race && finish.includes(p.id) ? `${['🥇', '🥈', '🥉'][rank(p.id)] ?? `${rank(p.id) + 1}.`} ` : ''}${esc(p.name)} <b>${t('adv.over.treats', { n: p.coins.length })}</b></span>`).join('');
       $('.adv-next').hidden = !mode.host;
       $('.adv-next').textContent = t(state.phase === 'complete' ? 'adv.over.again' : 'adv.next');
     }

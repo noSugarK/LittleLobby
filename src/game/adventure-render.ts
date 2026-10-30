@@ -1,5 +1,5 @@
 import { drawBuddyImage, type BuddyAction } from './adventure-sprites';
-import { MAP_THEMES, LEVELS, ROPE, enemyX, type AdventureView, type Rect } from './adventure';
+import { MAP_THEMES, LEVELS, ROPE, SPRING, eatenTreats, enemySize, enemyX, enemyY, goalOpen, moverRect, type AdventureView, type Rect } from './adventure';
 import { t } from '../i18n';
 
 const INK = '#70594f';
@@ -98,7 +98,22 @@ export class AdventureRenderer {
       }
     }
     this.devices(s, theme.accent, now);
-    level.coins.forEach((item, i) => { if (!me?.coins.includes(i)) drawTreat(ctx, item.x, item.y + Math.sin(now / 380 + i) * 3, theme.treat, .8); });
+    // 弹簧垫：红色软垫压在弹簧上；移动平台：一朵软软的云
+    for (const sp of level.springs ?? []) {
+      const y = sp.y - SPRING.h;
+      ctx.strokeStyle = '#b08a5e'; ctx.beginPath();
+      for (let i = 0; i <= 6; i++) ctx.lineTo(sp.x + 12 + (i % 2) * 32, y + 6 + i * 1.3);
+      ctx.stroke(); ctx.strokeStyle = INK;
+      round(ctx, sp.x, y - 2, SPRING.w, 9, 5, '#f08c94', INK);
+    }
+    for (const m of level.movers ?? []) {
+      const r = moverRect(m, s.time);
+      round(ctx, r.x, r.y, r.w, r.h, 10, '#ffffff', '#c9d6e0');
+      for (let x = r.x + 16; x < r.x + r.w - 8; x += 26) oval(ctx, x, r.y + 2, 14, 9, '#ffffff');
+      oval(ctx, r.x + r.w / 2 - 8, r.y + 10, 1.5, 2, INK); oval(ctx, r.x + r.w / 2 + 8, r.y + 10, 1.5, 2, INK);
+    }
+    const eaten = eatenTreats(s.players);
+    level.coins.forEach((item, i) => { if (!eaten.has(i)) drawTreat(ctx, item.x, item.y + Math.sin(now / 380 + i) * 3, theme.treat, .8); });
     level.stars.forEach((item, i) => {
       if (s.stars.includes(i)) return;
       oval(ctx, item.x, item.y + 3, 24, 24, '#fff4c480'); star(ctx, item.x, item.y + Math.sin(now / 400) * 4, 17, '#f6d47a');
@@ -112,18 +127,28 @@ export class AdventureRenderer {
     });
     level.enemies.forEach((e, i) => {
       if (s.defeated.includes(i)) return;
-      const x = enemyX(level, i, s.time);
-      oval(ctx, x - 10, e.y - 3, 10, 4, '#c1a5ac'); oval(ctx, x + 10, e.y - 3, 10, 4, '#c1a5ac');
-      round(ctx, x - 22, e.y - 30, 44, 27, 14, theme.accent, INK);
-      oval(ctx, x - 7, e.y - 18, 2, 2, INK); oval(ctx, x + 7, e.y - 18, 2, 2, INK); smile(ctx, x, e.y - 14);
-      oval(ctx, x - 14, e.y - 12, 4, 2, '#ffffff70'); oval(ctx, x + 14, e.y - 12, 4, 2, '#ffffff70');
+      const x = enemyX(level, i, s.time), y = enemyY(level, i, s.time), k = enemySize(e), hp = e.hp ?? 1;
+      if (y < e.y) oval(ctx, x, e.y - 2, 16, 3, '#70594f1c');
+      ctx.save(); ctx.translate(x, y); ctx.scale(k, k);
+      oval(ctx, -10, -3, 10, 4, '#c1a5ac'); oval(ctx, 10, -3, 10, 4, '#c1a5ac');
+      round(ctx, -22, -30, 44, 27, 14, hp > 1 ? '#c7a6dd' : theme.accent, INK);
+      oval(ctx, -7, -18, 2, 2, INK); oval(ctx, 7, -18, 2, 2, INK); smile(ctx, 0, -14);
+      oval(ctx, -14, -12, 4, 2, '#ffffff70'); oval(ctx, 14, -12, 4, 2, '#ffffff70');
+      // Boss 戴一顶小皇冠
+      if (hp > 1) { ctx.beginPath(); ctx.moveTo(-10, -29); ctx.lineTo(-10, -39); ctx.lineTo(-4, -33); ctx.lineTo(0, -41); ctx.lineTo(4, -33); ctx.lineTo(10, -39); ctx.lineTo(10, -29); ctx.closePath(); ctx.fillStyle = '#f6d47a'; ctx.fill(); ctx.stroke(); }
+      ctx.restore();
+      if (hp > 1) for (let h = 0; h < hp; h++) {
+        ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = h < hp - (s.hits?.[i] ?? 0) ? '#e4686c' : '#d8c8bc';
+        ctx.fillText('♥', x + (h - (hp - 1) / 2) * 16, y - 30 * k - 24);
+      }
     });
-    const gx = level.goal;
+    const gx = level.goal, open = goalOpen(level, s.mode, s.stars.length, s.defeated);
     round(ctx, gx - 25, 377, 140, 123, 16, '#fff5e6', '#bda28c');
     ctx.beginPath(); ctx.moveTo(gx - 40, 382); ctx.quadraticCurveTo(gx + 45, 285, gx + 130, 382); ctx.closePath(); ctx.fillStyle = theme.accent; ctx.fill(); ctx.strokeStyle = INK; ctx.stroke();
-    round(ctx, gx + 24, 424, 43, 76, 20, s.stars.length === 3 ? '#a8cdb0' : '#dfc9b4', INK);
+    round(ctx, gx + 24, 424, 43, 76, 20, open ? '#a8cdb0' : '#dfc9b4', INK);
     oval(ctx, gx + 56, 466, 3, 3, '#fff6d6'); round(ctx, gx - 4, 410, 19, 23, 5, '#d7eeeb', '#bda28c'); round(ctx, gx + 78, 410, 19, 23, 5, '#d7eeeb', '#bda28c');
-    ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.font = 'bold 14px sans-serif'; ctx.fillText(s.stars.length === 3 ? t('adv.goal.open') : t('adv.goal.need', { n: 3 - s.stars.length }), gx + 45, 350);
+    ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(open ? t('adv.goal.open') : s.stars.length < 3 ? t('adv.goal.need', { n: 3 - s.stars.length }) : t('adv.goal.boss'), gx + 45, 350);
     if (s.mode === 'rope') this.rope(s);
     for (const p of s.players) {
       // 被吃掉的队友藏在肚子里，不单独画
@@ -182,6 +207,7 @@ const TIPS = {
   rope: [t('adv.intro.rope'), t('adv.intro.rope.2')],
   eat: [t('adv.intro.eat'), t('adv.intro.eat.2')],
   stack: [t('adv.intro.stack'), t('adv.intro.stack.2')],
+  race: [t('adv.intro.race'), t('adv.intro.race.2')],
 } as const;
 function plank(ctx: CanvasRenderingContext2D, r: Rect) {
   round(ctx, r.x, r.y, r.w, r.h, 6, '#e8c48f', '#b08a5e');
