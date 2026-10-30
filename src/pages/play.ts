@@ -68,12 +68,14 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   const autoJoin = joined === '1' || joined === 'w';
   const opts = isHost ? roomOpts() : null;
   const local = opts?.mode === 'lan' ? lanSession() : null;
+  // 没检测到局域网地址时二维码只会指向本机，手机扫了也打不开，不如不显示
+  const noAddress = !!local && !local.addresses.length;
   // 客户端密码：二维码自带 > 本标签页上次输入的
   const urlPin = mode.kind === 'client' ? mode.pin : '';
   const pinKey = `pin.${room}`;
   const askPin = mode.kind === 'client' && !urlPin && (mode.lock || !!store.get(pinKey, false));
   let qrUrl = '';
-  if (opts) QRCode.toDataURL(joinUrl({ room, pin: opts.pin }), { width: 220, margin: 1 }).then((u) => {
+  if (opts && !noAddress) QRCode.toDataURL(joinUrl({ room, pin: opts.pin }), { width: 220, margin: 1 }).then((u) => {
       qrUrl = u;
       renderPanel();
     });
@@ -89,7 +91,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       </div>
     </div>
     <img class="corner-logo" src="${brand('logo-white-sm.png')}" alt="">
-    ${isHost ? `<div class="game-dock football-dock phone-dock" hidden><div class="dock-invite"><img class="dock-qr" alt=""><div><span>${t('screen.scanJoin')}</span><b class="room-code">${esc(room)}</b></div></div><button class="primary dock-start"></button></div>` : ''}
+    ${isHost ? `<div class="game-dock football-dock phone-dock" hidden><div class="dock-invite"><img class="dock-qr" alt="" ${noAddress ? 'hidden' : ''}><div><span ${noAddress ? 'hidden' : ''}>${t('screen.scanJoin')}</span><b class="room-code">${esc(room)}</b></div></div><button class="primary dock-start"></button></div>` : ''}
     <div class="pad"></div>
     <div class="panel card drawer" hidden></div>
     ${joinCardHtml({
@@ -433,8 +435,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     if (isHost && showQr) {
       html += `<div class="host-qr">${qrUrl ? `<img src="${qrUrl}" alt="">` : ''}<div>
         <div class="room-code sm">${esc(room)}</div>${pinLineHtml(opts?.pin)}
-        <div class="muted small">${t('play.scanToJoin')}${opts?.listed ? t('play.listed') : ''}</div>
-        <button class="ghost save-qr">${icon.download}${t('qr.save')}</button></div></div>${local ? lanInfoHtml() : ''}`;
+        ${noAddress ? '' : `<div class="muted small">${t('play.scanToJoin')}${opts?.listed ? t('play.listed') : ''}</div>
+        <button class="ghost save-qr">${icon.download}${t('qr.save')}</button>`}</div></div>${local ? lanInfoHtml() : ''}`;
     }
     if (ended && r.end && !resultClosed) {
       html += `<div class="result-strip">${resultLineHtml(r.end)}<button class="ghost result-x" aria-label="${t('screen.closePanel')}">×</button></div>`;
