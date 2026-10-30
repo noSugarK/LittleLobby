@@ -223,3 +223,15 @@
 .adv-row .switch:checked { background: var(--adv-green); }
 .adv-row .switch:focus-visible { outline: 2px solid var(--adv-green); outline-offset: 2px; }
 .adv-panel .pmain { padding-right: 4px; }
+/* ---------- 游戏里的角色选择：收起时一行小头像 + 名字，展开是一格格小脸，名字写在下面 ---------- */
+.adv-play .adv-picker > summary { gap: 8px; min-height: 0; padding: 3px 10px 3px 3px; border-radius: 10px; }
+.adv-play .adv-picked-avatar { width: 28px; height: 28px; }
+.adv-play .adv-picker > summary small { display: none; }
+.adv-play .adv-row-picker > span { line-height: 36px; }
+.adv-play .adv-options { grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 4px; max-height: none; }
+.adv-play .adv-options > .adv-search, .adv-play .adv-search-empty, .adv-face-name { grid-column: 1 / -1; }
+.adv-play .adv-options .adv-character { justify-content: center; aspect-ratio: 1; padding: 1px; border-radius: 50%; }
+.adv-play .adv-options .adv-character canvas { width: 100%; height: 100%; max-width: 36px; max-height: 36px; }
+.adv-play .adv-options .adv-character b, .adv-play .adv-options .adv-character small { display: none; }
+.adv-face-name { margin: 2px 0 0; text-align: center; font-size: 12px; }
+.adv-face-name small { color: var(--muted); }

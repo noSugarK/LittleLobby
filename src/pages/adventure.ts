@@ -39,6 +39,15 @@ async function avatars(root: HTMLElement, skin: SkinId, signal?: AbortSignal) {
   root.querySelectorAll<HTMLElement>('.adv-options').forEach((options) => {
     // 游戏里不放「去角色图鉴」：跳页会关掉房间，应用的 WebView 里也开不了新标签页
     options.innerHTML = `<label class="adv-search">${icon.search}<input type="search" placeholder="${t('chars.pick')}" aria-label="${t('chars.search')}" autocomplete="off"></label>${CHARACTERS.map((c) => `<button class="adv-character" data-skin="${c.id}" aria-pressed="false" aria-label="${t('adv.pickOne', { name: esc(c.name), note: esc(c.subtitle) })}"><canvas aria-hidden="true"></canvas><b>${esc(c.name)}</b><small>${esc(c.subtitle.split(' · ')[1] || c.subtitle)}</small></button>`).join('')}<p class="adv-search-empty" hidden>${t('chars.empty')}</p>${options.closest('.adv-play') ? '' : `<a class="adv-more" href="#/characters">${t(isLanPage() ? 'chars.pickAll' : 'chars.pickMore')} →</a>`}`;
+    // 游戏里是一格格小脸：手指 / 鼠标停在哪张脸上，下面就写谁；离开时回到已选的那位
+    if (options.closest('.adv-play')) {
+      const readout = document.createElement('p'); readout.className = 'adv-face-name'; options.append(readout);
+      const say = (id?: string) => { const c = characterOf(id ?? options.querySelector<HTMLElement>('[aria-pressed="true"]')?.dataset.skin ?? skin); readout.innerHTML = `${esc(c.name)} <small>${esc(c.subtitle)}</small>`; };
+      options.addEventListener('pointerover', (e) => say((e.target as HTMLElement).closest<HTMLElement>('[data-skin]')?.dataset.skin));
+      options.addEventListener('focusin', (e) => say((e.target as HTMLElement).closest<HTMLElement>('[data-skin]')?.dataset.skin));
+      options.addEventListener('pointerleave', () => say()); options.addEventListener('click', () => say());
+      say();
+    }
     const input = options.querySelector('input')!;
     input.oninput = () => showMatching(options.querySelectorAll<HTMLElement>('[data-skin]'), (button) => characterMatches(characterOf(button.dataset.skin!), input.value), options.querySelector<HTMLElement>('.adv-search-empty'));
   });
