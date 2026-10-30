@@ -113,6 +113,8 @@
 }
 /* 浅色地图上半透明白色摇杆几乎看不见，改用暖棕描边 */
 .adv-play .joy-base { background: rgba(110, 89, 77, 0.1); border-color: rgba(110, 89, 77, 0.4); }
+/* 没碰摇杆时更淡一点，别挡住开场站在左下角的小伙伴 */
+.adv-play .joy-base:not(.active) { opacity: .3; }
 .adv-play .joy-knob { background: rgba(110, 89, 77, 0.4); }
 /* ---------- 角色下拉：当前角色头像 + 名字，展开后每项带头像预览 ---------- */
 .adv-picker { position: relative; width: 100%; max-width: 460px; justify-self: end; }
@@ -175,7 +177,7 @@
 /* 展开的角色列表把这一行撑高时，「角色」二字仍和收起的下拉框（高 58px）对齐 */
 .adv-row-picker { align-items: flex-start; }
 .adv-row-picker > span { line-height: 58px; }
-.adv-row .lang-select { min-width: 120px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--fg); font: inherit; font-size: 14px; }
+.adv-row .lang-select, .adv-row .adv-stage-select { min-width: 120px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--fg); font: inherit; font-size: 14px; }
 .adv-actions { display: grid; gap: 8px; margin-top: 4px; }
 .adv-actions .ghost { width: 100%; padding: 10px; font-size: 15px; }
 .adv-play .adv-actions .adv-leave { padding: 8px; border: 0; background: none; color: #d0473f; font-size: 15px; font-weight: 650; }
@@ -221,14 +223,3 @@
 .adv-row .switch:checked { background: var(--adv-green); }
 .adv-row .switch:focus-visible { outline: 2px solid var(--adv-green); outline-offset: 2px; }
 .adv-panel .pmain { padding-right: 4px; }
-.adv-stages { display: grid; gap: 8px; padding: 10px 0 12px; border-bottom: 1px solid var(--line); }
-.adv-stages > span { color: var(--muted); font-size: 15px; text-align: left; }
-.adv-stages > div { display: grid; gap: 6px; }
-.adv-stages button { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
-.adv-stages button small { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.adv-stages .is-done { background: #eef6ef; border-color: #a8cdb0; }
-.adv-stages .is-done small { color: #b88a1e; }
-.adv-stages .is-next { border: 1.5px solid #e4686c; }
-.adv-stages .is-next small { color: #d4575c; }
-.adv-stages button:disabled { background: #f4ede6; color: #b3a49a; cursor: default; }
-.adv-stages button[aria-current='true'] { border-left: 4px solid var(--adv-green); }

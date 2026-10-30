@@ -326,11 +326,16 @@ export class AdventureGame {
   }
   private respawn(p: Adventurer, hurt = true) {
     if (p.eating >= 0) this.release(p.id);
+    if (hurt) {
+      p.deaths++;
+      // 爱心用完：补满，但退回上一面小旗（串一串的存档全队共享，不退）
+      if (p.hearts > 1) p.hearts--;
+      else { p.hearts = 3; if (this.mode !== 'rope') p.checkpoint = Math.max(-1, p.checkpoint - 1); }
+    }
     const cp = LEVELS[this.level].checkpoints[p.checkpoint];
     // 竞速大家站在同一条起跑线上，其他玩法错开一点免得叠在一起
     p.x = cp?.x ?? (this.mode === 'race' ? 120 : 90 + (p.id % 4) * 42);
     p.y = (cp?.y ?? 500) - H; p.vx = p.vy = 0; p.grounded = false;
-    if (hurt) { p.deaths++; p.hearts = p.hearts > 1 ? p.hearts - 1 : 3; }
     p.invulnerable = hurt ? 1.5 : 0;
   }
   /** 串一串：绳子拉住超出长度的相邻两人；站在地上（或已到终点）的人更“重”，空中的人被拉向他。返回被绳子吊着的人。 */

@@ -62,6 +62,16 @@ test('掉坑在检查点复活，不丢星星或点心；断线停止输入，�
   assert.deepEqual(p.coins, coins); assert.notEqual(p.x, 10000);
 });
 
+test('爱心用完会补满，但退回上一面小旗；串一串不退', () => {
+  const g = game(), p = g.players.get(1);
+  p.checkpoint = 2; p.hearts = 1; p.y = 720; g.step(1 / 60);
+  assert.equal(p.hearts, 3); assert.equal(p.checkpoint, 1); assert.equal(p.x, LEVELS[0].checkpoints[1].x);
+  const r = coop('rope'), q = r.players.get(1);
+  q.checkpoint = 0; q.hearts = 1; r.players.get(2).checkpoint = 0;
+  place(q, 560, 720); place(r.players.get(2), 600, 720); settle(r, 90);
+  assert.equal(q.checkpoint, 0, '串一串的存档全队共享，不退');
+});
+
 test('未集齐星星不能过关；在线伙伴都到达才完成，离线者不阻塞', () => {
   const g = game(); g.add(2, '朋友'); const level = LEVELS[0];
   for (const p of g.players.values()) { p.x = level.goal; p.y = 456; }

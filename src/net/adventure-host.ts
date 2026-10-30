@@ -10,6 +10,8 @@ export class AdventureHost {
   readonly net: HostTransport | null;
   localId: number | undefined;
   localInput: AdventureInput = { axis: 0, jump: false, act: false };
+  /** 单人打开菜单时暂停，和切到后台一样（不然最快用时会把看菜单的时间也算进去）。 */
+  held = false;
   onView: (view: AdventureView) => void = () => {};
   onStatus: (ok: boolean) => void = () => {};
   private tokens = new Map<string, number>();
@@ -111,7 +113,7 @@ export class AdventureHost {
       const now = performance.now(); accumulator += Math.min(100, now - last) / 1000; last = now;
       while (accumulator >= 1 / 60) {
         if (this.localId !== undefined) this.game.input(this.localId, this.localInput);
-        this.game.step(1 / 60, document.visibilityState !== 'hidden'); accumulator -= 1 / 60;
+        this.game.step(1 / 60, document.visibilityState !== 'hidden' && !this.held); accumulator -= 1 / 60;
         if (++frames % 3 === 0) this.publish();
       }
     }, 8);

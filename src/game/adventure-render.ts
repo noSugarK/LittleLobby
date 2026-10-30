@@ -102,8 +102,8 @@ export class AdventureRenderer {
     this.devices(s, theme.accent, now);
     // 弹簧垫：红色软垫压在弹簧上；移动平台：一朵软软的云
     for (const sp of level.springs ?? []) {
-      // 有人刚从上面弹起：弹簧压扁一下
-      const pressed = s.players.some((p) => p.vy < -500 && p.x + 34 > sp.x && p.x < sp.x + SPRING.w && p.y + 44 > sp.y - SPRING.h - 60);
+      // 有人刚从上面弹起（比普通起跳快得多）：弹簧压扁一下
+      const pressed = s.players.some((p) => p.vy < -800 && p.x + 34 > sp.x && p.x < sp.x + SPRING.w && p.y + 44 > sp.y - SPRING.h - 60);
       const y = sp.y - SPRING.h * (pressed ? .45 : 1), coil = sp.y - y - 6;
       ctx.strokeStyle = '#b08a5e'; ctx.lineWidth = 3; ctx.beginPath();
       for (let i = 0; i <= 6; i++) ctx.lineTo(sp.x + 16 + (i % 2) * 24, sp.y - i * coil / 6);

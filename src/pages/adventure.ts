@@ -1,5 +1,5 @@
 import './adventure.css';
-import { AdventureGame, LEVELS, MAP_THEMES, MODES, goalOpen, modeInfo, modeLevels, padInput, validMode, type AdventureInput, type AdventureView, type ModeId } from '../game/adventure';
+import { AdventureGame, LEVELS, MAP_THEMES, MODES, RACE_COUNTDOWN, goalOpen, modeInfo, modeLevels, padInput, validMode, type AdventureInput, type AdventureView, type ModeId } from '../game/adventure';
 import { AdventureRenderer, drawAvatar, loadCharacterSprites } from '../game/adventure-render';
 import { CHARACTERS, DEFAULT_SKIN, characterMatches, characterOf, legacySkin, validSkin, type SkinId } from '../game/characters';
 import { AdventureHost } from '../net/adventure-host';
@@ -132,9 +132,9 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       <p class="adv-progress"></p>
       <p class="muted small adv-hint">${HINTS.classic}</p>
       <div class="adv-roster"></div>
-      ${mode.solo ? `<div class="adv-stages"><span>${t('adv.stages')}</span><div></div></div>` : ''}
       <div class="adv-settings">
         ${mode.screen ? '' : `<div class="adv-row adv-row-picker"><span>${t('adv.menu.character')}</span>${choices()}</div>`}
+        ${mode.host ? `<label class="adv-row"><span>${t('adv.stages')}</span><select class="adv-stage-select"></select></label>` : ''}
         <label class="adv-row"><span>${t('adv.menu.sound')}</span><input type="checkbox" class="switch adv-audio" checked></label>
         <label class="adv-row"><span>${t('lang.label')}</span>${langSelect()}</label>
       </div>
@@ -188,7 +188,8 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   const renderer = new AdventureRenderer($<HTMLCanvasElement>('.stage'));
   // 和足球同一套菱形键位：B 跳跃在右、A 吃 / 吐在下；X、Y 用不到，留淡淡的空位
   const pad = new Gamepad($('.pad'), { buttons: [{ bit: BTN_Y, key: 'Y', label: '', cls: 'y' }, { bit: BTN_X, key: 'X', label: '', cls: 'x' }, { bit: BTN_B, key: 'B', label: t('adv.pad.jump'), cls: 'b' }, { bit: BTN_A, key: 'A', label: t('adv.pad.eat'), cls: 'a' }] });
-  pad.slot(BTN_Y, true); pad.slot(BTN_X, true); pad.slot(BTN_A, true);
+  // 冒险从来不用 X / Y：直接藏起来，别挡住右边的关卡；A 只在吃吐吐里用，平时留空位
+  pad.show(BTN_Y, false); pad.show(BTN_X, false); pad.slot(BTN_A, true);
   bindControlsPane(panel, (settings) => { pad.apply(settings); pad.slot(BTN_A, state?.mode !== 'eat'); });
   // 菜单抽屉左缘竖排「房间 / 按键设置」两个分页；按键分页时抽屉缩成窄条，两侧手柄露出来
   panel.querySelectorAll<HTMLButtonElement>('.prail [data-tab]').forEach((button) => {
@@ -221,7 +222,9 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   function updateInput() {
     const enabled = (state?.phase === 'playing' || state?.phase === 'lobby') && !state.paused && (host ? host.localId !== undefined : !!client?.linked);
     const next = padInput(pad.input.jx, pad.input.jy, !!(pad.input.btn & BTN_B), enabled, !!(pad.input.btn & BTN_A));
-    if (next.jump && !input.jump && sound) { unlockAudio(); sfxAdventure('jump'); }
+    // 竞速倒数时按跳不会动，也别响
+    const countdown = state?.mode === 'race' && state.phase === 'playing' && state.time < RACE_COUNTDOWN;
+    if (next.jump && !input.jump && sound && !countdown) { unlockAudio(); sfxAdventure('jump'); }
     const changed = next.axis !== input.axis || next.jump !== input.jump || next.act !== input.act;
     input = next;
     if (changed) send();
@@ -229,7 +232,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
   pad.onButtons = updateInput;
   pad.onPress = (bit) => { if (bit === BTN_B) vibrate(8); };
 
-  const renderPanel = () => { panel.hidden = !panelOpen || !joinEl.hidden; if (panel.hidden) play.classList.remove('ctl-preview'); else play.classList.toggle('ctl-preview', panel.classList.contains('is-narrow')); };
+  const renderPanel = () => { panel.hidden = !panelOpen || !joinEl.hidden; if (mode.solo && host) host.held = !panel.hidden; if (panel.hidden) play.classList.remove('ctl-preview'); else play.classList.toggle('ctl-preview', panel.classList.contains('is-narrow')); };
   const menuBtn = app.querySelector<HTMLButtonElement>('.menu');
   if (menuBtn) menuBtn.onclick = () => { panelOpen = !panelOpen; renderPanel(); };
   const closePanel = () => { panelOpen = false; renderPanel(); };
@@ -280,7 +283,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     if (oldMe && me) {
       // 大厅里只是热身，出发时星星、存档都会清零，不弹进度提示
       const warmUp = state.phase === 'lobby';
-      if (me.deaths > oldMe.deaths) { if (!warmUp) toast(t('adv.toast.respawn')); if (sound) sfxAdventure('hurt'); vibrate(25); }
+      if (me.deaths > oldMe.deaths) { if (!warmUp) toast(t(me.checkpoint < oldMe.checkpoint ? 'adv.toast.heartsOut' : 'adv.toast.respawn')); if (sound) sfxAdventure('hurt'); vibrate(25); }
       else if (me.checkpoint > oldMe.checkpoint && !warmUp) toast(t('adv.toast.checkpoint'));
       else if (me.coins.length > oldMe.coins.length && sound) sfxAdventure('collect');
       if (me.vy < -900 && oldMe.vy >= -900 && sound) sfxAdventure('bounce');
@@ -309,7 +312,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     const modeLine = app.querySelector('.adv-mode-line');
     if (modeLine) modeLine.textContent = t('adv.modeLine', { name: modeInfo(state.mode).name, desc: modeInfo(state.mode).desc });
     pad.slot(BTN_A, state.mode !== 'eat');
-    $('.adv-progress').textContent = state.paused ? t('adv.progress.paused') : state.phase === 'lobby' ? t(mode.host ? 'adv.progress.hostLobby' : 'adv.progress.lobby') : me && me.eatenBy >= 0 ? t('adv.progress.eaten', { name: nameOf(me.eatenBy) }) : me?.reached ? t('adv.progress.reached') : state.mode === 'race' ? t('adv.progress.race') : goalOpen(level, state.mode, state.stars.length, state.defeated) ? t('adv.progress.open') : state.stars.length === 3 ? t('adv.progress.boss') : t('adv.progress.stars');
+    $('.adv-progress').textContent = state.paused ? t(mode.solo ? 'adv.progress.soloPaused' : 'adv.progress.paused') : state.phase === 'lobby' ? t(mode.host ? 'adv.progress.hostLobby' : 'adv.progress.lobby') : me && me.eatenBy >= 0 ? t('adv.progress.eaten', { name: nameOf(me.eatenBy) }) : me?.reached ? t('adv.progress.reached') : state.mode === 'race' ? t('adv.progress.race') : goalOpen(level, state.mode, state.stars.length, state.defeated) ? t('adv.progress.open') : state.stars.length === 3 ? t('adv.progress.boss') : t('adv.progress.stars');
     $('.adv-overlay').hidden = !won;
     if (won) {
       const coop = modeInfo(state.mode).coop, race = state.mode === 'race', finish = state.finish ?? [];
@@ -345,7 +348,8 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     }
     $('.adv-lobby').hidden = !mode.host || !!mode.solo || lobby;
     const playing = !!me && (state.phase === 'playing' || state.phase === 'lobby') && !state.paused && (!!host || !!client?.linked);
-    $('.adv-paused').hidden = !state.paused || state.phase !== 'playing';
+    // 单人暂停只会是自己开了菜单或切走了，不用再弹“房主在后台”
+    $('.adv-paused').hidden = !state.paused || state.phase !== 'playing' || !!mode.solo;
     $('.pad').hidden = !playing;
     play.classList.toggle('watching', !me);
     if (!playing) pad.reset();
@@ -355,24 +359,34 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       if (mode.solo && won) { const best = soloBest(); if (!(best[state.level] <= state.time)) { best[state.level] = Math.round(state.time); store.set('adventure.solo', JSON.stringify(best)); } }
       lastPhase = state.phase; panelOpen = false; renderPanel();
     }
-    if (mode.solo && (state.phase !== stagesShown.phase || state.level !== stagesShown.level)) renderStages(state);
+    if (mode.host && (state.phase !== stagesShown.phase || state.level !== stagesShown.level || state.mode !== stagesShown.mode)) renderStages(state);
   }
-  /** 单人选关：过了的关显示最快用时，下一关高亮，再往后锁着。 */
+  /** 选关下拉框：单人按存档解锁（过了的关显示最快用时），房主在大厅里任选本玩法的一关作为起点。 */
   const soloBest = (): Record<number, number> => { try { return JSON.parse(store.get('adventure.solo') || '{}'); } catch { return {}; } };
-  const stagesShown = { phase: '', level: -1 };
+  const stagesShown = { phase: '', level: -1, mode: '' };
+  let picked: number | undefined;
   const clock = (sec: number) => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+  const stageSelect = app.querySelector<HTMLSelectElement>('.adv-stage-select');
   function renderStages(view: AdventureView) {
-    stagesShown.phase = view.phase; stagesShown.level = view.level;
-    const best = soloBest(), levels = modeLevels('classic'), next = levels.findIndex((li) => best[li] === undefined);
-    const list = $('.adv-stages > div');
-    list.innerHTML = levels.map((li, i) => {
-      const done = best[li] !== undefined, open = done || i === next;
-      const note = done ? `★★★ ${clock(best[li])}` : open ? t('adv.stages.next') : t('adv.stages.locked');
-      return `<button data-stage="${li}" class="${done ? 'is-done' : open ? 'is-next' : ''}"${open ? '' : ' disabled'}${view.level === li && view.phase === 'playing' ? ' aria-current="true"' : ''}><span>${String(i + 1).padStart(2, '0')} ${esc(LEVELS[li].name)}</span><small>${note}</small></button>`;
+    if (!stageSelect) return;
+    Object.assign(stagesShown, { phase: view.phase, level: view.level, mode: view.mode });
+    const levels = modeLevels(view.mode), best = soloBest(), next = levels.findIndex((li) => best[li] === undefined);
+    if (picked !== undefined && !levels.includes(picked)) picked = undefined;
+    const current = view.phase === 'lobby' ? picked ?? levels[0] : view.level;
+    stageSelect.innerHTML = levels.map((li, i) => {
+      const done = mode.solo && best[li] !== undefined, open = !mode.solo || done || i <= next || next < 0;
+      const note = view.level === li && view.phase === 'playing' ? t('adv.stages.playing') : done ? `★★★ ${clock(best[li])}` : !mode.solo ? '' : open ? t('adv.stages.next') : t('adv.stages.locked');
+      return `<option value="${li}"${open ? '' : ' disabled'}${li === current ? ' selected' : ''}>${String(i + 1).padStart(2, '0')} ${esc(LEVELS[li].name)}${note ? ` · ${note}` : ''}</option>`;
     }).join('');
-    list.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach((b) => { b.onclick = () => { unlockAudio(); pad.reset(); host?.toLobby(); host?.advance(Number(b.dataset.stage)); closePanel(); }; });
+    // 多人只能在大厅里定起点；单人随时换关
+    stageSelect.disabled = !mode.solo && view.phase !== 'lobby';
   }
-  const start = () => { unlockAudio(); void keepAwake(); pad.reset(); host?.advance(); };
+  if (stageSelect) stageSelect.onchange = () => {
+    const level = Number(stageSelect.value);
+    if (!mode.solo) { picked = level; return; }
+    unlockAudio(); pad.reset(); host?.toLobby(); host?.advance(level); closePanel();
+  };
+  const start = () => { unlockAudio(); void keepAwake(); pad.reset(); host?.advance(state?.phase === 'lobby' ? picked : undefined); };
   app.querySelector<HTMLButtonElement>('.adv-start')?.addEventListener('click', start); $('.adv-next').onclick = start;
   $('.adv-lobby').onclick = () => { pad.reset(); host?.toLobby(); closePanel(); };
   function draw() {
