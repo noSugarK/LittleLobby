@@ -81,7 +81,7 @@ export class AdventureHost {
       },
     };
     this.net = factory?.(room, cb) ?? null;
-    this.lobby = this.net?.signal ? new LobbyPublisher(this.net.signal, listed) : null;
+    this.lobby = this.net ? new LobbyPublisher(this.net, listed) : null;
     if (this.net?.signal) this.net.signal.onStatus = (ok) => {
       this.onStatus(ok);
       if (ok && !this.closed) this.publishInfo(true);

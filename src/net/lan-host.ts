@@ -2,11 +2,13 @@ import type { Hello, HostCallbacks } from './host';
 import type { HostTransport } from './transport';
 import type { RejectReason } from '../game/types';
 import type { LanSession } from './lan-session';
+import type { RoomInfo } from './lobby';
 
 export class LanHost implements HostTransport {
   private socket: WebSocket | null = null;
   private peers = new Set<string>();
   private closed = false;
+  private info = '';
 
   constructor(private session: LanSession, readonly cb: HostCallbacks) {}
 
@@ -16,7 +18,7 @@ export class LanHost implements HostTransport {
       this.socket = ws;
       ws.binaryType = 'arraybuffer';
       const timer = window.setTimeout(() => { ws.close(); reject(new Error('LAN host timeout')); }, 5000);
-      ws.onopen = () => { clearTimeout(timer); resolve(); };
+      ws.onopen = () => { clearTimeout(timer); if (this.info) this.send(this.info); resolve(); };
       ws.onerror = () => { clearTimeout(timer); reject(new Error('LAN server unavailable')); };
       ws.onclose = () => {
         clearTimeout(timer);
@@ -55,6 +57,11 @@ export class LanHost implements HostTransport {
     if (this.socket?.readyState !== WebSocket.OPEN) return;
     if (typeof data === 'string') this.socket.send(data);
     else this.socket.send(data as Uint8Array<ArrayBuffer>);
+  }
+  announce(info: RoomInfo) {
+    // 连上之前的最新一份留着，连上后补发
+    this.info = JSON.stringify({ info });
+    this.send(this.info);
   }
   sendJson(cid: string, data: object) { this.send(JSON.stringify({ cid: Number(cid), data })); }
   broadcastJson(data: object) {

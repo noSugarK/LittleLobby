@@ -2,6 +2,7 @@
 // 首页订阅 `<topicPrefix>/+/info` 列出所有公开房间。发布与读取的格式都在这里。
 import { normalizeCode } from '../ui/util';
 import { Signal, parseJson } from './signal';
+import type { HostTransport } from './transport';
 
 export interface LobbyInfo {
   host: string; // 无大屏模式下为房主昵称，大屏模式为空
@@ -19,29 +20,32 @@ const TOPIC = 'info';
 export const LOBBY_HEARTBEAT_MS = 30_000;
 export const LOBBY_STALE_MS = 90_000;
 
-/** 主机端：内容变化或心跳时发布，关闭/掉线时清除 */
+export type RoomInfo = Omit<LobbyInfo, 'ts'>;
+
+/** 主机端：内容变化或心跳时发布，关闭/掉线时清除。
+ *  在线房间发到公开大厅（勾了公开才发），局域网房间交给本机服务，回应其他应用的局域网搜索 */
 export class LobbyPublisher {
   private last = '';
 
   constructor(
-    private readonly signal: Signal,
+    private readonly net: Pick<HostTransport, 'signal' | 'announce'>,
     private readonly listed: boolean,
   ) {
     // 遗嘱必须在连接前设置：异常掉线时由 broker 清掉保留消息
-    if (listed) signal.willClearTopic = TOPIC;
+    if (listed && net.signal) net.signal.willClearTopic = TOPIC;
   }
 
-  publish(info: Omit<LobbyInfo, 'ts'>, force = false) {
-    if (!this.listed) return;
+  publish(info: RoomInfo, force = false) {
     const key = JSON.stringify(info);
     if (!force && key === this.last) return;
     this.last = key;
-    this.signal.pub(TOPIC, { ...info, ts: Date.now() }, true);
+    this.net.announce?.(info);
+    if (this.listed) this.net.signal?.pub(TOPIC, { ...info, ts: Date.now() }, true);
   }
 
   /** 空的保留消息 = 房间关闭；不公开的房间也清一次，同一房间码之前可能公开过 */
   clear() {
-    this.signal.pub(TOPIC, new Uint8Array(0), true);
+    this.net.signal?.pub(TOPIC, new Uint8Array(0), true);
   }
 }
 

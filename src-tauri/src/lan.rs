@@ -36,6 +36,31 @@ const DISCOVERY_QUERY: &[u8] = b"SCANKICK_DISCOVER_V1";
 pub struct LanRoom {
     room: String,
     base_url: String,
+    info: Option<RoomInfo>,
+}
+
+/// What the host page reports about its room, shown in other apps' LAN lobby.
+/// Older apps ignore the extra field, and rooms from older apps simply have none.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+struct RoomInfo {
+    #[serde(default)]
+    host: String,
+    n: u8,
+    max: u8,
+    #[serde(default)]
+    playing: bool,
+    #[serde(default)]
+    lock: bool,
+    #[serde(default)]
+    game: String,
+}
+impl RoomInfo {
+    /// Discovery replies must fit a small UDP datagram, so names are capped and games are known ids.
+    fn clean(mut self) -> Self {
+        self.host = self.host.chars().take(12).collect();
+        if self.game != "adventure" { self.game = "football".into(); }
+        self
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -43,6 +68,8 @@ struct Advertisement {
     service: String,
     room: String,
     port: u16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    info: Option<RoomInfo>,
 }
 
 async fn advertise(hub: Arc<Hub>, port: u16) {
@@ -55,9 +82,6 @@ async fn advertise(hub: Arc<Hub>, port: u16) {
 }
 
 async fn respond_to_discovery(socket: UdpSocket, hub: Arc<Hub>, port: u16) {
-    let response = serde_json::to_vec(&Advertisement {
-        service: "scankick-v1".into(), room: hub.room.clone(), port,
-    }).unwrap();
     let mut stop = hub.stop.subscribe();
     let mut buffer = [0; 256];
     loop {
@@ -66,6 +90,9 @@ async fn respond_to_discovery(socket: UdpSocket, hub: Arc<Hub>, port: u16) {
             incoming = socket.recv_from(&mut buffer) => {
                 let Ok((n, addr)) = incoming else { break; };
                 if &buffer[..n] == DISCOVERY_QUERY && hub.host.lock().await.is_some() {
+                    let response = serde_json::to_vec(&Advertisement {
+                        service: "scankick-v1".into(), room: hub.room.clone(), port, info: hub.info.lock().await.clone(),
+                    }).unwrap();
                     let _ = socket.send_to(&response, addr).await;
                 }
             }
@@ -101,7 +128,7 @@ async fn query_discovery(socket: UdpSocket, targets: Vec<SocketAddr>) -> Result<
         if info.service != "scankick-v1" || info.port == 0 || !(4..=8).contains(&info.room.len())
             || !info.room.bytes().all(|b| b.is_ascii_uppercase() || b.is_ascii_digit()) { continue; }
         let base_url = format!("http://{}:{}", addr.ip(), info.port);
-        rooms.insert(base_url.clone(), LanRoom { room: info.room, base_url });
+        rooms.insert(base_url.clone(), LanRoom { room: info.room, base_url, info: info.info.map(RoomInfo::clean) });
     }
     let mut rooms: Vec<_> = rooms.into_values().collect();
     rooms.sort_by(|a, b| a.base_url.cmp(&b.base_url));
@@ -141,6 +168,7 @@ struct Hub {
     characters: Option<std::path::PathBuf>,
     key: String,
     host: Mutex<Option<mpsc::Sender<Message>>>,
+    info: Mutex<Option<RoomInfo>>,
     peers: Mutex<HashMap<u32, Peer>>,
     next: AtomicU32,
     stop: watch::Sender<bool>,
@@ -219,6 +247,7 @@ async fn start_server(
         characters,
         key: key.clone(),
         host: Mutex::new(None),
+        info: Mutex::new(None),
         peers: Mutex::new(HashMap::new()),
         next: AtomicU32::new(1),
         stop: stop.clone(),
@@ -433,6 +462,7 @@ struct HostPacket {
     data: Option<Value>,
     #[serde(default)]
     drop: bool,
+    info: Option<Value>,
 }
 async fn host_socket(mut socket: WebSocket, hub: Arc<Hub>, mut rx: mpsc::Receiver<Message>) {
     let mut stop = hub.stop.subscribe();
@@ -446,7 +476,10 @@ async fn host_socket(mut socket: WebSocket, hub: Arc<Hub>, mut rx: mpsc::Receive
             incoming = socket.recv() => match incoming {
                 Some(Ok(Message::Text(text))) => {
                     let Ok(packet) = serde_json::from_str::<HostPacket>(&text) else { break; };
-                    if packet.drop {
+                    if let Some(info) = packet.info {
+                        // A malformed report only clears the lobby details; it never closes the room.
+                        *hub.info.lock().await = serde_json::from_value::<RoomInfo>(info).ok().map(RoomInfo::clean);
+                    } else if packet.drop {
                         if let Some(cid) = packet.cid { hub.peers.lock().await.remove(&cid); }
                     } else if let Some(data) = packet.data {
                         deliver(&hub, packet.cid, Message::Text(data.to_string().into()), false).await;
@@ -803,15 +836,23 @@ mod tests {
         let (stop, _) = watch::channel(false);
         let (tx, _rx) = mpsc::channel(1);
         let hub = Arc::new(Hub {
-            room: "ABCDE".into(), characters: None, key: "secret".into(), host: Mutex::new(Some(tx)),
+            room: "ABCDE".into(), characters: None, key: "secret".into(), host: Mutex::new(Some(tx)), info: Mutex::new(None),
             peers: Mutex::new(HashMap::new()), next: AtomicU32::new(1), stop: stop.clone(),
         });
-        let responder = tokio::spawn(respond_to_discovery(socket, hub, 12345));
+        let responder = tokio::spawn(respond_to_discovery(socket, hub.clone(), 12345));
         let client = UdpSocket::bind("127.0.0.1:0").await.unwrap();
         let rooms = query_discovery(client, vec![target, target]).await.unwrap();
         assert_eq!(rooms.len(), 1, "Duplicate responses must collapse to one room");
         assert_eq!(rooms[0].room, "ABCDE");
         assert_eq!(rooms[0].base_url, "http://127.0.0.1:12345");
+        assert_eq!(rooms[0].info, None, "Hosts that never reported details still show up");
+        *hub.info.lock().await = serde_json::from_value::<RoomInfo>(json!({
+            "host": "a very long host name", "n": 3, "max": 8, "playing": true, "lock": true, "game": "adventure", "map": 2,
+        })).ok().map(RoomInfo::clean);
+        let client = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let info = query_discovery(client, vec![target]).await.unwrap().remove(0).info.unwrap();
+        assert_eq!((info.host.as_str(), info.n, info.max, info.playing, info.lock, info.game.as_str()),
+            ("a very long ", 3, 8, true, true, "adventure"));
         stop.send(true).unwrap();
         responder.await.unwrap();
         let client = UdpSocket::bind("127.0.0.1:0").await.unwrap();
@@ -860,7 +901,7 @@ mod tests {
         let (snapshot, mut latest) = watch::channel(None);
         let (stop, _) = watch::channel(false);
         let hub = Hub {
-            room: "ABCDE".into(), characters: None, key: "test".into(), host: Mutex::new(None),
+            room: "ABCDE".into(), characters: None, key: "test".into(), host: Mutex::new(None), info: Mutex::new(None),
             peers: Mutex::new(HashMap::from([(1, Peer { control, snapshot })])),
             next: AtomicU32::new(2), stop,
         };

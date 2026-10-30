@@ -153,7 +153,7 @@ export class HostGame {
         this.rosterChanged();
       },
     });
-    this.lobby = this.net.signal ? new LobbyPublisher(this.net.signal, opts.listed) : null;
+    this.lobby = new LobbyPublisher(this.net, opts.listed);
     this.loadHistory();
   }
 

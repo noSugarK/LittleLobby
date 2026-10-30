@@ -1,6 +1,20 @@
 import { t } from '../i18n';
 import { discoverLan, lanJoinHash, type LanRoom } from '../net/lan-session';
+import { gameName } from '../room/catalog';
+import { icon } from './site';
 import { esc } from './util';
+
+/** 和公开大厅同一套列：房间码、房主 · 玩法 · 锁、人数、状态；旧版应用开的房间只有地址 */
+function roomRow(room: LanRoom, i: number) {
+  const address = esc(room.baseUrl.replace(/^http:\/\//, ''));
+  const r = room.info;
+  if (!r) return `<button type="button" class="lan-row" data-room="${i}"><b class="mono">${esc(room.room)}</b><span class="who"><small>${address}</small></span><span></span><i class="st">${t('join.go')} →</i></button>`;
+  const full = r.n >= r.max;
+  const [st, label] = full ? ['full', t('lobby.full')] : r.playing ? ['live', t('lobby.live')] : ['open', t('lobby.open')];
+  return `<button type="button" class="lan-row${full ? ' is-full' : ''}" data-room="${i}"><b class="mono">${esc(room.room)}</b>
+    <span class="who"><span>${r.lock ? `<i title="${t('lobby.locked')}" aria-label="${t('lobby.locked')}">${icon.lock}</i>` : ''}<span>${r.host ? `${esc(r.host)} · ` : ''}${gameName(r.game === 'adventure' ? 'adventure' : 'football')}</span></span><small>${address}</small></span>
+    <span class="mono">${r.n}/${r.max}</span><i class="st ${st}">${label}</i></button>`;
+}
 
 export function lanLobbyHtml() {
   return `<div class="lan-head"><h2 id="lh-lan-title">${t('lan.joinTitle')}</h2><span class="lan-status" aria-live="polite">${t('lan.searching')}</span><button type="button" class="lh-link lan-refresh">${t('lan.refresh')}</button></div>
@@ -38,8 +52,7 @@ export function bindLanLobby(root: HTMLElement) {
       const rooms = await discoverLan();
       if (closed) return;
       if (status) status.textContent = rooms.length ? t('lan.found', { n: rooms.length }) : '';
-      show(rooms.length ? rooms.map((room: LanRoom, i) =>
-        `<button type="button" class="lan-row" data-room="${i}"><b class="mono">${esc(room.room)}</b><span>${esc(room.baseUrl.replace(/^http:\/\//, ''))}</span><i>${t('join.go')} →</i></button>`).join('')
+      show(rooms.length ? rooms.map(roomRow).join('')
         : `<p class="lan-empty">${t('lan.empty')}</p>`);
       body.querySelectorAll<HTMLButtonElement>('[data-room]').forEach((button) => {
         button.onclick = () => { location.hash = lanJoinHash(rooms[Number(button.dataset.room)]); };

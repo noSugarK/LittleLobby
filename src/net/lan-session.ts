@@ -1,4 +1,5 @@
 import { store } from '../ui/util';
+import type { RoomInfo } from './lobby';
 
 declare global {
   interface Window {
@@ -48,7 +49,8 @@ export function setLanAddress(baseUrl: string) {
   }
 }
 
-export interface LanRoom { room: string; baseUrl: string }
+/** info 来自主机的局域网服务；旧版应用开的房间没有 */
+export interface LanRoom { room: string; baseUrl: string; info?: RoomInfo | null }
 
 export function discoverLan(): Promise<LanRoom[]> {
   return window.__TAURI__!.core.invoke('discover_lan');
@@ -62,10 +64,13 @@ export function lanBaseUrl(address: string) {
   return url.origin;
 }
 
-export function lanJoinHash({ room, baseUrl }: LanRoom, pin = '') {
+export function lanJoinHash({ room, baseUrl, info }: LanRoom, pin = '') {
   if (!/^[A-Z0-9]{4,8}$/.test(room)) throw new Error('Invalid room code');
   const query = new URLSearchParams({ lan: '1', server: lanBaseUrl(baseUrl) });
   if (pin) query.set('pin', pin);
+  // 和公开大厅一样：上锁的提前显示密码框，冒险房间直接进冒险的加入页
+  else if (info?.lock) query.set('lock', '');
+  if (info?.game === 'adventure') query.set('game', 'adventure');
   return `#/join/${room}?${query}`;
 }
 

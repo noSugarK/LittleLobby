@@ -231,3 +231,13 @@ test('iOS 游戏页挡住连点和捏合放大，已放大时放行捏合缩回�
     scale = 1; inGame = false; const home = event(4000); listeners.gesturestart(home); assert.equal(home.prevented, false);
   } finally { Object.assign(globalThis, originals); }
 });
+
+test('局域网房间带上锁和玩法时，加入链接提前显示密码框并进对应玩法；自带密码时不再要求输入', async () => {
+  const { lanJoinHash } = await import('../src/net/lan-session.ts');
+  const room = { room: 'ABCDE', baseUrl: 'http://192.168.1.2:12345', info: { host: '', n: 1, max: 8, playing: false, lock: true, game: 'adventure' } };
+  const query = (hash) => new URLSearchParams(hash.split('?')[1]);
+  assert.ok(query(lanJoinHash(room)).has('lock'));
+  assert.equal(query(lanJoinHash(room)).get('game'), 'adventure');
+  assert.ok(!query(lanJoinHash(room, '1234')).has('lock'));
+  assert.ok(!query(lanJoinHash({ room: 'ABCDE', baseUrl: room.baseUrl })).has('game'), '旧版应用的房间没有玩法信息');
+});
