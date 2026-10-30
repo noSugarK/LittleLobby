@@ -1,5 +1,5 @@
 import { drawBuddyImage, type BuddyAction } from './adventure-sprites';
-import { MAP_THEMES, LEVELS, ROPE, SPRING, eatenTreats, enemySize, enemyX, enemyY, goalOpen, moverRect, type AdventureView, type Rect } from './adventure';
+import { MAP_THEMES, LEVELS, RACE_COUNTDOWN, ROPE, SPRING, eatenTreats, enemySize, enemyX, enemyY, goalOpen, moverRect, type AdventureView, type Rect } from './adventure';
 import { t } from '../i18n';
 
 const INK = '#70594f';
@@ -130,6 +130,8 @@ export class AdventureRenderer {
       const x = enemyX(level, i, s.time), y = enemyY(level, i, s.time), k = enemySize(e), hp = e.hp ?? 1;
       if (y < e.y) oval(ctx, x, e.y - 2, 16, 3, '#70594f1c');
       ctx.save(); ctx.translate(x, y); ctx.scale(k, k);
+      // 刚被踩：闪烁并压扁一点
+      if (s.stunned?.includes(i)) { ctx.globalAlpha = Math.floor(now / 90) % 2 ? .45 : 1; ctx.scale(1.12, .85); }
       oval(ctx, -10, -3, 10, 4, '#c1a5ac'); oval(ctx, 10, -3, 10, 4, '#c1a5ac');
       round(ctx, -22, -30, 44, 27, 14, hp > 1 ? '#c7a6dd' : theme.accent, INK);
       oval(ctx, -7, -18, 2, 2, INK); oval(ctx, 7, -18, 2, 2, INK); smile(ctx, 0, -14);
@@ -171,6 +173,13 @@ export class AdventureRenderer {
       round(ctx, 54, 318, 207, 57, 12, '#fffdf3e6', '#dbc6b3'); ctx.textAlign = 'left'; ctx.fillStyle = INK; ctx.font = 'bold 12px sans-serif';
       const tip = TIPS[s.mode];
       ctx.fillText(tip[0], 69, 340); ctx.font = '11px sans-serif'; ctx.fillText(tip[1], 69, 359);
+    }
+    // 竞速倒数：3、2、1，开跑后“出发！”再停留半秒
+    if (s.mode === 'race' && s.phase === 'playing' && s.time < RACE_COUNTDOWN + .6) {
+      const left = Math.ceil(RACE_COUNTDOWN - s.time), text = left > 0 ? String(left) : t('adv.race.go');
+      ctx.font = 'bold 64px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 8; ctx.strokeStyle = '#fffdf3';
+      const cx = this.camera + worldWidth / 2;
+      ctx.strokeText(text, cx, 300); ctx.fillStyle = INK; ctx.fillText(text, cx, 300); ctx.lineWidth = 2;
     }
     ctx.restore();
   }

@@ -17,9 +17,14 @@ export function audioReady() {
 }
 
 /** 软萌闯关使用轻柔的木琴声，不复用足球的号角和哨声。 */
-export function sfxAdventure(kind: 'jump' | 'collect' | 'clear' | 'hurt') {
+const ADVENTURE_NOTES = {
+  clear: [523, 659, 784, 1047], collect: [880, 1175], jump: [440, 660], hurt: [330, 262],
+  // 弹簧：一串往上蹦的音；踩中小怪或 Boss：低低的两下闷响
+  bounce: [392, 587, 880], stomp: [196, 147],
+};
+export function sfxAdventure(kind: keyof typeof ADVENTURE_NOTES) {
   if (!ctx || ctx.state !== 'running') return;
-  const notes = kind === 'clear' ? [523, 659, 784, 1047] : kind === 'collect' ? [880, 1175] : kind === 'jump' ? [440, 660] : [330, 262];
+  const notes = ADVENTURE_NOTES[kind];
   notes.forEach((frequency, i) => {
     const at = ctx!.currentTime + i * .075;
     const oscillator = ctx!.createOscillator(), gain = ctx!.createGain();

@@ -366,10 +366,11 @@ test('跳跳怪会离地，可以从下面钻过；Boss 要踩三下，打败前
   place(p, level.goal, 456); g.step(1 / 60);
   assert.equal(p.reached, false, 'Boss 还在，小屋不开门');
   for (let n = 1; n <= 3; n++) {
-    g.time += 1;
-    place(p, enemyX(level, boss, g.time) - 17, 500 - 54 - 44 - 4); p.vy = 300; g.step(1 / 60);
+    g.time += 1.5;
+    place(p, enemyX(level, boss, g.time) - 10, 500 - 54 - 44 - 4); p.vy = 300; g.step(1 / 60);
     assert.equal(g.hits.get(boss), n); assert.ok(p.vy < 0, '踩中会弹起');
     assert.equal(g.defeated.has(boss), n === 3);
+    if (n < 3) { assert.deepEqual(g.view(1).stunned, [boss], '没倒的 Boss 会眩晕'); assert.ok(p.vx > 0, '人被往外弹开'); }
     assert.equal(p.deaths, 0);
   }
   assert.equal(g.view(1).hits[boss], 3);
@@ -380,6 +381,10 @@ test('跳跳怪会离地，可以从下面钻过；Boss 要踩三下，打败前
 test('竞速：用经典关卡，不集星星也能进小屋，第一个到的人一到就结束', () => {
   const g = coop('race'), [a, b] = g.players.values();
   assert.deepEqual(modeLevels('race'), modeLevels('classic')); assert.equal(g.level, 0);
+  assert.equal(a.x, b.x, '同一条起跑线');
+  // 倒数时按了也不动，倒数完才能跑
+  for (let i = 0; i < 60 * 3 + 30; i++) { g.input(1, { axis: 1, jump: false }); g.input(2, { axis: 0, jump: false }); g.step(1 / 60); if (g.time < 3) assert.equal(a.x, b.x); }
+  assert.ok(a.x > b.x + 20, `倒数后能跑：${a.x}`);
   place(b, LEVELS[0].goal, 456); g.step(1 / 60);
   assert.equal(b.reached, true); assert.equal(a.reached, false);
   assert.deepEqual(g.view().finish, [2]); assert.equal(g.phase, 'clear');

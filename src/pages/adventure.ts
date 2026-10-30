@@ -282,10 +282,13 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       if (me.deaths > oldMe.deaths) { if (!warmUp) toast(t('adv.toast.respawn')); if (sound) sfxAdventure('hurt'); vibrate(25); }
       else if (me.checkpoint > oldMe.checkpoint && !warmUp) toast(t('adv.toast.checkpoint'));
       else if (me.coins.length > oldMe.coins.length && sound) sfxAdventure('collect');
+      if (me.vy < -900 && oldMe.vy >= -900 && sound) sfxAdventure('bounce');
       if (me.eatenBy >= 0 && oldMe.eatenBy < 0) toast(t('adv.toast.eaten', { name: nameOf(me.eatenBy) }), 3000);
       if (me.eating >= 0 && oldMe.eating < 0) toast(t('adv.toast.eating', { name: nameOf(me.eating) }), 3000);
     }
     if (state.stars.length > (previous?.stars.length ?? 0)) { if (state.phase !== 'lobby') toast(t('adv.toast.star', { n: state.stars.length })); if (sound) sfxAdventure('collect'); }
+    const stomps = (v?: AdventureView | null) => (v?.hits ?? []).reduce((a, b) => a + b, 0);
+    if (previous?.level === state.level && stomps(state) > stomps(previous) && sound) sfxAdventure('stomp');
     const won = state.phase === 'clear' || state.phase === 'complete';
     if (won && previous?.phase === 'playing' && sound) sfxAdventure('clear');
     const time = `${String(Math.floor(state.time / 60)).padStart(2, '0')}:${String(Math.floor(state.time) % 60).padStart(2, '0')}`;

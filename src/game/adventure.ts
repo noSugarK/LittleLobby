@@ -169,6 +169,8 @@ export interface AdventureView {
   epoch: number; time: number; stars: number[]; defeated: number[]; active: number[]; players: Adventurer[]; paused: boolean; me: number;
   /** 每只小怪被踩了几下（Boss 血条用）；finish 是到达小屋的先后（竞速排名）。 */
   hits: number[]; finish: number[];
+  /** 刚被踩、正在眩晕闪烁的小怪。 */
+  stunned: number[];
 }
 const W = 34, H = 44;
 export const ROPE = 150;
@@ -187,6 +189,8 @@ export function enemyY(level: Level, enemy: number, time: number) {
 /** Boss 画得大、判定也大。 */
 export const enemySize = (e: Enemy) => (e.hp ?? 1) > 1 ? 1.8 : 1;
 export const SPRING = { w: 56, h: 14 };
+/** 竞速开跑前的倒数秒数：这段时间里大家站在起跑线上动不了。 */
+export const RACE_COUNTDOWN = 3;
 export function moverRect(m: Mover, time: number): Rect {
   const k = (1 - Math.cos(time * (m.speed ?? 1))) / 2;
   return { x: m.x + (m.dx ?? 0) * k, y: m.y + (m.dy ?? 0) * k, w: m.w, h: 20 };
@@ -321,7 +325,8 @@ export class AdventureGame {
   private respawn(p: Adventurer, hurt = true) {
     if (p.eating >= 0) this.release(p.id);
     const cp = LEVELS[this.level].checkpoints[p.checkpoint];
-    p.x = cp?.x ?? 90 + (p.id % 4) * 42;
+    // 竞速大家站在同一条起跑线上，其他玩法错开一点免得叠在一起
+    p.x = cp?.x ?? (this.mode === 'race' ? 120 : 90 + (p.id % 4) * 42);
     p.y = (cp?.y ?? 500) - H; p.vx = p.vy = 0; p.grounded = false;
     if (hurt) { p.deaths++; p.hearts = p.hearts > 1 ? p.hearts - 1 : 3; }
     p.invulnerable = hurt ? 1.5 : 0;
@@ -369,7 +374,8 @@ export class AdventureGame {
     for (const p of all) {
       if (!p.online || p.reached) continue;
       const c = this.controls.get(p.id)!;
-      if (this.clock - c.seen > 0.75) { c.axis = 0; c.jump = false; c.buffer = 0; c.act = false; }
+      const countdown = this.mode === 'race' && this.phase === 'playing' && this.time < RACE_COUNTDOWN;
+      if (countdown || this.clock - c.seen > 0.75) { c.axis = 0; c.jump = false; c.buffer = 0; c.act = false; }
       const pressed = c.actQueued; c.actQueued = false;
       if (p.eatenBy >= 0) {
         // 在队友肚子里：跟着走、不会受伤；按 A 挣脱出来
@@ -472,7 +478,12 @@ export class AdventureGame {
       if (p.vy > 50 && oldBottom < y - 15 * s) {
         const hits = (this.hits.get(i) ?? 0) + 1;
         this.hits.set(i, hits); p.vy = -430;
-        if (hits >= (e.hp ?? 1)) this.defeated.add(i); else this.stun.set(i, this.time + 0.8);
+        if (hits >= (e.hp ?? 1)) this.defeated.add(i);
+        else {
+          // Boss 没倒：眩晕一会儿，并把人往外弹开，免得落回它身上又被撞
+          this.stun.set(i, this.time + 1.2);
+          p.vx = (p.x + W / 2 < x ? -1 : 1) * 240; this.controls.get(p.id)!.launch = 0.5;
+        }
       }
       else if (p.invulnerable === 0) this.respawn(p);
     });
@@ -492,6 +503,6 @@ export class AdventureGame {
     });
   }
   view(me = -1): AdventureView {
-    return { t: 'adventure-state', phase: this.phase, level: this.level, mode: this.mode, epoch: this.epoch, time: this.time, stars: [...this.stars], defeated: [...this.defeated], active: [...this.active], paused: this.paused, me, hits: LEVELS[this.level].enemies.map((_, i) => this.hits.get(i) ?? 0), finish: [...this.finish], players: [...this.players.values()].map((p) => ({ ...p, coins: [...p.coins] })) };
+    return { t: 'adventure-state', phase: this.phase, level: this.level, mode: this.mode, epoch: this.epoch, time: this.time, stars: [...this.stars], defeated: [...this.defeated], active: [...this.active], paused: this.paused, me, hits: LEVELS[this.level].enemies.map((_, i) => this.hits.get(i) ?? 0), finish: [...this.finish], stunned: [...this.stun].flatMap(([i, until]) => until > this.time ? [i] : []), players: [...this.players.values()].map((p) => ({ ...p, coins: [...p.coins] })) };
   }
 }
