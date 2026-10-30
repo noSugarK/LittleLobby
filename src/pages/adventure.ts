@@ -75,7 +75,7 @@ function selected(root: HTMLElement, skin: SkinId) {
 export async function mountAdventureMenu(app: HTMLElement) {
   document.title = `${gameName('adventure')} · Little Lobby`;
   let skin = storedSkin();
-  app.innerHTML = `<main class="adventure adv-menu">${nav}<section class="adv-hero"><div class="adv-welcome"><span class="adv-eyebrow">A TINY ADVENTURE, TOGETHER</span><h1>${t('adv.hero.title')}</h1><p>${t('adv.hero.lead')}</p><div class="adv-menu-actions"><a class="adv-primary" href="#/adventure-host?solo=1">${t('adv.hero.solo')} <span>→</span></a><a class="adv-secondary" href="${isLanPage() ? `#/join/${window.__LITTLE_LOBBY_LAN__!.room}?lan=1&game=adventure` : `#/adventure-host${isNativeApp() ? '?lan=1' : ''}`}">${t(isLanPage() ? 'adv.hero.backToRoom' : isNativeApp() ? 'adv.hero.offline' : 'adv.hero.together')} <span>↗</span></a></div><small class="adv-network-note">${t(isNativeApp() || isLanPage() ? 'adv.hero.noteLan' : 'adv.hero.noteWeb')}</small></div><div class="adv-preview"><span class="adv-sticker">${t('adv.hero.sticker')}</span><canvas class="adv-preview-canvas" aria-label="${t('adv.hero.previewAria')}"></canvas><div class="adv-preview-caption"><span>01 / ${LEVELS[0].name}</span><span>${t('adv.hero.caption')}</span></div></div></section><section class="adv-wardrobe"><div><span class="adv-eyebrow">PICK YOUR LITTLE BUDDY</span><h2>${t('adv.wardrobe.title')}</h2><p>${t('adv.wardrobe.desc')}</p><strong class="adv-theme-label"></strong></div>${choices()}</section><section class="adv-trip"><span>✦ ${t('adv.trip.title')}</span>${modeLevels('classic').map((li, i) => `<span><b>0${i + 1}</b>${LEVELS[li].name}</span>`).join('')}<span>${t('adv.trip.more', { modes: MODES.filter((m) => m.coop).map((m) => m.name).join(' · ') })}</span></section><p class="adv-original"><a href="#/characters">${t('adv.gallery')} →</a></p></main>`;
+  app.innerHTML = `<main class="adventure adv-menu">${nav}<section class="adv-hero"><div class="adv-welcome"><span class="adv-eyebrow">A TINY ADVENTURE, TOGETHER</span><h1>${t('adv.hero.title')}</h1><p>${t('adv.hero.lead')}</p><div class="adv-menu-actions"><a class="adv-primary" href="#/adventure-host?solo=1">${t('adv.hero.solo')} <span>→</span></a><a class="adv-secondary" href="${isLanPage() ? `#/join/${window.__LITTLE_LOBBY_LAN__!.room}?lan=1&game=adventure` : `#/adventure-host${isNativeApp() ? '?lan=1' : ''}`}">${t(isLanPage() ? 'adv.hero.backToRoom' : isNativeApp() ? 'adv.hero.offline' : 'adv.hero.together')} <span>↗</span></a></div><small class="adv-network-note">${t(isNativeApp() || isLanPage() ? 'adv.hero.noteLan' : 'adv.hero.noteWeb')}</small></div><div class="adv-preview"><span class="adv-sticker">${t('adv.hero.sticker')}</span><canvas class="adv-preview-canvas" aria-label="${t('adv.hero.previewAria')}"></canvas><div class="adv-preview-caption"><span>01 / ${LEVELS[0].name}</span><span>${t('adv.hero.caption')}</span></div></div></section><section class="adv-wardrobe"><div><span class="adv-eyebrow">PICK YOUR LITTLE BUDDY</span><h2>${t('adv.wardrobe.title')}</h2><p>${t('adv.wardrobe.desc')}</p><strong class="adv-theme-label"></strong></div>${choices()}</section><section class="adv-trip"><span>✦ ${t('adv.trip.title')}</span>${modeLevels('classic').map((li, i) => `<span><b>0${i + 1}</b>${LEVELS[li].name}</span>`).join('')}<span>${t('adv.trip.more', { modes: MODES.filter((m) => m.multi).map((m) => m.name).join(' · ') })}</span></section><p class="adv-original"><a href="#/characters">${t('adv.gallery')} →</a></p></main>`;
   try { await avatars(app, skin); }
   catch (error) { app.querySelector('.adv-preview-caption')!.textContent = String(error); return; }
   skin = characterOf(skin).id;
@@ -316,17 +316,17 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     app.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach((button) => {
       const m = modeInfo(button.dataset.mode as ModeId);
       button.setAttribute('aria-checked', String(m.id === state!.mode));
-      button.disabled = m.coop && state!.players.filter((p) => p.online).length < 2;
+      button.disabled = m.multi && state!.players.filter((p) => p.online).length < 2;
     });
     const modeLine = app.querySelector('.adv-mode-line');
     if (modeLine) modeLine.textContent = t('adv.modeLine', { name: modeInfo(state.mode).name, desc: modeInfo(state.mode).desc });
     pad.slot(BTN_A, state.mode !== 'eat');
-    $('.adv-progress').textContent = state.paused ? t(mode.solo ? 'adv.progress.soloPaused' : 'adv.progress.paused') : state.phase === 'lobby' ? t(mode.host ? 'adv.progress.hostLobby' : 'adv.progress.lobby') : me && me.eatenBy >= 0 ? t('adv.progress.eaten', { name: nameOf(me.eatenBy) }) : me?.reached ? t('adv.progress.reached') : state.mode === 'race' ? t('adv.progress.race') : goalOpen(level, state.mode, state.stars.length, state.defeated) ? t('adv.progress.open') : state.stars.length === 3 ? t('adv.progress.boss') : t('adv.progress.stars');
+    $('.adv-progress').textContent = state.paused ? t(mode.solo ? 'adv.progress.soloPaused' : 'adv.progress.paused') : state.phase === 'lobby' ? t(mode.host ? 'adv.progress.hostLobby' : 'adv.progress.lobby') : me && me.eatenBy >= 0 ? t('adv.progress.eaten', { name: nameOf(me.eatenBy) }) : me?.reached ? t('adv.progress.reached') : state.mode === 'race' ? t('adv.progress.race') : goalOpen(level, state.mode, state.stars.length, state.defeated) ? t('adv.progress.open') : state.stars.length === 3 ? t('adv.progress.boss', { n: Math.max(...level.enemies.map((e) => e.hp ?? 1)) }) : t('adv.progress.stars');
     $('.adv-overlay').hidden = !won;
     if (won) {
-      const coop = modeInfo(state.mode).coop, race = state.mode === 'race', finish = state.finish ?? [];
-      $('.adv-overlay h2').textContent = race && finish.length ? t('adv.over.raceWin', { name: nameOf(finish[0]) }) : state.phase === 'complete' ? (coop ? t('adv.over.modeDone', { mode: modeInfo(state.mode).name }) : t('adv.over.tripDone')) : t('adv.over.stage');
-      $('.adv-overlay p').textContent = state.phase === 'complete' ? t(race ? 'adv.over.raceDone' : coop ? 'adv.over.coop' : 'adv.over.trip') : t(mode.host ? 'adv.over.rest' : 'adv.over.wait');
+      const multi = modeInfo(state.mode).multi, race = state.mode === 'race', finish = state.finish ?? [];
+      $('.adv-overlay h2').textContent = race && finish.length ? t('adv.over.raceWin', { name: nameOf(finish[0]) }) : state.phase === 'complete' ? (multi ? t('adv.over.modeDone', { mode: modeInfo(state.mode).name }) : t('adv.over.tripDone')) : t('adv.over.stage');
+      $('.adv-overlay p').textContent = state.phase === 'complete' ? t(race ? 'adv.over.raceDone' : multi ? 'adv.over.coop' : 'adv.over.trip') : t(mode.host ? 'adv.over.rest' : 'adv.over.wait');
       // 竞速按到达先后排名，其他玩法按加入顺序
       const rank = (id: number) => finish.includes(id) ? finish.indexOf(id) : finish.length;
       const shownPlayers = state.players.filter((p) => p.online).sort((a, b) => race ? rank(a.id) - rank(b.id) : 0);
@@ -348,7 +348,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     const lobby = state.phase === 'lobby', dock = app.querySelector<HTMLElement>('.adv-dock');
     if (dock) {
       dock.hidden = !lobby;
-      const start = $<HTMLButtonElement>('.adv-start'), online = state.players.filter((p) => p.online).length, needTwo = modeInfo(state.mode).coop && online < 2;
+      const start = $<HTMLButtonElement>('.adv-start'), online = state.players.filter((p) => p.online).length, needTwo = modeInfo(state.mode).multi && online < 2;
       start.disabled = !online || needTwo;
       start.textContent = t(!online ? 'adv.start.wait' : needTwo ? 'adv.start.needTwo' : 'adv.start.go');
     }

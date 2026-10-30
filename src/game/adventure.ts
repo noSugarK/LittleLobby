@@ -6,14 +6,14 @@ export const MAP_THEMES = [
   { sky: '#edf6fc', grass: '#b7d6cc', accent: '#eeb76b', item: t('adv.theme.1'), treat: 1 },
   { sky: '#eee9f8', grass: '#b9c4d9', accent: '#bfacd9', item: t('adv.theme.2'), treat: 0 },
 ] as const;
-/** 四种玩法互不叠加：经典单独闯关，其余三种是需要至少两人的合作机制。 */
+/** 五种玩法互不叠加：经典单独闯关；串一串、吃吐吐、叠罗汉是合作，小赛跑是比赛。multi 表示至少要两人。 */
 export const MODES = [
-  { id: 'classic', name: t('adv.mode.classic'), desc: t('adv.mode.classic.desc'), coop: false },
-  { id: 'rope', name: t('adv.mode.rope'), desc: t('adv.mode.rope.desc'), coop: true },
-  { id: 'eat', name: t('adv.mode.eat'), desc: t('adv.mode.eat.desc'), coop: true },
-  { id: 'stack', name: t('adv.mode.stack'), desc: t('adv.mode.stack.desc'), coop: true },
-  // 竞速借用经典关卡：不用集星星、不用打 Boss，谁先到小屋谁赢
-  { id: 'race', name: t('adv.mode.race'), desc: t('adv.mode.race.desc'), coop: true },
+  { id: 'classic', name: t('adv.mode.classic'), desc: t('adv.mode.classic.desc'), multi: false },
+  { id: 'rope', name: t('adv.mode.rope'), desc: t('adv.mode.rope.desc'), multi: true },
+  { id: 'eat', name: t('adv.mode.eat'), desc: t('adv.mode.eat.desc'), multi: true },
+  { id: 'stack', name: t('adv.mode.stack'), desc: t('adv.mode.stack.desc'), multi: true },
+  // 竞速借用经典关卡：不用集星星、不用打 Boss，谁先到小屋谁赢；它要两人以上，但不是合作
+  { id: 'race', name: t('adv.mode.race'), desc: t('adv.mode.race.desc'), multi: true },
 ] as const;
 export type ModeId = typeof MODES[number]['id'];
 export const validMode = (mode: unknown): mode is ModeId => MODES.some((m) => m.id === mode);
@@ -277,7 +277,7 @@ export class AdventureGame {
   }
   canStart(mode = this.mode) {
     const online = [...this.players.values()].filter((p) => p.online).length;
-    return online > 0 && (!modeInfo(mode).coop || online >= 2);
+    return online > 0 && (!modeInfo(mode).multi || online >= 2);
   }
   input(id: number, input: AdventureInput) {
     const c = this.controls.get(id);
