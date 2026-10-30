@@ -25,6 +25,8 @@ export function mountScreen(app: HTMLElement) {
   const opts = roomOpts();
   const local = opts.mode === 'lan' ? lanSession() : null;
   const qrUrl = joinUrl({ room, pin: opts.pin });
+  // 没检测到局域网地址时二维码只会指向本机，手机扫了也打不开，不如不显示
+  const noAddress = !!local && !local.addresses.length;
 
   app.innerHTML = `
   <div class="screen">
@@ -36,13 +38,12 @@ export function mountScreen(app: HTMLElement) {
     </div>
     <img class="corner-logo" src="${brand('logo-white-sm.png')}" alt="${t('app.name')}">
     <div class="corner-qr" hidden>
-      <canvas></canvas><div>${t('screen.scanJoin')} · <b>${room}</b>${opts.pin ? ` · ${t('play.pinLine')} ${opts.pin}` : ''}</div>
+      <canvas ${noAddress ? 'hidden' : ''}></canvas><div>${t('screen.scanJoin')} · <b>${room}</b>${opts.pin ? ` · ${t('play.pinLine')} ${opts.pin}` : ''}</div>
     </div>
     <div class="game-dock football-dock" hidden>
       <div class="tcards"></div>
       <div class="cfg dock-modes"></div>
-      <div class="dock-invite"><canvas class="qr"></canvas><div><span>${t('screen.scanJoin')}</span><b class="room-code">${room}</b>${pinLineHtml(opts.pin)}</div></div>
-      ${local ? lanInfoHtml() : ''}
+      <div class="dock-invite"><canvas class="qr" ${noAddress ? 'hidden' : ''}></canvas><div><span ${noAddress ? 'hidden' : ''}>${t('screen.scanJoin')}</span><b class="room-code">${room}</b>${pinLineHtml(opts.pin)}${local ? lanInfoHtml() : ''}</div></div>
       <button class="primary start"></button>
     </div>
     <div class="panel card drawer screen-menu" hidden>

@@ -30,7 +30,9 @@ export function mountHome(app: HTMLElement) {
   // 局域网页面只能加入；原生局域网模式由应用内大厅加入，没有房间码表单
   const showJoin = isLanPage() || !lan;
   const showHost = !isLanPage();
-  const showLobby = !isLanPage();
+  // 原生局域网模式：右栏换成局域网房间列表，没有公开大厅
+  const showLanJoin = lan && native;
+  const showLobby = !isLanPage() && !showLanJoin;
   const gameArt = (id: GameId) => id === 'football' ? pitchArt
     : `<span class="lh-buddies" aria-hidden="true"><canvas data-buddy="yier" width="112" height="112"></canvas><canvas data-buddy="bubu" width="112" height="112"></canvas></span>`;
 
@@ -45,7 +47,7 @@ export function mountHome(app: HTMLElement) {
       ${native ? `<div class="network-mode seg lh-network" role="group" aria-label="${t('lan.mode')}"><button data-network="online" class="${lan ? '' : 'on'}">${t('lan.online')}</button><button data-network="lan" class="${lan ? 'on' : ''}">${t('lan.local')}</button></div>` : ''}
       ${lan ? `<p class="lh-note">${t('lan.hint')}</p>` : ''}
 
-      <div class="lh-actions${showJoin && showHost ? '' : ' is-single'}">
+      <div class="lh-actions${(showJoin || showLanJoin) && showHost ? '' : ' is-single'}">
         ${showJoin ? `<section class="lh-panel lh-join" aria-labelledby="lh-join-title">
           <h2 id="lh-join-title">${t('home.joinTitle')}</h2>
           <form class="code-form lh-code-form">
@@ -77,12 +79,13 @@ export function mountHome(app: HTMLElement) {
           <button type="button" class="lh-btn lh-btn-ink create">${t('host.screen')}</button>
           <button type="button" class="lh-link host">${t('host.phone')}</button>
         </section>` : ''}
+
+        ${showLanJoin ? `<section class="lh-panel lh-lan" aria-labelledby="lh-lan-title">${lanLobbyHtml()}</section>` : ''}
       </div>
 
       ${showLobby ? `<section class="lh-section lh-lobby" aria-labelledby="lh-lobby-title">
-        <div class="lh-section-head"><h2 id="lh-lobby-title">${t('tab.lobby')} <span class="count"></span></h2>${lan ? '' : `<span class="lh-lobby-state">${t('home.lobbyLoading')}</span><button type="button" class="lh-link lh-refresh">${t('lobby.refresh')}</button>`}</div>
-        ${lan && native ? `<div class="lh-lan">${lanLobbyHtml()}</div>` : ''}
-        <div class="lobby-table" role="table" ${lan ? 'hidden' : ''}>
+        <div class="lh-section-head"><h2 id="lh-lobby-title">${t('tab.lobby')} <span class="count"></span></h2><span class="lh-lobby-state">${t('home.lobbyLoading')}</span><button type="button" class="lh-link lh-refresh">${t('lobby.refresh')}</button></div>
+        <div class="lobby-table" role="table">
           <div class="lbody"></div>
         </div>
       </section>` : ''}
@@ -205,7 +208,7 @@ export function mountHome(app: HTMLElement) {
   }
 
   if (lan) {
-    if (native) bindLanLobby(app);
+    if (showLanJoin) bindLanLobby(app);
     return; // Never initialize public MQTT discovery in local mode.
   }
 

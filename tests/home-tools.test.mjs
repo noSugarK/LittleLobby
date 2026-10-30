@@ -56,9 +56,11 @@ test('局域网大厅无需开服务器即可搜索、刷新、点击房间和�
     assert.match(elements['.lan-rooms'].innerHTML, /ABCDE/);
     row.onclick();
     assert.equal(new URLSearchParams(location.hash.split('?')[1]).get('server'), 'http://192.168.1.2:12345');
+    elements['.lan-rooms'].innerHTML = 'kept';
     elements['.lan-refresh'].onclick();
     await new Promise((resolve) => setImmediate(resolve));
     assert.equal(searches, 2);
+    assert.equal(elements['.lan-rooms'].innerHTML, 'kept', '结果不变时不重绘列表，避免闪烁和丢焦点');
     const submit = () => elements['.lan-join'].onsubmit({ preventDefault() {} });
     elements['.lan-url'].value = 'http://192.168.1.3:54321/#/join/FGHJK?lan=1&pin=1234';
     submit();

@@ -547,19 +547,29 @@ h1 {
   border-left: 0;
 }
 .lan-info {
+  display: grid;
+  gap: 6px;
   max-width: 300px;
   text-align: left;
+}
+.lan-addr {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.lan-warn {
+  margin: 0;
+  font-size: 13px;
 }
 .lan-address {
   display: block;
   width: 100%;
-  margin-top: 6px;
-  padding: 7px;
+  padding: 5px 7px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--bg);
   color: var(--fg);
   font: inherit;
+  font-size: 12px;
 }
 .panel p {
   margin: 0;
@@ -2147,11 +2157,9 @@ li.open .row-actions {
 .panel {
   overflow-y: auto;
 }
-.lan-join { display: grid; gap: 12px; margin-top: 20px; }
+.lan-join { display: grid; gap: 12px; padding-top: 12px; }
 .lan-join label { display: grid; gap: 8px; }
 .lan-join input { width: 100%; min-width: 0; }
-.lan-rooms .choice { width: 100%; }
-.lan-rooms small { overflow-wrap: anywhere; }
 
 /* ---------- 按键自定义：缩放 / 十字方向键 / 圆弧布局 / 设置面板 ---------- */
 .pad-btn[hidden] {

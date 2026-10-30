@@ -89,6 +89,22 @@
 .lh-options-body { display: grid; gap: 10px; padding-top: 12px; }
 .home .lh-options .opt-row, .home .lh-options .pin-field { font-size: 14px; }
 
+/* ---------- 局域网：开房右侧就是同一网络里的房间列表 ---------- */
+.lh-lan { gap: 14px; }
+.lan-head { display: flex; align-items: baseline; gap: 12px; }
+.lan-head h2 { margin: 0; }
+.lan-status { flex: 1; font-size: 14px; color: var(--h-mu); }
+.lan-rooms { display: grid; border: 1px solid var(--h-line); border-radius: 12px; overflow: hidden; }
+.home .lan-row { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 56px; padding: 12px 18px; border: 0; border-top: 1px solid var(--h-line); background: none; color: var(--h-ink); font-size: 15px; text-align: left; cursor: pointer; }
+.home .lan-row:first-child { border-top: 0; }
+.home .lan-row:hover { background: var(--h-ac-soft); }
+.lan-row b { font-size: 17px; letter-spacing: .06em; }
+.lan-row span { color: var(--h-mu); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.lan-row i { font-style: normal; font-weight: 650; color: var(--h-link); }
+.lan-empty { margin: 0; padding: 18px; font-size: 14px; line-height: 1.7; color: var(--h-mu); }
+.home .lh-lan .hint { margin: 0; font-size: 13px; line-height: 1.6; color: var(--h-mu); }
+.lan-manual summary { cursor: pointer; font-size: 14px; color: var(--h-mu); }
+
 /* ---------- 公开大厅：一张细线列表 ---------- */
 .lh-section { margin-top: 48px; }
 .lh-section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 14px; }
@@ -100,7 +116,6 @@
 .lh-lobby.is-empty .lobby-table { display: none; }
 .home .lh-lobby .lrow { padding: 14px 20px; font-size: 15px; grid-template-columns: 84px minmax(0, 1fr) 56px 72px; }
 .home .lh-lobby .lbody .lrow:hover { background: var(--h-ac-soft); }
-.lh-lan { display: grid; gap: 12px; padding: 22px; border: 1px solid var(--h-line); border-radius: 12px; background: var(--h-panel); }
 
 /* ---------- 页尾一行：离线下载、教程、图鉴 ---------- */
 .lh-more { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 40px 0 0; padding-top: 20px; border-top: 1px solid var(--h-line); font-size: 14px; color: var(--h-mu); }
@@ -120,8 +135,9 @@
   .lh-panel h2 { font-size: 22px; }
   .home .lh-code-boxes { gap: 7px; } .home .lh-code-boxes span { height: 60px; font-size: 28px; }
   .lh-pick-art { width: 96px; height: 60px; }
-  .lh-section-head { flex-wrap: wrap; }
+  .lh-section-head, .lan-head { flex-wrap: wrap; }
   .home .lh-lobby .lrow { padding: 12px 14px; font-size: 14px; grid-template-columns: 64px minmax(0, 1fr) 42px 58px; }
+  .home .lan-row { grid-template-columns: 64px minmax(0, 1fr) auto; padding: 12px 14px; font-size: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .home .lh-btn, .home .lh-pick, .home .lh-code-boxes span { transition: none; }
