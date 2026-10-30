@@ -30,6 +30,8 @@ export interface Level {
   coins: { x: number; y: number }[]; stars: { x: number; y: number }[];
   checkpoints: { x: number; y: number }[]; enemies: Enemy[];
   devices?: Device[];
+  /** 开场提示框的两行字；没有就用玩法的通用提示。 */
+  tip?: [string, string];
   /** 弹簧垫：(x, y) 是它所在的地面，落上去会被高高弹起。 */
   springs?: { x: number; y: number }[];
   movers?: Mover[];
@@ -100,7 +102,7 @@ export const LEVELS: Level[] = [
   },
   {
     // 经典第四站：弹簧垫弹上高台、坐移动平台和电梯过大坑，最后踩三下大果冻 Boss 才能开门
-    name: t('adv.level.6'), caption: t('adv.level.6.caption'), mode: 'classic', theme: 1, width: 3600,
+    name: t('adv.level.6'), caption: t('adv.level.6.caption'), tip: [t('adv.level.6.tip'), t('adv.level.6.tip2')], mode: 'classic', theme: 1, width: 3600,
     platforms: [ground(0, 640), ground(900, 700), ground(2000, 1600), ledge(620, 230, 160), ledge(1270, 390), ledge(1430, 290, 120), ledge(1760, 320, 200)],
     springs: [{ x: 500, y: 500 }, { x: 2200, y: 500 }],
     movers: [{ x: 660, y: 480, w: 110, dx: 120, speed: 0.9 }, { x: 1620, y: 480, w: 100, dy: -160, speed: 0.8 }],
@@ -111,7 +113,7 @@ export const LEVELS: Level[] = [
   },
   {
     // 串一串第二关：绳子连着大家一起坐移动平台过坑，坐不下的人就挂在绳子上
-    name: t('adv.level.7'), caption: t('adv.level.7.caption'), mode: 'rope', theme: 2, width: 3200,
+    name: t('adv.level.7'), caption: t('adv.level.7.caption'), tip: [t('adv.level.7.tip'), t('adv.level.7.tip2')], mode: 'rope', theme: 2, width: 3200,
     platforms: [ground(0, 600), ground(1000, 400), ground(1750, 350), ground(2450, 750), ledge(1470, 440, 100), ledge(2180, 430, 90), ledge(2330, 400, 90)],
     movers: [{ x: 610, y: 480, w: 160, dx: 220, speed: 0.7 }, { x: 1590, y: 440, w: 100, dx: 60, speed: 1.2 }],
     coins: [{ x: 200, y: 462 }, { x: 420, y: 462 }, { x: 700, y: 440 }, { x: 900, y: 440 }, { x: 1100, y: 462 }, { x: 1300, y: 462 }, { x: 1520, y: 405 }, { x: 1650, y: 400 }, { x: 1900, y: 462 }, { x: 2220, y: 395 }, { x: 2370, y: 365 }, { x: 2600, y: 462 }, { x: 2850, y: 462 }],
@@ -121,7 +123,7 @@ export const LEVELS: Level[] = [
   },
   {
     // 吃吐吐第二关：先把队友吐过湖按开吊桥；再含着队友踩弹簧，弹到最高处把他吐上云台按开第二座桥
-    name: t('adv.level.8'), caption: t('adv.level.8.caption'), mode: 'eat', theme: 0, width: 3300,
+    name: t('adv.level.8'), caption: t('adv.level.8.caption'), tip: [t('adv.level.8.tip'), t('adv.level.8.tip2')], mode: 'eat', theme: 0, width: 3300,
     platforms: [ground(0, 700), ground(1100, 500), ground(2000, 1300), ledge(1650, 150, 300)],
     springs: [{ x: 1320, y: 500 }],
     devices: [
@@ -136,7 +138,7 @@ export const LEVELS: Level[] = [
   },
   {
     // 叠罗汉第二关：叠高才够得着的空中平台——上去的人坐到对岸按开吊桥，最后再叠一次摘星星
-    name: t('adv.level.9'), caption: t('adv.level.9.caption'), mode: 'stack', theme: 1, width: 3400,
+    name: t('adv.level.9'), caption: t('adv.level.9.caption'), tip: [t('adv.level.9.tip'), t('adv.level.9.tip2')], mode: 'stack', theme: 1, width: 3400,
     platforms: [ground(0, 1400), ground(1800, 1600), block(700, 330, 200), ledge(2600, 330, 130)],
     movers: [{ x: 1400, y: 350, w: 120, dx: 280, speed: 0.7 }],
     devices: [
@@ -188,7 +190,7 @@ export function enemyY(level: Level, enemy: number, time: number) {
 }
 /** Boss 画得大、判定也大。 */
 export const enemySize = (e: Enemy) => (e.hp ?? 1) > 1 ? 1.8 : 1;
-export const SPRING = { w: 56, h: 14 };
+export const SPRING = { w: 56, h: 28 };
 /** 竞速开跑前的倒数秒数：这段时间里大家站在起跑线上动不了。 */
 export const RACE_COUNTDOWN = 3;
 export function moverRect(m: Mover, time: number): Rect {
@@ -470,7 +472,8 @@ export class AdventureGame {
     });
     const eaten = eatenTreats(this.players.values());
     level.coins.forEach((coin, i) => { if (!eaten.has(i) && near(p, coin.x, coin.y)) p.coins.push(i); });
-    level.stars.forEach((star, i) => { if (near(p, star.x, star.y, 35)) this.stars.add(i); });
+    // 竞速不用星星：不画也不收
+    if (this.mode !== 'race') level.stars.forEach((star, i) => { if (near(p, star.x, star.y, 35)) this.stars.add(i); });
     level.enemies.forEach((e, i) => {
       if (this.defeated.has(i) || (this.stun.get(i) ?? 0) > this.time) return;
       const x = enemyX(level, i, this.time), y = enemyY(level, i, this.time), s = enemySize(e);

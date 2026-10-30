@@ -132,6 +132,7 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
       <p class="adv-progress"></p>
       <p class="muted small adv-hint">${HINTS.classic}</p>
       <div class="adv-roster"></div>
+      ${mode.solo ? `<div class="adv-stages"><span>${t('adv.stages')}</span><div></div></div>` : ''}
       <div class="adv-settings">
         ${mode.screen ? '' : `<div class="adv-row adv-row-picker"><span>${t('adv.menu.character')}</span>${choices()}</div>`}
         <label class="adv-row"><span>${t('adv.menu.sound')}</span><input type="checkbox" class="switch adv-audio" checked></label>
@@ -293,10 +294,11 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     if (won && previous?.phase === 'playing' && sound) sfxAdventure('clear');
     const time = `${String(Math.floor(state.time / 60)).padStart(2, '0')}:${String(Math.floor(state.time) % 60).padStart(2, '0')}`;
     // 大屏没有自己的角色：显示关卡、星星和时间；手机显示自己的爱心和收集
+    const starsText = state.mode === 'race' ? '' : `✦ ${state.stars.length}/3 · `;
     $('.adv-hud').textContent = state.phase === 'lobby' ? t(!mode.host ? 'adv.hud.waitHost' : mode.screen ? 'adv.hud.screen' : 'adv.hud.host')
       : me
-      ? `${'♥'.repeat(me.hearts) + '♡'.repeat(3 - me.hearts)} · ${MAP_THEMES[level.theme].item} ${me.coins.length}/${level.coins.length} · ✦ ${state.stars.length}/3 · ${time}`
-      : `${level.name} · ✦ ${state.stars.length}/3 · ${time}`;
+      ? `${'♥'.repeat(me.hearts) + '♡'.repeat(3 - me.hearts)} · ${MAP_THEMES[level.theme].item} ${me.coins.length}/${level.coins.length} · ${starsText}${time}`
+      : `${level.name} · ${starsText}${time}`;
     $('.adv-level-name').textContent = level.name; $('.adv-level-number').textContent = `${modeInfo(state.mode).name} ${String(levels.indexOf(shown) + 1).padStart(2, '0')} / ${String(levels.length).padStart(2, '0')}`;
     $('.adv-hint').textContent = HINTS[state.mode];
     app.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach((button) => {
@@ -348,7 +350,27 @@ export async function mountAdventure(app: HTMLElement, mode: AdventureMode) {
     play.classList.toggle('watching', !me);
     if (!playing) pad.reset();
     // 换阶段时收起菜单；大厅里菜单不自动弹出，进来就能先走走
-    if (state.phase !== lastPhase) { lastPhase = state.phase; panelOpen = false; renderPanel(); }
+    if (state.phase !== lastPhase) {
+      // 单人过关：记下这一关的最快用时
+      if (mode.solo && won) { const best = soloBest(); if (!(best[state.level] <= state.time)) { best[state.level] = Math.round(state.time); store.set('adventure.solo', JSON.stringify(best)); } }
+      lastPhase = state.phase; panelOpen = false; renderPanel();
+    }
+    if (mode.solo && (state.phase !== stagesShown.phase || state.level !== stagesShown.level)) renderStages(state);
+  }
+  /** 单人选关：过了的关显示最快用时，下一关高亮，再往后锁着。 */
+  const soloBest = (): Record<number, number> => { try { return JSON.parse(store.get('adventure.solo') || '{}'); } catch { return {}; } };
+  const stagesShown = { phase: '', level: -1 };
+  const clock = (sec: number) => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+  function renderStages(view: AdventureView) {
+    stagesShown.phase = view.phase; stagesShown.level = view.level;
+    const best = soloBest(), levels = modeLevels('classic'), next = levels.findIndex((li) => best[li] === undefined);
+    const list = $('.adv-stages > div');
+    list.innerHTML = levels.map((li, i) => {
+      const done = best[li] !== undefined, open = done || i === next;
+      const note = done ? `★★★ ${clock(best[li])}` : open ? t('adv.stages.next') : t('adv.stages.locked');
+      return `<button data-stage="${li}" class="${done ? 'is-done' : open ? 'is-next' : ''}"${open ? '' : ' disabled'}${view.level === li && view.phase === 'playing' ? ' aria-current="true"' : ''}><span>${String(i + 1).padStart(2, '0')} ${esc(LEVELS[li].name)}</span><small>${note}</small></button>`;
+    }).join('');
+    list.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach((b) => { b.onclick = () => { unlockAudio(); pad.reset(); host?.toLobby(); host?.advance(Number(b.dataset.stage)); closePanel(); }; });
   }
   const start = () => { unlockAudio(); void keepAwake(); pad.reset(); host?.advance(); };
   app.querySelector<HTMLButtonElement>('.adv-start')?.addEventListener('click', start); $('.adv-next').onclick = start;

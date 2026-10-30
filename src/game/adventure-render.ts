@@ -3,6 +3,8 @@ import { MAP_THEMES, LEVELS, RACE_COUNTDOWN, ROPE, SPRING, eatenTreats, enemySiz
 import { t } from '../i18n';
 
 const INK = '#70594f';
+/** 竞速进度条上每个人圆点的描边色。 */
+const RING = ['#e4686c', '#7aa6d8', '#8fc39b', '#c7a6dd', '#f2b880', '#6fc2c0'];
 function round(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number, fill: string, stroke = '') {
   ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fillStyle = fill; ctx.fill();
   if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
@@ -100,11 +102,17 @@ export class AdventureRenderer {
     this.devices(s, theme.accent, now);
     // 弹簧垫：红色软垫压在弹簧上；移动平台：一朵软软的云
     for (const sp of level.springs ?? []) {
-      const y = sp.y - SPRING.h;
-      ctx.strokeStyle = '#b08a5e'; ctx.beginPath();
-      for (let i = 0; i <= 6; i++) ctx.lineTo(sp.x + 12 + (i % 2) * 32, y + 6 + i * 1.3);
-      ctx.stroke(); ctx.strokeStyle = INK;
-      round(ctx, sp.x, y - 2, SPRING.w, 9, 5, '#f08c94', INK);
+      // 有人刚从上面弹起：弹簧压扁一下
+      const pressed = s.players.some((p) => p.vy < -500 && p.x + 34 > sp.x && p.x < sp.x + SPRING.w && p.y + 44 > sp.y - SPRING.h - 60);
+      const y = sp.y - SPRING.h * (pressed ? .45 : 1), coil = sp.y - y - 6;
+      ctx.strokeStyle = '#b08a5e'; ctx.lineWidth = 3; ctx.beginPath();
+      for (let i = 0; i <= 6; i++) ctx.lineTo(sp.x + 16 + (i % 2) * 24, sp.y - i * coil / 6);
+      ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = INK;
+      round(ctx, sp.x - (pressed ? 4 : 0), y - 4, SPRING.w + (pressed ? 8 : 0), 12, 6, '#f08c94', INK);
+      oval(ctx, sp.x + 14, y - 1, 6, 1.5, '#ffffff90');
+      // 小箭头提示“往上弹”
+      const a = y - 18 - Math.abs(Math.sin(now / 300)) * 6;
+      ctx.strokeStyle = '#e4686c'; ctx.beginPath(); ctx.moveTo(sp.x + SPRING.w / 2 - 6, a + 6); ctx.lineTo(sp.x + SPRING.w / 2, a); ctx.lineTo(sp.x + SPRING.w / 2 + 6, a + 6); ctx.stroke(); ctx.strokeStyle = INK;
     }
     for (const m of level.movers ?? []) {
       const r = moverRect(m, s.time);
@@ -114,7 +122,7 @@ export class AdventureRenderer {
     }
     const eaten = eatenTreats(s.players);
     level.coins.forEach((item, i) => { if (!eaten.has(i)) drawTreat(ctx, item.x, item.y + Math.sin(now / 380 + i) * 3, theme.treat, .8); });
-    level.stars.forEach((item, i) => {
+    if (s.mode !== 'race') level.stars.forEach((item, i) => {
       if (s.stars.includes(i)) return;
       oval(ctx, item.x, item.y + 3, 24, 24, '#fff4c480'); star(ctx, item.x, item.y + Math.sin(now / 400) * 4, 17, '#f6d47a');
       oval(ctx, item.x - 5, item.y - 1, 1.5, 2, INK); oval(ctx, item.x + 5, item.y - 1, 1.5, 2, INK);
@@ -152,6 +160,16 @@ export class AdventureRenderer {
     ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.font = 'bold 14px sans-serif';
     ctx.fillText(open ? t('adv.goal.open') : s.stars.length < 3 ? t('adv.goal.need', { n: 3 - s.stars.length }) : t('adv.goal.boss'), gx + 45, 350);
     if (s.mode === 'rope') this.rope(s);
+    // 名牌：自己的贴着头顶，和别人的叠在一起时，别人的往上摞
+    ctx.font = 'bold 12px sans-serif';
+    const tags = new Map<number, { y: number; w: number; text: string }>(), placed: Rect[] = [];
+    for (const p of [...s.players].sort((a, b) => Number(b.id === s.me) - Number(a.id === s.me) || a.id - b.id)) {
+      if (!p.online || p.eatenBy >= 0) continue;
+      const text = `${p.name}${p.id === s.me ? ` · ${t('adv.you')}` : ''}`, w = ctx.measureText(text).width + 16, x = p.x + 17 - w / 2;
+      let y = p.y - 45;
+      while (placed.some((r) => x < r.x + r.w && x + w > r.x && y < r.y + r.h + 2 && y + 20 > r.y - 2)) y -= 24;
+      placed.push({ x, y, w, h: 20 }); tags.set(p.id, { y, w, text });
+    }
     for (const p of s.players) {
       // 被吃掉的队友藏在肚子里，不单独画
       if (!p.online || p.eatenBy >= 0 || (p.invulnerable > 0 && Math.floor(now / 90) % 2)) continue;
@@ -162,16 +180,19 @@ export class AdventureRenderer {
         animation = { action, since: now, skin: p.skin }; this.animations.set(p.id, animation);
       }
       drawBuddyImage(ctx, p.x + 17, p.y + 44, p.skin, action, (now - animation.since) / 1000, p.facing, p.eating >= 0);
+      const tag = tags.get(p.id)!;
+      if (tag.y < p.y - 45) { ctx.strokeStyle = '#c9b5a3'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p.x + 17, tag.y + 20); ctx.lineTo(p.x + 17, p.y - 22); ctx.stroke(); ctx.lineWidth = 2; }
+      round(ctx, p.x + 17 - tag.w / 2, tag.y, tag.w, 20, 9, '#fffdf3dc');
       ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
-      const name = `${p.name}${p.id === s.me ? ` · ${t('adv.you')}` : ''}`;
-      const width = ctx.measureText(name).width + 16;
-      round(ctx, p.x + 17 - width / 2, p.y - 45, width, 20, 9, '#fffdf3dc');
-      ctx.fillStyle = INK; ctx.fillText(name, p.x + 17, p.y - 31);
-      if (p.reached) star(ctx, p.x + 17, p.y - 59, 8, '#f6d47a');
+      ctx.fillStyle = INK; ctx.fillText(tag.text, p.x + 17, tag.y + 14);
+      if (p.reached) star(ctx, p.x + 17, tag.y - 14, 8, '#f6d47a');
     }
     if (this.camera < 350) {
-      round(ctx, 54, 318, 207, 57, 12, '#fffdf3e6', '#dbc6b3'); ctx.textAlign = 'left'; ctx.fillStyle = INK; ctx.font = 'bold 12px sans-serif';
-      const tip = TIPS[s.mode];
+      const tip = (s.mode !== 'race' && level.tip) || TIPS[s.mode];
+      // 框跟着字变宽，长一点的英文提示也装得下
+      ctx.font = '11px sans-serif'; const second = ctx.measureText(tip[1]).width;
+      ctx.font = 'bold 12px sans-serif'; const w = Math.max(207, Math.max(ctx.measureText(tip[0]).width, second) + 30);
+      round(ctx, 54, 318, w, 57, 12, '#fffdf3e6', '#dbc6b3'); ctx.textAlign = 'left'; ctx.fillStyle = INK;
       ctx.fillText(tip[0], 69, 340); ctx.font = '11px sans-serif'; ctx.fillText(tip[1], 69, 359);
     }
     // 竞速倒数：3、2、1，开跑后“出发！”再停留半秒
@@ -182,6 +203,32 @@ export class AdventureRenderer {
       ctx.strokeText(text, cx, 300); ctx.fillStyle = INK; ctx.fillText(text, cx, 300); ctx.lineWidth = 2;
     }
     ctx.restore();
+    if (s.mode === 'race' && s.phase !== 'lobby') this.raceBar(s, level.goal);
+  }
+  /** 竞速进度条（屏幕坐标，HUD 下方）：起点小旗到小屋，每人一个按名次编号的圆点，黄色是自己跑过的路。 */
+  private raceBar(s: AdventureView, goal: number) {
+    const ctx = this.ctx, w = Math.min(360, this.width - 120), x0 = (this.width - w) / 2, y = this.width < 560 ? 92 : 50;
+    const runners = s.players.filter((p) => p.online).map((p) => ({ p, k: p.reached ? 1 : Math.max(0, Math.min(1, p.x / goal)) }));
+    const order = [...runners].sort((a, b) => b.k - a.k);
+    const left = x0 + 28, right = x0 + w - 28, at = (k: number) => left + (right - left) * k;
+    ctx.lineWidth = 2;
+    round(ctx, x0, y - 15, w, 30, 15, '#fffdf3e6', '#e3d3c3');
+    ctx.lineCap = 'round'; ctx.lineWidth = 6;
+    ctx.strokeStyle = '#e8d8c6'; ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+    const mine = runners.find((r) => r.p.id === s.me);
+    if (mine) { ctx.strokeStyle = '#f6d47a'; ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(at(mine.k), y); ctx.stroke(); }
+    ctx.lineWidth = 1.5; ctx.strokeStyle = INK;
+    ctx.beginPath(); ctx.moveTo(x0 + 12, y + 8); ctx.lineTo(x0 + 12, y - 8); ctx.lineTo(x0 + 21, y - 4); ctx.lineTo(x0 + 12, y); ctx.fillStyle = '#e4686c'; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(right + 6, y + 6); ctx.lineTo(right + 22, y + 6); ctx.lineTo(right + 22, y - 2); ctx.lineTo(right + 14, y - 8); ctx.lineTo(right + 6, y - 2); ctx.closePath(); ctx.fillStyle = '#f2b880'; ctx.fill(); ctx.stroke();
+    // 落后的先画，领先的压在上面
+    ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+    for (const r of [...order].reverse()) {
+      const cx = at(r.k), rank = order.indexOf(r) + 1;
+      ctx.lineWidth = 2.5; oval(ctx, cx, y, 10, 10, '#ffffff', RING[Math.abs(r.p.id) % RING.length]);
+      ctx.fillStyle = INK; ctx.fillText(String(rank), cx, y + 4);
+      if (r === mine) { ctx.font = '11px sans-serif'; ctx.fillText(t('adv.you'), cx, y + 26); ctx.font = 'bold 11px sans-serif'; }
+    }
+    ctx.lineWidth = 2;
   }
   /** 机关：踩板（激活后压下去）、激活后出现的木板吊桥 / 台阶、未打开时挡路的糖果闸门。 */
   private devices(s: AdventureView, accent: string, now: number) {

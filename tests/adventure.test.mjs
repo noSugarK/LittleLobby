@@ -385,6 +385,8 @@ test('竞速：用经典关卡，不集星星也能进小屋，第一个到的�
   // 倒数时按了也不动，倒数完才能跑
   for (let i = 0; i < 60 * 3 + 30; i++) { g.input(1, { axis: 1, jump: false }); g.input(2, { axis: 0, jump: false }); g.step(1 / 60); if (g.time < 3) assert.equal(a.x, b.x); }
   assert.ok(a.x > b.x + 20, `倒数后能跑：${a.x}`);
+  const star = LEVELS[0].stars[0];
+  place(a, star.x - 17, star.y - 22); g.step(1 / 60); assert.equal(g.stars.size, 0, '竞速不收星星');
   place(b, LEVELS[0].goal, 456); g.step(1 / 60);
   assert.equal(b.reached, true); assert.equal(a.reached, false);
   assert.deepEqual(g.view().finish, [2]); assert.equal(g.phase, 'clear');

@@ -221,3 +221,14 @@
 .adv-row .switch:checked { background: var(--adv-green); }
 .adv-row .switch:focus-visible { outline: 2px solid var(--adv-green); outline-offset: 2px; }
 .adv-panel .pmain { padding-right: 4px; }
+.adv-stages { display: grid; gap: 8px; padding: 10px 0 12px; border-bottom: 1px solid var(--line); }
+.adv-stages > span { color: var(--muted); font-size: 15px; text-align: left; }
+.adv-stages > div { display: grid; gap: 6px; }
+.adv-stages button { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.adv-stages button small { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.adv-stages .is-done { background: #eef6ef; border-color: #a8cdb0; }
+.adv-stages .is-done small { color: #b88a1e; }
+.adv-stages .is-next { border: 1.5px solid #e4686c; }
+.adv-stages .is-next small { color: #d4575c; }
+.adv-stages button:disabled { background: #f4ede6; color: #b3a49a; cursor: default; }
+.adv-stages button[aria-current='true'] { border-left: 4px solid var(--adv-green); }

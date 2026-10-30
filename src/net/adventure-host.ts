@@ -95,7 +95,7 @@ export class AdventureHost {
     if (this.localId !== undefined) this.game.remove(this.localId);
     this.localId = undefined; this.localInput = { axis: 0, jump: false, act: false }; this.publish();
   }
-  advance() { this.localInput = { axis: 0, jump: false, act: false }; const result = this.game.start(); this.publish(); return result; }
+  advance(level?: number) { this.localInput = { axis: 0, jump: false, act: false }; const result = this.game.start(level); this.publish(); return result; }
   /** 房主在大厅里选玩法（经典 / 串一串 / 吃吐吐 / 叠罗汉）。 */
   setMode(mode: unknown) { const ok = this.game.setMode(mode); if (ok) this.publish(); return ok; }
   toLobby() { this.localInput = { axis: 0, jump: false, act: false }; const ok = this.game.toLobby(); if (ok) this.publish(); return ok; }
