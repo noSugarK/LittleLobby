@@ -66,7 +66,8 @@ export class LanClient {
       if (performance.now() - this.lastRecv > 6000) { ws.close(); return; }
       // Lobbies and background hosts may stop sending simulation snapshots.
       // Keep the room alive independently of a game's render/tick rate.
-      this.sendJson({ t: 'ping', ts: Date.now() });
+      // play.ts measures RTT as performance.now() - ts, so stamp with the same clock.
+      this.sendJson({ t: 'ping', ts: performance.now() });
       this.timer = window.setTimeout(watch, 2000);
     };
     this.timer = window.setTimeout(watch, 2000);

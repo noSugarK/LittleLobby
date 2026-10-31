@@ -62,7 +62,7 @@ test('局域网大厅即使没有游戏快照也持续发送心跳', async () =>
     ws.onmessage({ data: JSON.stringify({ t: 'welcome', game: 'party', pid: 1 }) });
     for (let i = 0; i < 20; i++) {
       now += 2000; timer();
-      assert.equal(sent.at(-1).t, 'ping');
+      assert.deepEqual(sent.at(-1), { t: 'ping', ts: now }, 'RTT 用客户端单调时钟计算');
       ws.onmessage({ data: JSON.stringify({ t: 'pong' }) });
       assert.equal(client.linked, true);
     }

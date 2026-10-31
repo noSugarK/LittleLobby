@@ -648,7 +648,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
     if (!latest || i < 0) return;
     const server = latest.s.players.find((p) => p.id === meId);
     if (!server) return;
-    const ahead = Math.min(0.25, (now - latest.recv + rtt / 2) / 1000);
+    const ahead = Math.max(0, Math.min(0.25, (now - latest.recv + rtt / 2) / 1000));
     const sx = server.x + server.vx * ahead;
     const sy = server.y + server.vy * ahead;
     const frozen = view.phase === Phase.Ready || view.phase === Phase.Ended || server.flags & (FLAG_STUN | FLAG_TACKLE);
