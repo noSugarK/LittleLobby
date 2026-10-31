@@ -1,6 +1,6 @@
 [package]
 name = "little-lobby"
-version = "0.2.3"
+version = "0.2.4"
 description = "Little Lobby local party games for desktop and mobile"
 license = "MIT"
 repository = "https://github.com/noSugarK/LittleLobby"
