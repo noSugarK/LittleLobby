@@ -22,6 +22,9 @@ export const LOBBY_STALE_MS = 90_000;
 
 export type RoomInfo = Omit<LobbyInfo, 'ts'>;
 
+/** 大厅一行的状态列，公开大厅和局域网房间列表共用 */
+export const roomState = (r: Pick<LobbyInfo, 'n' | 'max' | 'playing'>) => r.n >= r.max ? 'full' : r.playing ? 'live' : 'open';
+
 /** 主机端：内容变化或心跳时发布，关闭/掉线时清除。
  *  在线房间发到公开大厅（勾了公开才发），局域网房间交给本机服务，回应其他应用的局域网搜索 */
 export class LobbyPublisher {

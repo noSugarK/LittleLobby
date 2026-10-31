@@ -1,19 +1,21 @@
 import { t } from '../i18n';
 import { discoverLan, lanJoinHash, type LanRoom } from '../net/lan-session';
+import { roomState } from '../net/lobby';
 import { gameName } from '../room/catalog';
+import { hostPort } from './lan-room';
 import { icon } from './site';
 import { esc } from './util';
 
 /** 和公开大厅同一套列：房间码、房主 · 玩法 · 锁、人数、状态；旧版应用开的房间只有地址 */
 function roomRow(room: LanRoom, i: number) {
-  const address = esc(room.baseUrl.replace(/^http:\/\//, ''));
+  const address = esc(hostPort(room.baseUrl));
   const r = room.info;
   if (!r) return `<button type="button" class="lan-row" data-room="${i}"><b class="mono">${esc(room.room)}</b><span class="who"><small>${address}</small></span><span></span><i class="st">${t('join.go')} →</i></button>`;
-  const full = r.n >= r.max;
-  const [st, label] = full ? ['full', t('lobby.full')] : r.playing ? ['live', t('lobby.live')] : ['open', t('lobby.open')];
-  return `<button type="button" class="lan-row${full ? ' is-full' : ''}" data-room="${i}"><b class="mono">${esc(room.room)}</b>
-    <span class="who"><span>${r.lock ? `<i title="${t('lobby.locked')}" aria-label="${t('lobby.locked')}">${icon.lock}</i>` : ''}<span>${r.host ? `${esc(r.host)} · ` : ''}${gameName(r.game === 'adventure' ? 'adventure' : 'football')}</span></span><small>${address}</small></span>
-    <span class="mono">${r.n}/${r.max}</span><i class="st ${st}">${label}</i></button>`;
+  const st = roomState(r);
+  // game 已由本机服务归一为 football / adventure
+  return `<button type="button" class="lan-row${st === 'full' ? ' is-full' : ''}" data-room="${i}"><b class="mono">${esc(room.room)}</b>
+    <span class="who"><span>${r.lock ? `<i title="${t('lobby.locked')}" aria-label="${t('lobby.locked')}">${icon.lock}</i>` : ''}<span>${r.host ? `${esc(r.host)} · ` : ''}${gameName(r.game ?? 'football')}</span></span><small>${address}</small></span>
+    <span class="mono">${r.n}/${r.max}</span><i class="st ${st}">${t(`lobby.${st}`)}</i></button>`;
 }
 
 export function lanLobbyHtml() {
@@ -34,7 +36,7 @@ export function lanLobbyHtml() {
 export function bindLanLobby(root: HTMLElement) {
   const body = root.querySelector<HTMLElement>('.lan-rooms')!;
   const refresh = root.querySelector<HTMLButtonElement>('.lan-refresh')!;
-  const status = root.querySelector<HTMLElement>('.lan-status');
+  const status = root.querySelector<HTMLElement>('.lan-status')!;
   let closed = false;
   let busy = false;
   let timer = 0;
@@ -47,11 +49,11 @@ export function bindLanLobby(root: HTMLElement) {
   const search = async () => {
     if (busy || closed) return;
     busy = refresh.disabled = true;
-    if (status) status.textContent = t('lan.searching');
+    status.textContent = t('lan.searching');
     try {
       const rooms = await discoverLan();
       if (closed) return;
-      if (status) status.textContent = rooms.length ? t('lan.found', { n: rooms.length }) : '';
+      status.textContent = rooms.length ? t('lan.found', { n: rooms.length }) : '';
       show(rooms.length ? rooms.map(roomRow).join('')
         : `<p class="lan-empty">${t('lan.empty')}</p>`);
       body.querySelectorAll<HTMLButtonElement>('[data-room]').forEach((button) => {
@@ -59,7 +61,7 @@ export function bindLanLobby(root: HTMLElement) {
       });
     } catch {
       if (closed) return;
-      if (status) status.textContent = '';
+      status.textContent = '';
       show(`<p class="lan-empty">${t('lan.searchFailed')}</p>`);
     } finally {
       busy = refresh.disabled = false;

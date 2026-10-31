@@ -36,7 +36,7 @@ test('局域网大厅无需开服务器即可搜索、刷新、点击房间和�
   const row = { dataset: { room: '0' } };
   const elements = {
     '.lan-rooms': { innerHTML: '', querySelectorAll: () => [row] },
-    '.lan-refresh': {}, '.lan-join': {}, '.lan-url': { value: '' },
+    '.lan-refresh': {}, '.lan-status': { textContent: '' }, '.lan-join': {}, '.lan-url': { value: '' },
     '.lan-code': { value: '' }, '.lan-error': { hidden: true },
   };
   globalThis.location = { hash: '' };
@@ -53,6 +53,7 @@ test('局域网大厅无需开服务器即可搜索、刷新、点击房间和�
     bindLanLobby({ querySelector: (selector) => elements[selector] });
     await new Promise((resolve) => setImmediate(resolve));
     assert.equal(searches, 1);
+    assert.match(elements['.lan-status'].textContent, /1/, '搜索状态显示找到的房间数');
     assert.match(elements['.lan-rooms'].innerHTML, /ABCDE/);
     row.onclick();
     assert.equal(new URLSearchParams(location.hash.split('?')[1]).get('server'), 'http://192.168.1.2:12345');

@@ -22,7 +22,7 @@ const mocks = {
   '../net/lan-client': 'export class LanClient {}',
   '../net/lan-host': 'export class LanHost {}',
   '../net/lan-session': 'export const lanSession = () => null;',
-  '../ui/lan-room': 'export const bindLanAddress = () => {}, lanInfoHtml = () => "";',
+  '../ui/lan-room': 'export const bindLanAddress = () => {}, lanInfoHtml = () => "", lacksLanAddress = () => false;',
   '../net/interp': `export const separateViewBall = (view) => view, separateViewPlayers = (view) => view;
     export class SnapBuffer {
     constructor() { globalThis.__playConnectionTest.buffer = this; this.frames = []; }

@@ -13,7 +13,7 @@ import { bindLangSelect, icon, langSelect } from '../ui/site';
 import { audioReady, unlockAudio } from '../ui/sound';
 import { lanSession } from '../net/lan-session';
 import { LanHost } from '../net/lan-host';
-import { bindLanAddress, lanInfoHtml } from '../ui/lan-room';
+import { bindLanAddress, lacksLanAddress, lanInfoHtml } from '../ui/lan-room';
 import { brand, enterFullscreen, esc, joinUrl, keepAwake, randomCode, roomOpts, store } from '../ui/util';
 
 export function mountScreen(app: HTMLElement) {
@@ -25,8 +25,7 @@ export function mountScreen(app: HTMLElement) {
   const opts = roomOpts();
   const local = opts.mode === 'lan' ? lanSession() : null;
   const qrUrl = joinUrl({ room, pin: opts.pin });
-  // 没检测到局域网地址时二维码只会指向本机，手机扫了也打不开，不如不显示
-  const noAddress = !!local && !local.addresses.length;
+  const noAddress = lacksLanAddress(local);
 
   app.innerHTML = `
   <div class="screen">
@@ -38,7 +37,7 @@ export function mountScreen(app: HTMLElement) {
     </div>
     <img class="corner-logo" src="${brand('logo-white-sm.png')}" alt="${t('app.name')}">
     <div class="corner-qr" hidden>
-      <canvas ${noAddress ? 'hidden' : ''}></canvas><div>${t('screen.scanJoin')} · <b>${room}</b>${opts.pin ? ` · ${t('play.pinLine')} ${opts.pin}` : ''}</div>
+      <canvas ${noAddress ? 'hidden' : ''}></canvas><div>${noAddress ? '' : `${t('screen.scanJoin')} · `}<b>${room}</b>${opts.pin ? ` · ${t('play.pinLine')} ${opts.pin}` : ''}</div>
     </div>
     <div class="game-dock football-dock" hidden>
       <div class="tcards"></div>

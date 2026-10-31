@@ -1,5 +1,5 @@
 import { t } from '../i18n';
-import { LOBBY_STALE_MS, watchLobby, type LobbyInfo } from '../net/lobby';
+import { LOBBY_STALE_MS, roomState, watchLobby, type LobbyInfo } from '../net/lobby';
 import { openScanner } from '../ui/scan';
 import { MAIN_DOWNLOADS, REPO_URL, bindSiteTools, icon, latestRelease, siteFooter, siteTools } from '../ui/site';
 import { HISTORY_KEY, brand, esc, isPin, normalizeCode, store } from '../ui/util';
@@ -235,13 +235,12 @@ export function mountHome(app: HTMLElement) {
     }
     body.innerHTML = list
       .map(([code, r]) => {
-        const full = r.n >= r.max;
-        const st = full ? ['full', t('lobby.full')] : r.playing ? ['live', t('lobby.live')] : ['open', t('lobby.open')];
-        return `<button class="lrow ${full ? 'is-full' : ''}" role="row" data-code="${code}">
+        const st = roomState(r);
+        return `<button class="lrow ${st === 'full' ? 'is-full' : ''}" role="row" data-code="${code}">
           <span class="mono code">${code}</span>
-          <span class="who">${r.host ? esc(r.host) : t('lobby.screen')} · ${gameName(r.game === 'adventure' ? 'adventure' : 'football')}${r.lock ? `<i title="${t('lobby.locked')}">${icon.lock}</i>` : ''}</span>
+          <span class="who">${r.host ? esc(r.host) : t('lobby.screen')} · ${gameName(r.game ?? 'football')}${r.lock ? `<i title="${t('lobby.locked')}">${icon.lock}</i>` : ''}</span>
           <span class="mono">${r.n}/${r.max}</span>
-          <span class="st ${st[0]}">${st[1]}</span>
+          <span class="st ${st}">${t(`lobby.${st}`)}</span>
         </button>`;
       })
       .join('');

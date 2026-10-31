@@ -61,6 +61,10 @@ impl RoomInfo {
         if self.game != "adventure" { self.game = "football".into(); }
         self
     }
+    /// Shared by the host socket and its tests so both clean reports the same way.
+    fn parse(info: Value) -> Option<Self> {
+        serde_json::from_value::<Self>(info).ok().map(Self::clean)
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -478,7 +482,7 @@ async fn host_socket(mut socket: WebSocket, hub: Arc<Hub>, mut rx: mpsc::Receive
                     let Ok(packet) = serde_json::from_str::<HostPacket>(&text) else { break; };
                     if let Some(info) = packet.info {
                         // A malformed report only clears the lobby details; it never closes the room.
-                        *hub.info.lock().await = serde_json::from_value::<RoomInfo>(info).ok().map(RoomInfo::clean);
+                        *hub.info.lock().await = RoomInfo::parse(info);
                     } else if packet.drop {
                         if let Some(cid) = packet.cid { hub.peers.lock().await.remove(&cid); }
                     } else if let Some(data) = packet.data {
@@ -846,9 +850,9 @@ mod tests {
         assert_eq!(rooms[0].room, "ABCDE");
         assert_eq!(rooms[0].base_url, "http://127.0.0.1:12345");
         assert_eq!(rooms[0].info, None, "Hosts that never reported details still show up");
-        *hub.info.lock().await = serde_json::from_value::<RoomInfo>(json!({
+        *hub.info.lock().await = RoomInfo::parse(json!({
             "host": "a very long host name", "n": 3, "max": 8, "playing": true, "lock": true, "game": "adventure", "map": 2,
-        })).ok().map(RoomInfo::clean);
+        }));
         let client = UdpSocket::bind("127.0.0.1:0").await.unwrap();
         let info = query_discovery(client, vec![target]).await.unwrap().remove(0).info.unwrap();
         assert_eq!((info.host.as_str(), info.n, info.max, info.playing, info.lock, info.game.as_str()),

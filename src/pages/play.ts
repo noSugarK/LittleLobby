@@ -20,7 +20,7 @@ import { ClientNet, type ClientState } from '../net/client';
 import { LanClient } from '../net/lan-client';
 import { LanHost } from '../net/lan-host';
 import { lanSession } from '../net/lan-session';
-import { bindLanAddress, lanInfoHtml } from '../ui/lan-room';
+import { bindLanAddress, lacksLanAddress, lanInfoHtml } from '../ui/lan-room';
 import { SnapBuffer, separateViewBall, separateViewPlayers } from '../net/interp';
 import { decodeSnapshot, encodeInput } from '../net/protocol';
 import { CONFIG } from '../config';
@@ -68,8 +68,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   const autoJoin = joined === '1' || joined === 'w';
   const opts = isHost ? roomOpts() : null;
   const local = opts?.mode === 'lan' ? lanSession() : null;
-  // 没检测到局域网地址时二维码只会指向本机，手机扫了也打不开，不如不显示
-  const noAddress = !!local && !local.addresses.length;
+  const noAddress = lacksLanAddress(local);
   // 客户端密码：二维码自带 > 本标签页上次输入的
   const urlPin = mode.kind === 'client' ? mode.pin : '';
   const pinKey = `pin.${room}`;
@@ -91,7 +90,7 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
       </div>
     </div>
     <img class="corner-logo" src="${brand('logo-white-sm.png')}" alt="">
-    ${isHost ? `<div class="game-dock football-dock phone-dock" hidden><div class="dock-invite"><img class="dock-qr" alt="" ${noAddress ? 'hidden' : ''}><div><span ${noAddress ? 'hidden' : ''}>${t('screen.scanJoin')}</span><b class="room-code">${esc(room)}</b></div></div><button class="primary dock-start"></button></div>` : ''}
+    ${isHost ? `<div class="game-dock football-dock phone-dock" hidden><div class="dock-invite"><img class="dock-qr" alt="" ${noAddress ? 'hidden' : ''}><div><span ${noAddress ? 'hidden' : ''}>${t('screen.scanJoin')}</span><b class="room-code">${esc(room)}</b>${noAddress ? lanInfoHtml() : ''}</div></div><button class="primary dock-start"></button></div>` : ''}
     <div class="pad"></div>
     <div class="panel card drawer" hidden></div>
     ${joinCardHtml({
@@ -615,7 +614,8 @@ export function mountPlay(app: HTMLElement, mode: PlayMode) {
   };
   pad.onButtons = () => sendInput(true);
   setInterval(sendInput, 33);
-  setInterval(() => net?.linked && net.sendJson({ t: 'ping', ts: performance.now() }), 2000);
+  // LanClient 自带心跳（同样的 ping），这里只给在线连接测 RTT
+  setInterval(() => net instanceof ClientNet && net.linked && net.sendJson({ t: 'ping', ts: performance.now() }), 2000);
 
   // ---------- 渲染与本地预测 ----------
   const pred = { x: 0, y: 0, vx: 0, vy: 0, ok: false };

@@ -1,8 +1,11 @@
 import { t } from '../i18n';
-import { lanSession, setLanAddress } from '../net/lan-session';
+import { lanSession, setLanAddress, type LanSession } from '../net/lan-session';
 import { esc } from './util';
 
-const hostPort = (url: string) => url.replace(/^http:\/\//, '');
+export const hostPort = (url: string) => url.replace(/^http:\/\//, '');
+
+/** 没检测到局域网地址时二维码只会指向本机，手机扫了也打不开，不如不显示 */
+export const lacksLanAddress = (session: LanSession | null) => !!session && !session.addresses.length;
 
 export function lanInfoHtml() {
   const session = lanSession();
